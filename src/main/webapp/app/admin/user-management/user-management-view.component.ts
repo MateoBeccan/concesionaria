@@ -1,0 +1,38 @@
+import { type Ref, defineComponent, inject, ref } from 'vue';
+import { useRoute } from 'vue-router';
+
+import { useAlertService } from '@/shared/alert/alert.service';
+import { useDateFormat } from '@/shared/composables';
+
+import UserManagementService from './user-management.service';
+
+export default defineComponent({
+  name: 'JhiUserManagementView',
+  setup() {
+    const route = useRoute();
+    const { formatDateLong: formatDate } = useDateFormat();
+
+    const alertService = inject('alertService', () => useAlertService(), true);
+    const userManagementService = inject('userManagementService', () => new UserManagementService(), true);
+
+    const user: Ref<any> = ref(null);
+
+    async function loadUser(userId: string) {
+      try {
+        const response = await userManagementService.get(userId);
+        user.value = response.data;
+      } catch (error) {
+        alertService.showHttpError(error.response);
+      }
+    }
+
+    loadUser(route.params?.userId);
+
+    return {
+      formatDate,
+      alertService,
+      userManagementService,
+      user,
+    };
+  },
+});

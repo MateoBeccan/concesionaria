@@ -1,0 +1,82 @@
+package com.concesionaria.app.service;
+
+import com.concesionaria.app.domain.*; // for static metamodels
+import com.concesionaria.app.domain.Marca;
+import com.concesionaria.app.repository.MarcaRepository;
+import com.concesionaria.app.service.criteria.MarcaCriteria;
+import com.concesionaria.app.service.dto.MarcaDTO;
+import com.concesionaria.app.service.mapper.MarcaMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import tech.jhipster.service.QueryService;
+
+/**
+ * Service for executing complex queries for {@link Marca} entities in the database.
+ * The main input is a {@link MarcaCriteria} which gets converted to {@link Specification},
+ * in a way that all the filters must apply.
+ * It returns a {@link Page} of {@link MarcaDTO} which fulfills the criteria.
+ */
+@Service
+@Transactional(readOnly = true)
+public class MarcaQueryService extends QueryService<Marca> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(MarcaQueryService.class);
+
+    private final MarcaRepository marcaRepository;
+
+    private final MarcaMapper marcaMapper;
+
+    public MarcaQueryService(MarcaRepository marcaRepository, MarcaMapper marcaMapper) {
+        this.marcaRepository = marcaRepository;
+        this.marcaMapper = marcaMapper;
+    }
+
+    /**
+     * Return a {@link Page} of {@link MarcaDTO} which matches the criteria from the database.
+     * @param criteria The object which holds all the filters, which the entities should match.
+     * @param page The page, which should be returned.
+     * @return the matching entities.
+     */
+    @Transactional(readOnly = true)
+    public Page<MarcaDTO> findByCriteria(MarcaCriteria criteria, Pageable page) {
+        LOG.debug("find by criteria : {}, page: {}", criteria, page);
+        final Specification<Marca> specification = createSpecification(criteria);
+        return marcaRepository.findAll(specification, page).map(marcaMapper::toDto);
+    }
+
+    /**
+     * Return the number of matching entities in the database.
+     * @param criteria The object which holds all the filters, which the entities should match.
+     * @return the number of matching entities.
+     */
+    @Transactional(readOnly = true)
+    public long countByCriteria(MarcaCriteria criteria) {
+        LOG.debug("count by criteria : {}", criteria);
+        final Specification<Marca> specification = createSpecification(criteria);
+        return marcaRepository.count(specification);
+    }
+
+    /**
+     * Function to convert {@link MarcaCriteria} to a {@link Specification}
+     * @param criteria The object which holds all the filters, which the entities should match.
+     * @return the matching {@link Specification} of the entity.
+     */
+    protected Specification<Marca> createSpecification(MarcaCriteria criteria) {
+        Specification<Marca> specification = Specification.unrestricted();
+        if (criteria != null) {
+            // This has to be called first, because the distinct method returns null
+            specification = Specification.allOf(
+                Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
+                buildRangeSpecification(criteria.getId(), Marca_.id),
+                buildStringSpecification(criteria.getNombre(), Marca_.nombre),
+                buildStringSpecification(criteria.getPaisOrigen(), Marca_.paisOrigen)
+            );
+        }
+        return specification;
+    }
+}

@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "changelogDate": "20260320230055"
+  },
+  "applications": ["*"],
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "nombre",
+      "fieldType": "String",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "descripcion",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "anioInicio",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "anioFin",
+      "fieldType": "Integer"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "Version",
+  "pagination": "pagination",
+  "readOnly": false,
+  "relationships": [
+    {
+      "otherEntityName": "motor",
+      "otherEntityRelationshipName": "versiones",
+      "relationshipName": "motores",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-many"
+    },
+    {
+      "otherEntityName": "modelo",
+      "otherEntityRelationshipName": "versiones",
+      "relationshipName": "modelos",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

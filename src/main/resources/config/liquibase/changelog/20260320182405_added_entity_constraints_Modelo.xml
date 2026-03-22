@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <!--
+        Added the constraints for entity Modelo.
+    -->
+    <changeSet id="20260320182405-2" author="jhipster">
+
+        <addForeignKeyConstraint baseColumnNames="marca_id"
+                                 baseTableName="modelo"
+                                 constraintName="fk_modelo__marca_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="marca"
+                                 />
+
+        <addForeignKeyConstraint baseColumnNames="modelo_id"
+                                 baseTableName="rel_modelo__versiones"
+                                 constraintName="fk_rel_modelo__versiones__modelo_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="modelo"
+                                 />
+
+        <addForeignKeyConstraint baseColumnNames="versiones_id"
+                                 baseTableName="rel_modelo__versiones"
+                                 constraintName="fk_rel_modelo__versiones__versiones_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="version"
+                                 />
+    </changeSet>
+</databaseChangeLog>

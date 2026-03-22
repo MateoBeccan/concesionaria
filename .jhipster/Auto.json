@@ -1,0 +1,69 @@
+{
+  "annotations": {
+    "changelogDate": "20260321000427"
+  },
+  "applications": ["*"],
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "estado",
+      "fieldType": "EstadoAuto",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "NUEVO,USADO"
+    },
+    {
+      "fieldName": "condicion",
+      "fieldType": "CondicionAuto",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "EN_VENTA,RESERVADO,VENDIDO"
+    },
+    {
+      "fieldName": "fechaFabricacion",
+      "fieldType": "LocalDate"
+    },
+    {
+      "fieldName": "km",
+      "fieldType": "Integer"
+    },
+    {
+      "fieldName": "patente",
+      "fieldType": "String"
+    },
+    {
+      "fieldName": "precio",
+      "fieldType": "BigDecimal"
+    }
+  ],
+  "jpaMetamodelFiltering": true,
+  "name": "Auto",
+  "pagination": "pagination",
+  "readOnly": false,
+  "relationships": [
+    {
+      "otherEntityName": "marca",
+      "relationshipName": "marca",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "modelo",
+      "relationshipName": "modelo",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "version",
+      "relationshipName": "version",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "motor",
+      "relationshipName": "motor",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

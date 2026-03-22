@@ -1,0 +1,64 @@
+entity Marca {
+  nombre String required,
+  paisOrigen String
+}
+
+entity Modelo {
+  nombre String required,
+  anioLanzamiento Integer,
+  carroceria String
+}
+
+entity Version {
+  nombre String required,
+  descripcion String,
+  anioInicio Integer,
+  anioFin Integer
+}
+
+entity Motor {
+  nombre String required,
+  cilindradaCc Integer,
+  cilindroCant Integer,
+  potenciaHp Integer,
+  turbo Boolean
+}
+
+entity Combustible {
+  nombre String required,
+  descripcion String
+}
+
+entity Auto {
+  estado EstadoAuto required,
+  condicion CondicionAuto required,
+  fechaFabricacion LocalDate,
+  km Integer,
+  patente String,
+  precio BigDecimal
+}
+
+enum EstadoAuto {
+  NUEVO,
+  USADO
+}
+
+enum CondicionAuto {
+  EN_VENTA,
+  RESERVADO,
+  VENDIDO
+}
+
+relationship ManyToOne {
+  Modelo{marca} to Marca
+  Combustible{motor} to Motor
+  Auto{marca} to Marca
+  Auto{modelo} to Modelo
+  Auto{version} to Version
+  Auto{motor} to Motor
+}
+
+relationship ManyToMany {
+  Modelo{versiones} to Version{modelos}
+  Version{motores} to Motor{versiones}
+}

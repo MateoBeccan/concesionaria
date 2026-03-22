@@ -1,0 +1,14 @@
+{
+  "annotations": {
+    "changelogDate": "20260320174406"
+  },
+  "dto": "mapstruct",
+  "fields": [],
+  "jpaMetamodelFiltering": true,
+  "name": "Prueba1",
+  "pagination": "pagination",
+  "readOnly": false,
+  "relationships": [],
+  "searchEngine": "no",
+  "service": "serviceClass"
+}
