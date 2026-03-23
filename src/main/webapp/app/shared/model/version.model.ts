@@ -7,8 +7,8 @@ export interface IVersion {
   descripcion?: string | null;
   anioInicio?: number | null;
   anioFin?: number | null;
-  motoreses?: IMotor[] | null;
   modeloses?: IModelo[] | null;
+  motoreses?: IMotor[] | null;
 }
 
 export class Version implements IVersion {
@@ -18,7 +18,7 @@ export class Version implements IVersion {
     public descripcion?: string | null,
     public anioInicio?: number | null,
     public anioFin?: number | null,
-    public motoreses?: IMotor[] | null,
     public modeloses?: IModelo[] | null,
+    public motoreses?: IMotor[] | null,
   ) {}
 }

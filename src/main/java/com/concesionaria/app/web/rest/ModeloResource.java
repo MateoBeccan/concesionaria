@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.ModeloRepository;
-import com.concesionaria.app.service.ModeloQueryService;
 import com.concesionaria.app.service.ModeloService;
-import com.concesionaria.app.service.criteria.ModeloCriteria;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,12 +42,9 @@ public class ModeloResource {
 
     private final ModeloRepository modeloRepository;
 
-    private final ModeloQueryService modeloQueryService;
-
-    public ModeloResource(ModeloService modeloService, ModeloRepository modeloRepository, ModeloQueryService modeloQueryService) {
+    public ModeloResource(ModeloService modeloService, ModeloRepository modeloRepository) {
         this.modeloService = modeloService;
         this.modeloRepository = modeloRepository;
-        this.modeloQueryService = modeloQueryService;
     }
 
     /**
@@ -144,31 +139,14 @@ public class ModeloResource {
      * {@code GET  /modelos} : get all the Modelos.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Modelos in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<ModeloDTO>> getAllModelos(
-        ModeloCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Modelos by criteria: {}", criteria);
-
-        Page<ModeloDTO> page = modeloQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<ModeloDTO>> getAllModelos(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Modelos");
+        Page<ModeloDTO> page = modeloService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /modelos/count} : count all the modelos.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countModelos(ModeloCriteria criteria) {
-        LOG.debug("REST request to count Modelos by criteria: {}", criteria);
-        return ResponseEntity.ok().body(modeloQueryService.countByCriteria(criteria));
     }
 
     /**

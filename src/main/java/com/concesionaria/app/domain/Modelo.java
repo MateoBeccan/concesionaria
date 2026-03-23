@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.Carroceria;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -31,19 +32,15 @@ public class Modelo implements Serializable {
     @Column(name = "anio_lanzamiento")
     private Integer anioLanzamiento;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "carroceria")
-    private String carroceria;
+    private Carroceria carroceria;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Marca marca;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "rel_modelo__versiones",
-        joinColumns = @JoinColumn(name = "modelo_id"),
-        inverseJoinColumns = @JoinColumn(name = "versiones_id")
-    )
-    @JsonIgnoreProperties(value = { "motoreses", "modeloses" }, allowSetters = true)
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "modeloses")
+    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
     private Set<Version> versioneses = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
@@ -87,16 +84,16 @@ public class Modelo implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public String getCarroceria() {
+    public Carroceria getCarroceria() {
         return this.carroceria;
     }
 
-    public Modelo carroceria(String carroceria) {
+    public Modelo carroceria(Carroceria carroceria) {
         this.setCarroceria(carroceria);
         return this;
     }
 
-    public void setCarroceria(String carroceria) {
+    public void setCarroceria(Carroceria carroceria) {
         this.carroceria = carroceria;
     }
 
@@ -118,6 +115,12 @@ public class Modelo implements Serializable {
     }
 
     public void setVersioneses(Set<Version> versions) {
+        if (this.versioneses != null) {
+            this.versioneses.forEach(i -> i.removeModelo(this));
+        }
+        if (versions != null) {
+            versions.forEach(i -> i.addModelo(this));
+        }
         this.versioneses = versions;
     }
 
@@ -128,11 +131,13 @@ public class Modelo implements Serializable {
 
     public Modelo addVersiones(Version version) {
         this.versioneses.add(version);
+        version.getModeloses().add(this);
         return this;
     }
 
     public Modelo removeVersiones(Version version) {
         this.versioneses.remove(version);
+        version.getModeloses().remove(this);
         return this;
     }
 

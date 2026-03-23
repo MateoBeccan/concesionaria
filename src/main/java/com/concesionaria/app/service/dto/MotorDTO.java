@@ -17,10 +17,13 @@ public class MotorDTO implements Serializable {
     @NotNull
     private String nombre;
 
+    @Min(value = 0)
     private Integer cilindradaCc;
 
+    @Min(value = 0)
     private Integer cilindroCant;
 
+    @Min(value = 0)
     private Integer potenciaHp;
 
     private Boolean turbo;

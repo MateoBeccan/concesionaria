@@ -3,6 +3,7 @@ package com.concesionaria.app.domain;
 import static com.concesionaria.app.domain.AutoTestSamples.*;
 import static com.concesionaria.app.domain.MarcaTestSamples.*;
 import static com.concesionaria.app.domain.ModeloTestSamples.*;
+import static com.concesionaria.app.domain.MonedaTestSamples.*;
 import static com.concesionaria.app.domain.MotorTestSamples.*;
 import static com.concesionaria.app.domain.VersionTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,5 +73,17 @@ class AutoTest {
 
         auto.motor(null);
         assertThat(auto.getMotor()).isNull();
+    }
+
+    @Test
+    void monedaTest() {
+        Auto auto = getAutoRandomSampleGenerator();
+        Moneda monedaBack = getMonedaRandomSampleGenerator();
+
+        auto.setMoneda(monedaBack);
+        assertThat(auto.getMoneda()).isEqualTo(monedaBack);
+
+        auto.moneda(null);
+        assertThat(auto.getMoneda()).isNull();
     }
 }

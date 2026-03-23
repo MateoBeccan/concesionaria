@@ -76,53 +76,19 @@ class AutoCriteriaTest {
 
     private static void setAllFilters(AutoCriteria autoCriteria) {
         autoCriteria.id();
-        autoCriteria.estado();
-        autoCriteria.condicion();
-        autoCriteria.fechaFabricacion();
-        autoCriteria.km();
-        autoCriteria.patente();
-        autoCriteria.precio();
-        autoCriteria.marcaId();
-        autoCriteria.modeloId();
-        autoCriteria.versionId();
-        autoCriteria.motorId();
         autoCriteria.distinct();
     }
 
     private static Condition<AutoCriteria> criteriaFiltersAre(Function<Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId()) &&
-                condition.apply(criteria.getEstado()) &&
-                condition.apply(criteria.getCondicion()) &&
-                condition.apply(criteria.getFechaFabricacion()) &&
-                condition.apply(criteria.getKm()) &&
-                condition.apply(criteria.getPatente()) &&
-                condition.apply(criteria.getPrecio()) &&
-                condition.apply(criteria.getMarcaId()) &&
-                condition.apply(criteria.getModeloId()) &&
-                condition.apply(criteria.getVersionId()) &&
-                condition.apply(criteria.getMotorId()) &&
-                condition.apply(criteria.getDistinct()),
+            criteria -> condition.apply(criteria.getId()) && condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
     }
 
     private static Condition<AutoCriteria> copyFiltersAre(AutoCriteria copy, BiFunction<Object, Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId(), copy.getId()) &&
-                condition.apply(criteria.getEstado(), copy.getEstado()) &&
-                condition.apply(criteria.getCondicion(), copy.getCondicion()) &&
-                condition.apply(criteria.getFechaFabricacion(), copy.getFechaFabricacion()) &&
-                condition.apply(criteria.getKm(), copy.getKm()) &&
-                condition.apply(criteria.getPatente(), copy.getPatente()) &&
-                condition.apply(criteria.getPrecio(), copy.getPrecio()) &&
-                condition.apply(criteria.getMarcaId(), copy.getMarcaId()) &&
-                condition.apply(criteria.getModeloId(), copy.getModeloId()) &&
-                condition.apply(criteria.getVersionId(), copy.getVersionId()) &&
-                condition.apply(criteria.getMotorId(), copy.getMotorId()) &&
-                condition.apply(criteria.getDistinct(), copy.getDistinct()),
+            criteria -> condition.apply(criteria.getId(), copy.getId()) && condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );
     }

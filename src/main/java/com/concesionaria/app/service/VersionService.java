@@ -34,12 +34,12 @@ public interface VersionService {
     Optional<VersionDTO> partialUpdate(VersionDTO versionDTO);
 
     /**
-     * Get all the versions with eager load of many-to-many relationships.
+     * Get all the versions.
      *
      * @param pageable the pagination information.
      * @return the list of entities.
      */
-    Page<VersionDTO> findAllWithEagerRelationships(Pageable pageable);
+    Page<VersionDTO> findAll(Pageable pageable);
 
     /**
      * Get the "id" version.

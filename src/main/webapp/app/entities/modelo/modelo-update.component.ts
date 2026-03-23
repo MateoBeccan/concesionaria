@@ -7,6 +7,7 @@ import MarcaService from '@/entities/marca/marca.service';
 import VersionService from '@/entities/version/version.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
+import { Carroceria } from '@/shared/model/enumerations/carroceria.model';
 import { type IMarca } from '@/shared/model/marca.model';
 import { type IModelo, Modelo } from '@/shared/model/modelo.model';
 import { type IVersion } from '@/shared/model/version.model';
@@ -28,6 +29,7 @@ export default defineComponent({
     const versionService = inject('versionService', () => new VersionService());
 
     const versions: Ref<IVersion[]> = ref([]);
+    const carroceriaValues: Ref<string[]> = ref(Object.keys(Carroceria));
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -82,6 +84,7 @@ export default defineComponent({
       alertService,
       modelo,
       previousState,
+      carroceriaValues,
       isSaving,
       currentLanguage,
       marcas,

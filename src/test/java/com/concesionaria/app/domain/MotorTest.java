@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import static com.concesionaria.app.domain.CombustibleTestSamples.*;
 import static com.concesionaria.app.domain.MotorTestSamples.*;
 import static com.concesionaria.app.domain.VersionTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,5 +46,27 @@ class MotorTest {
         motor.setVersioneses(new HashSet<>());
         assertThat(motor.getVersioneses()).doesNotContain(versionBack);
         assertThat(versionBack.getMotoreses()).doesNotContain(motor);
+    }
+
+    @Test
+    void combustiblesTest() {
+        Motor motor = getMotorRandomSampleGenerator();
+        Combustible combustibleBack = getCombustibleRandomSampleGenerator();
+
+        motor.addCombustibles(combustibleBack);
+        assertThat(motor.getCombustibleses()).containsOnly(combustibleBack);
+        assertThat(combustibleBack.getMotor()).isEqualTo(motor);
+
+        motor.removeCombustibles(combustibleBack);
+        assertThat(motor.getCombustibleses()).doesNotContain(combustibleBack);
+        assertThat(combustibleBack.getMotor()).isNull();
+
+        motor.combustibleses(new HashSet<>(Set.of(combustibleBack)));
+        assertThat(motor.getCombustibleses()).containsOnly(combustibleBack);
+        assertThat(combustibleBack.getMotor()).isEqualTo(motor);
+
+        motor.setCombustibleses(new HashSet<>());
+        assertThat(motor.getCombustibleses()).doesNotContain(combustibleBack);
+        assertThat(combustibleBack.getMotor()).isNull();
     }
 }

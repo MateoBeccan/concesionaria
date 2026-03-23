@@ -34,12 +34,12 @@ public interface ModeloService {
     Optional<ModeloDTO> partialUpdate(ModeloDTO modeloDTO);
 
     /**
-     * Get all the modelos with eager load of many-to-many relationships.
+     * Get all the modelos.
      *
      * @param pageable the pagination information.
      * @return the list of entities.
      */
-    Page<ModeloDTO> findAllWithEagerRelationships(Pageable pageable);
+    Page<ModeloDTO> findAll(Pageable pageable);
 
     /**
      * Get the "id" modelo.

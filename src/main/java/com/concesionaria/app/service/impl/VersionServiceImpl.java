@@ -62,15 +62,18 @@ public class VersionServiceImpl implements VersionService {
             .map(versionMapper::toDto);
     }
 
-    public Page<VersionDTO> findAllWithEagerRelationships(Pageable pageable) {
-        return versionRepository.findAllWithEagerRelationships(pageable).map(versionMapper::toDto);
+    @Override
+    @Transactional(readOnly = true)
+    public Page<VersionDTO> findAll(Pageable pageable) {
+        LOG.debug("Request to get all Versions");
+        return versionRepository.findAll(pageable).map(versionMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<VersionDTO> findOne(Long id) {
         LOG.debug("Request to get Version : {}", id);
-        return versionRepository.findOneWithEagerRelationships(id).map(versionMapper::toDto);
+        return versionRepository.findById(id).map(versionMapper::toDto);
     }
 
     @Override

@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.MarcaRepository;
-import com.concesionaria.app.service.MarcaQueryService;
 import com.concesionaria.app.service.MarcaService;
-import com.concesionaria.app.service.criteria.MarcaCriteria;
 import com.concesionaria.app.service.dto.MarcaDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,12 +42,9 @@ public class MarcaResource {
 
     private final MarcaRepository marcaRepository;
 
-    private final MarcaQueryService marcaQueryService;
-
-    public MarcaResource(MarcaService marcaService, MarcaRepository marcaRepository, MarcaQueryService marcaQueryService) {
+    public MarcaResource(MarcaService marcaService, MarcaRepository marcaRepository) {
         this.marcaService = marcaService;
         this.marcaRepository = marcaRepository;
-        this.marcaQueryService = marcaQueryService;
     }
 
     /**
@@ -144,31 +139,14 @@ public class MarcaResource {
      * {@code GET  /marcas} : get all the Marcas.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Marcas in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<MarcaDTO>> getAllMarcas(
-        MarcaCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Marcas by criteria: {}", criteria);
-
-        Page<MarcaDTO> page = marcaQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<MarcaDTO>> getAllMarcas(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Marcas");
+        Page<MarcaDTO> page = marcaService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /marcas/count} : count all the marcas.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countMarcas(MarcaCriteria criteria) {
-        LOG.debug("REST request to count Marcas by criteria: {}", criteria);
-        return ResponseEntity.ok().body(marcaQueryService.countByCriteria(criteria));
     }
 
     /**

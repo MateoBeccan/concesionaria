@@ -45,14 +45,18 @@ class ModeloTest {
 
         modelo.addVersiones(versionBack);
         assertThat(modelo.getVersioneses()).containsOnly(versionBack);
+        assertThat(versionBack.getModeloses()).containsOnly(modelo);
 
         modelo.removeVersiones(versionBack);
         assertThat(modelo.getVersioneses()).doesNotContain(versionBack);
+        assertThat(versionBack.getModeloses()).doesNotContain(modelo);
 
         modelo.versioneses(new HashSet<>(Set.of(versionBack)));
         assertThat(modelo.getVersioneses()).containsOnly(versionBack);
+        assertThat(versionBack.getModeloses()).containsOnly(modelo);
 
         modelo.setVersioneses(new HashSet<>());
         assertThat(modelo.getVersioneses()).doesNotContain(versionBack);
+        assertThat(versionBack.getModeloses()).doesNotContain(modelo);
     }
 }

@@ -6,6 +6,7 @@ import sinon, { type SinonStubbedInstance } from 'sinon';
 
 import MarcaService from '@/entities/marca/marca.service';
 import ModeloService from '@/entities/modelo/modelo.service';
+import MonedaService from '@/entities/moneda/moneda.service';
 import MotorService from '@/entities/motor/motor.service';
 import VersionService from '@/entities/version/version.service';
 import AlertService from '@/shared/alert/alert.service';
@@ -69,6 +70,10 @@ describe('Component Tests', () => {
             } as any),
           motorService: () =>
             sinon.createStubInstance<MotorService>(MotorService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
+          monedaService: () =>
+            sinon.createStubInstance<MonedaService>(MonedaService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

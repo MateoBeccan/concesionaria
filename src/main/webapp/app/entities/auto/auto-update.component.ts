@@ -5,6 +5,7 @@ import { useVuelidate } from '@vuelidate/core';
 
 import MarcaService from '@/entities/marca/marca.service';
 import ModeloService from '@/entities/modelo/modelo.service';
+import MonedaService from '@/entities/moneda/moneda.service';
 import MotorService from '@/entities/motor/motor.service';
 import VersionService from '@/entities/version/version.service';
 import { useAlertService } from '@/shared/alert/alert.service';
@@ -14,6 +15,7 @@ import { CondicionAuto } from '@/shared/model/enumerations/condicion-auto.model'
 import { EstadoAuto } from '@/shared/model/enumerations/estado-auto.model';
 import { type IMarca } from '@/shared/model/marca.model';
 import { type IModelo } from '@/shared/model/modelo.model';
+import { type IMoneda } from '@/shared/model/moneda.model';
 import { type IMotor } from '@/shared/model/motor.model';
 import { type IVersion } from '@/shared/model/version.model';
 
@@ -42,6 +44,10 @@ export default defineComponent({
     const motorService = inject('motorService', () => new MotorService());
 
     const motors: Ref<IMotor[]> = ref([]);
+
+    const monedaService = inject('monedaService', () => new MonedaService());
+
+    const monedas: Ref<IMoneda[]> = ref([]);
     const estadoAutoValues: Ref<string[]> = ref(Object.keys(EstadoAuto));
     const condicionAutoValues: Ref<string[]> = ref(Object.keys(CondicionAuto));
     const isSaving = ref(false);
@@ -86,6 +92,11 @@ export default defineComponent({
         .then(res => {
           motors.value = res.data;
         });
+      monedaService()
+        .retrieve()
+        .then(res => {
+          monedas.value = res.data;
+        });
     };
 
     initRelationships();
@@ -99,13 +110,24 @@ export default defineComponent({
         required: validations.required('Este campo es obligatorio.'),
       },
       fechaFabricacion: {},
-      km: {},
-      patente: {},
-      precio: {},
+      fechaIngreso: {},
+      km: {
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+      },
+      patente: {
+        required: validations.required('Este campo es obligatorio.'),
+        maxLength: validations.maxLength('Este campo no puede superar más de 10 caracteres.', 10),
+      },
+      precio: {
+        required: validations.required('Este campo es obligatorio.'),
+        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+      },
       marca: {},
       modelo: {},
       version: {},
       motor: {},
+      moneda: {},
     };
     const v$ = useVuelidate(validationRules, auto as any);
     v$.value.$validate();
@@ -123,6 +145,7 @@ export default defineComponent({
       modelos,
       versions,
       motors,
+      monedas,
       v$,
     };
   },

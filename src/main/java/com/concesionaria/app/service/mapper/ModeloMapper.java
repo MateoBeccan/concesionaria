@@ -19,6 +19,7 @@ public interface ModeloMapper extends EntityMapper<ModeloDTO, Modelo> {
     @Mapping(target = "versioneses", source = "versioneses", qualifiedByName = "versionIdSet")
     ModeloDTO toDto(Modelo s);
 
+    @Mapping(target = "versioneses", ignore = true)
     @Mapping(target = "removeVersiones", ignore = true)
     Modelo toEntity(ModeloDTO modeloDTO);
 

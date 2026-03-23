@@ -8,6 +8,8 @@ import com.concesionaria.app.service.mapper.MarcaMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +60,13 @@ public class MarcaServiceImpl implements MarcaService {
             })
             .map(marcaRepository::save)
             .map(marcaMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<MarcaDTO> findAll(Pageable pageable) {
+        LOG.debug("Request to get all Marcas");
+        return marcaRepository.findAll(pageable).map(marcaMapper::toDto);
     }
 
     @Override

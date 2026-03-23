@@ -1,58 +1,95 @@
 <template>
-  <div class="home row">
-    <div class="col-md-3">
-      <span class="hipster img-fluid rounded"></span>
+  <div class="home container mt-4">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+      <h2>Panel de Gestión - Concesionaria</h2>
+      <p class="text-muted">
+        Sistema interno para administración de vehículos, marcas y operaciones.
+      </p>
     </div>
-    <div class="col-md-9">
-      <h1 class="display-4">¡Bienvenido, Java Hipster!</h1>
-      <p class="lead">Esta es su página de inicio</p>
 
-      <div>
-        <div class="alert alert-success" v-if="authenticated">
-          <span v-if="username">Está conectado como "{{ username }}".</span>
-        </div>
+    <!-- USUARIO -->
+    <div v-if="authenticated" class="alert alert-success">
+      Sesión iniciada como <strong>{{ username }}</strong>
+    </div>
 
-        <div class="alert alert-warning" v-if="!authenticated">
-          <span>Si desea </span>
-          <a class="alert-link" @click="showLogin()">iniciar sesión</a
-          ><span
-            >, puede intentar con las cuentas predeterminadas:<br />- Administrador (usuario="admin" y contraseña="admin") <br />- Usuario
-            (usuario="user" y contraseña="user").</span
-          >
-        </div>
-        <div class="alert alert-warning" v-if="!authenticated">
-          <span>¿Aún no tienes una cuenta?</span>&nbsp;
-          <router-link class="alert-link" to="/register">Crea una cuenta</router-link>
+    <div v-if="!authenticated" class="alert alert-warning">
+      Debe iniciar sesión para utilizar el sistema.
+      <a @click="showLogin()" class="alert-link">Iniciar sesión</a>
+    </div>
+
+    <!-- ACCESOS RÁPIDOS -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="p-3 border rounded bg-light text-center">
+          <h5>Autos</h5>
+          <p class="text-muted">Gestión de vehículos</p>
+          <router-link to="/auto" class="btn btn-primary btn-sm">Acceder</router-link>
         </div>
       </div>
 
-      <p>Si tiene preguntas sobre JHipster:</p>
+      <div class="col-md-3">
+        <div class="p-3 border rounded bg-light text-center">
+          <h5>Marcas</h5>
+          <p class="text-muted">Administrar marcas</p>
+          <router-link to="/marca" class="btn btn-primary btn-sm">Acceder</router-link>
+        </div>
+      </div>
 
-      <ul>
-        <li><a href="https://www.jhipster.tech/" target="_blank" rel="noopener noreferrer">Página de inicio de JHipster</a></li>
-        <li>
-          <a href="https://stackoverflow.com/tags/jhipster/info" target="_blank" rel="noopener noreferrer">JHipster en Stack Overflow</a>
-        </li>
-        <li>
-          <a href="https://github.com/jhipster/generator-jhipster/issues?state=open" target="_blank" rel="noopener noreferrer"
-            >JHipster seguimiento de errores</a
-          >
-        </li>
-        <li>
-          <a href="https://gitter.im/jhipster/generator-jhipster" target="_blank" rel="noopener noreferrer"
-            >Sala de chat pública de JHipster</a
-          >
-        </li>
-        <li>
-          <a href="https://twitter.com/jhipster" target="_blank" rel="noopener noreferrer">contacto @jhipster en Twitter</a>
-        </li>
-      </ul>
+      <div class="col-md-3">
+        <div class="p-3 border rounded bg-light text-center">
+          <h5>Modelos</h5>
+          <p class="text-muted">Administrar modelos</p>
+          <router-link to="/modelo" class="btn btn-primary btn-sm">Acceder</router-link>
+        </div>
+      </div>
 
-      <p>
-        <span>Si te gusta JHipster, danos una estrella en</span>
-        <a href="https://github.com/jhipster/generator-jhipster" target="_blank" rel="noopener noreferrer">GitHub</a>!
-      </p>
+      <div class="col-md-3">
+        <div class="p-3 border rounded bg-light text-center">
+          <h5>Motores</h5>
+          <p class="text-muted">Configuración técnica</p>
+          <router-link to="/motor" class="btn btn-primary btn-sm">Acceder</router-link>
+        </div>
+      </div>
     </div>
+
+    <!-- INFORMACIÓN DEL SISTEMA -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="p-3 border rounded">
+          <h5>Estado del sistema</h5>
+          <ul class="mb-0">
+            <li>✔ Backend operativo</li>
+            <li>✔ Base de datos conectada</li>
+            <li>✔ API activa</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="p-3 border rounded">
+          <h5>Acciones rápidas</h5>
+          <ul class="mb-0">
+            <li>
+              <router-link to="/auto/new">➕ Crear nuevo auto</router-link>
+            </li>
+            <li>
+              <router-link to="/marca/new">➕ Crear nueva marca</router-link>
+            </li>
+            <li>
+              <router-link to="/modelo/new">➕ Crear nuevo modelo</router-link>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- MENSAJE FINAL -->
+    <div class="alert alert-info">
+      Utilice el menú lateral o los accesos rápidos para gestionar la información del sistema.
+    </div>
+
   </div>
 </template>
 

@@ -6,7 +6,6 @@ import com.concesionaria.app.repository.ModeloRepository;
 import com.concesionaria.app.service.criteria.ModeloCriteria;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.service.mapper.ModeloMapper;
-import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -47,7 +46,7 @@ public class ModeloQueryService extends QueryService<Modelo> {
     public Page<ModeloDTO> findByCriteria(ModeloCriteria criteria, Pageable page) {
         LOG.debug("find by criteria : {}, page: {}", criteria, page);
         final Specification<Modelo> specification = createSpecification(criteria);
-        return modeloRepository.fetchBagRelationships(modeloRepository.findAll(specification, page)).map(modeloMapper::toDto);
+        return modeloRepository.findAll(specification, page).map(modeloMapper::toDto);
     }
 
     /**
@@ -73,12 +72,7 @@ public class ModeloQueryService extends QueryService<Modelo> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Modelo_.id),
-                buildStringSpecification(criteria.getNombre(), Modelo_.nombre),
-                buildRangeSpecification(criteria.getAnioLanzamiento(), Modelo_.anioLanzamiento),
-                buildStringSpecification(criteria.getCarroceria(), Modelo_.carroceria),
-                buildSpecification(criteria.getMarcaId(), root -> root.join(Modelo_.marca, JoinType.LEFT).get(Marca_.id)),
-                buildSpecification(criteria.getVersionesId(), root -> root.join(Modelo_.versioneses, JoinType.LEFT).get(Version_.id))
+                buildRangeSpecification(criteria.getId(), Modelo_.id)
             );
         }
         return specification;

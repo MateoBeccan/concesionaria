@@ -6,7 +6,6 @@ import com.concesionaria.app.repository.MotorRepository;
 import com.concesionaria.app.service.criteria.MotorCriteria;
 import com.concesionaria.app.service.dto.MotorDTO;
 import com.concesionaria.app.service.mapper.MotorMapper;
-import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -73,13 +72,7 @@ public class MotorQueryService extends QueryService<Motor> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Motor_.id),
-                buildStringSpecification(criteria.getNombre(), Motor_.nombre),
-                buildRangeSpecification(criteria.getCilindradaCc(), Motor_.cilindradaCc),
-                buildRangeSpecification(criteria.getCilindroCant(), Motor_.cilindroCant),
-                buildRangeSpecification(criteria.getPotenciaHp(), Motor_.potenciaHp),
-                buildSpecification(criteria.getTurbo(), Motor_.turbo),
-                buildSpecification(criteria.getVersionesId(), root -> root.join(Motor_.versioneses, JoinType.LEFT).get(Version_.id))
+                buildRangeSpecification(criteria.getId(), Motor_.id)
             );
         }
         return specification;

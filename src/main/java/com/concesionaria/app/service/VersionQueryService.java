@@ -6,7 +6,6 @@ import com.concesionaria.app.repository.VersionRepository;
 import com.concesionaria.app.service.criteria.VersionCriteria;
 import com.concesionaria.app.service.dto.VersionDTO;
 import com.concesionaria.app.service.mapper.VersionMapper;
-import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -47,7 +46,7 @@ public class VersionQueryService extends QueryService<Version> {
     public Page<VersionDTO> findByCriteria(VersionCriteria criteria, Pageable page) {
         LOG.debug("find by criteria : {}, page: {}", criteria, page);
         final Specification<Version> specification = createSpecification(criteria);
-        return versionRepository.fetchBagRelationships(versionRepository.findAll(specification, page)).map(versionMapper::toDto);
+        return versionRepository.findAll(specification, page).map(versionMapper::toDto);
     }
 
     /**
@@ -73,13 +72,7 @@ public class VersionQueryService extends QueryService<Version> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Version_.id),
-                buildStringSpecification(criteria.getNombre(), Version_.nombre),
-                buildStringSpecification(criteria.getDescripcion(), Version_.descripcion),
-                buildRangeSpecification(criteria.getAnioInicio(), Version_.anioInicio),
-                buildRangeSpecification(criteria.getAnioFin(), Version_.anioFin),
-                buildSpecification(criteria.getMotoresId(), root -> root.join(Version_.motoreses, JoinType.LEFT).get(Motor_.id)),
-                buildSpecification(criteria.getModelosId(), root -> root.join(Version_.modeloses, JoinType.LEFT).get(Modelo_.id))
+                buildRangeSpecification(criteria.getId(), Version_.id)
             );
         }
         return specification;

@@ -1,6 +1,10 @@
 import { Authority } from '@/shared/jhipster/constants';
 const Entities = () => import('@/entities/entities.vue');
 
+const Prueba1 = () => import('@/entities/prueba-1/prueba-1.vue');
+const Prueba1Update = () => import('@/entities/prueba-1/prueba-1-update.vue');
+const Prueba1Details = () => import('@/entities/prueba-1/prueba-1-details.vue');
+
 const Marca = () => import('@/entities/marca/marca.vue');
 const MarcaUpdate = () => import('@/entities/marca/marca-update.vue');
 const MarcaDetails = () => import('@/entities/marca/marca-details.vue');
@@ -25,12 +29,80 @@ const Auto = () => import('@/entities/auto/auto.vue');
 const AutoUpdate = () => import('@/entities/auto/auto-update.vue');
 const AutoDetails = () => import('@/entities/auto/auto-details.vue');
 
+const Cliente = () => import('@/entities/cliente/cliente.vue');
+const ClienteUpdate = () => import('@/entities/cliente/cliente-update.vue');
+const ClienteDetails = () => import('@/entities/cliente/cliente-details.vue');
+
+const CondicionIva = () => import('@/entities/condicion-iva/condicion-iva.vue');
+const CondicionIvaUpdate = () => import('@/entities/condicion-iva/condicion-iva-update.vue');
+const CondicionIvaDetails = () => import('@/entities/condicion-iva/condicion-iva-details.vue');
+
+const EstadoVenta = () => import('@/entities/estado-venta/estado-venta.vue');
+const EstadoVentaUpdate = () => import('@/entities/estado-venta/estado-venta-update.vue');
+const EstadoVentaDetails = () => import('@/entities/estado-venta/estado-venta-details.vue');
+
+const Venta = () => import('@/entities/venta/venta.vue');
+const VentaUpdate = () => import('@/entities/venta/venta-update.vue');
+const VentaDetails = () => import('@/entities/venta/venta-details.vue');
+
+const DetalleVenta = () => import('@/entities/detalle-venta/detalle-venta.vue');
+const DetalleVentaUpdate = () => import('@/entities/detalle-venta/detalle-venta-update.vue');
+const DetalleVentaDetails = () => import('@/entities/detalle-venta/detalle-venta-details.vue');
+
+const Comprobante = () => import('@/entities/comprobante/comprobante.vue');
+const ComprobanteUpdate = () => import('@/entities/comprobante/comprobante-update.vue');
+const ComprobanteDetails = () => import('@/entities/comprobante/comprobante-details.vue');
+
+const TipoComprobante = () => import('@/entities/tipo-comprobante/tipo-comprobante.vue');
+const TipoComprobanteUpdate = () => import('@/entities/tipo-comprobante/tipo-comprobante-update.vue');
+const TipoComprobanteDetails = () => import('@/entities/tipo-comprobante/tipo-comprobante-details.vue');
+
+const Pago = () => import('@/entities/pago/pago.vue');
+const PagoUpdate = () => import('@/entities/pago/pago-update.vue');
+const PagoDetails = () => import('@/entities/pago/pago-details.vue');
+
+const MetodoPago = () => import('@/entities/metodo-pago/metodo-pago.vue');
+const MetodoPagoUpdate = () => import('@/entities/metodo-pago/metodo-pago-update.vue');
+const MetodoPagoDetails = () => import('@/entities/metodo-pago/metodo-pago-details.vue');
+
+const Moneda = () => import('@/entities/moneda/moneda.vue');
+const MonedaUpdate = () => import('@/entities/moneda/moneda-update.vue');
+const MonedaDetails = () => import('@/entities/moneda/moneda-details.vue');
+
+const Cotizacion = () => import('@/entities/cotizacion/cotizacion.vue');
+const CotizacionUpdate = () => import('@/entities/cotizacion/cotizacion-update.vue');
+const CotizacionDetails = () => import('@/entities/cotizacion/cotizacion-details.vue');
+
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
 export default {
   path: '/',
   component: Entities,
   children: [
+    {
+      path: 'prueba-1',
+      name: 'Prueba1',
+      component: Prueba1,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'prueba-1/new',
+      name: 'Prueba1Create',
+      component: Prueba1Update,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'prueba-1/:prueba1Id/edit',
+      name: 'Prueba1Edit',
+      component: Prueba1Update,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'prueba-1/:prueba1Id/view',
+      name: 'Prueba1View',
+      component: Prueba1Details,
+      meta: { authorities: [Authority.USER] },
+    },
     {
       path: 'marca',
       name: 'Marca',
@@ -173,6 +245,270 @@ export default {
       path: 'auto/:autoId/view',
       name: 'AutoView',
       component: AutoDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cliente',
+      name: 'Cliente',
+      component: Cliente,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cliente/new',
+      name: 'ClienteCreate',
+      component: ClienteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cliente/:clienteId/edit',
+      name: 'ClienteEdit',
+      component: ClienteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cliente/:clienteId/view',
+      name: 'ClienteView',
+      component: ClienteDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'condicion-iva',
+      name: 'CondicionIva',
+      component: CondicionIva,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'condicion-iva/new',
+      name: 'CondicionIvaCreate',
+      component: CondicionIvaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'condicion-iva/:condicionIvaId/edit',
+      name: 'CondicionIvaEdit',
+      component: CondicionIvaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'condicion-iva/:condicionIvaId/view',
+      name: 'CondicionIvaView',
+      component: CondicionIvaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'estado-venta',
+      name: 'EstadoVenta',
+      component: EstadoVenta,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'estado-venta/new',
+      name: 'EstadoVentaCreate',
+      component: EstadoVentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'estado-venta/:estadoVentaId/edit',
+      name: 'EstadoVentaEdit',
+      component: EstadoVentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'estado-venta/:estadoVentaId/view',
+      name: 'EstadoVentaView',
+      component: EstadoVentaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'venta',
+      name: 'Venta',
+      component: Venta,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'venta/new',
+      name: 'VentaCreate',
+      component: VentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'venta/:ventaId/edit',
+      name: 'VentaEdit',
+      component: VentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'venta/:ventaId/view',
+      name: 'VentaView',
+      component: VentaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'detalle-venta',
+      name: 'DetalleVenta',
+      component: DetalleVenta,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'detalle-venta/new',
+      name: 'DetalleVentaCreate',
+      component: DetalleVentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'detalle-venta/:detalleVentaId/edit',
+      name: 'DetalleVentaEdit',
+      component: DetalleVentaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'detalle-venta/:detalleVentaId/view',
+      name: 'DetalleVentaView',
+      component: DetalleVentaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'comprobante',
+      name: 'Comprobante',
+      component: Comprobante,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'comprobante/new',
+      name: 'ComprobanteCreate',
+      component: ComprobanteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'comprobante/:comprobanteId/edit',
+      name: 'ComprobanteEdit',
+      component: ComprobanteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'comprobante/:comprobanteId/view',
+      name: 'ComprobanteView',
+      component: ComprobanteDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-comprobante',
+      name: 'TipoComprobante',
+      component: TipoComprobante,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-comprobante/new',
+      name: 'TipoComprobanteCreate',
+      component: TipoComprobanteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-comprobante/:tipoComprobanteId/edit',
+      name: 'TipoComprobanteEdit',
+      component: TipoComprobanteUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-comprobante/:tipoComprobanteId/view',
+      name: 'TipoComprobanteView',
+      component: TipoComprobanteDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'pago',
+      name: 'Pago',
+      component: Pago,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'pago/new',
+      name: 'PagoCreate',
+      component: PagoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'pago/:pagoId/edit',
+      name: 'PagoEdit',
+      component: PagoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'pago/:pagoId/view',
+      name: 'PagoView',
+      component: PagoDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'metodo-pago',
+      name: 'MetodoPago',
+      component: MetodoPago,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'metodo-pago/new',
+      name: 'MetodoPagoCreate',
+      component: MetodoPagoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'metodo-pago/:metodoPagoId/edit',
+      name: 'MetodoPagoEdit',
+      component: MetodoPagoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'metodo-pago/:metodoPagoId/view',
+      name: 'MetodoPagoView',
+      component: MetodoPagoDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'moneda',
+      name: 'Moneda',
+      component: Moneda,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'moneda/new',
+      name: 'MonedaCreate',
+      component: MonedaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'moneda/:monedaId/edit',
+      name: 'MonedaEdit',
+      component: MonedaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'moneda/:monedaId/view',
+      name: 'MonedaView',
+      component: MonedaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cotizacion',
+      name: 'Cotizacion',
+      component: Cotizacion,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cotizacion/new',
+      name: 'CotizacionCreate',
+      component: CotizacionUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cotizacion/:cotizacionId/edit',
+      name: 'CotizacionEdit',
+      component: CotizacionUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'cotizacion/:cotizacionId/view',
+      name: 'CotizacionView',
+      component: CotizacionDetails,
       meta: { authorities: [Authority.USER] },
     },
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here

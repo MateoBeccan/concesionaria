@@ -24,10 +24,17 @@ public class AutoDTO implements Serializable {
 
     private LocalDate fechaFabricacion;
 
+    private LocalDate fechaIngreso;
+
+    @Min(value = 0)
     private Integer km;
 
+    @NotNull
+    @Size(max = 10)
     private String patente;
 
+    @NotNull
+    @DecimalMin(value = "0")
     private BigDecimal precio;
 
     private MarcaDTO marca;
@@ -37,6 +44,8 @@ public class AutoDTO implements Serializable {
     private VersionDTO version;
 
     private MotorDTO motor;
+
+    private MonedaDTO moneda;
 
     public Long getId() {
         return id;
@@ -68,6 +77,14 @@ public class AutoDTO implements Serializable {
 
     public void setFechaFabricacion(LocalDate fechaFabricacion) {
         this.fechaFabricacion = fechaFabricacion;
+    }
+
+    public LocalDate getFechaIngreso() {
+        return fechaIngreso;
+    }
+
+    public void setFechaIngreso(LocalDate fechaIngreso) {
+        this.fechaIngreso = fechaIngreso;
     }
 
     public Integer getKm() {
@@ -126,6 +143,14 @@ public class AutoDTO implements Serializable {
         this.motor = motor;
     }
 
+    public MonedaDTO getMoneda() {
+        return moneda;
+    }
+
+    public void setMoneda(MonedaDTO moneda) {
+        this.moneda = moneda;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -155,6 +180,7 @@ public class AutoDTO implements Serializable {
             ", estado='" + getEstado() + "'" +
             ", condicion='" + getCondicion() + "'" +
             ", fechaFabricacion='" + getFechaFabricacion() + "'" +
+            ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", km=" + getKm() +
             ", patente='" + getPatente() + "'" +
             ", precio=" + getPrecio() +
@@ -162,6 +188,7 @@ public class AutoDTO implements Serializable {
             ", modelo=" + getModelo() +
             ", version=" + getVersion() +
             ", motor=" + getMotor() +
+            ", moneda=" + getMoneda() +
             "}";
     }
 }

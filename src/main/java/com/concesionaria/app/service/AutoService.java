@@ -2,6 +2,8 @@ package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.AutoDTO;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service Interface for managing {@link com.concesionaria.app.domain.Auto}.
@@ -30,6 +32,14 @@ public interface AutoService {
      * @return the persisted entity.
      */
     Optional<AutoDTO> partialUpdate(AutoDTO autoDTO);
+
+    /**
+     * Get all the autos.
+     *
+     * @param pageable the pagination information.
+     * @return the list of entities.
+     */
+    Page<AutoDTO> findAll(Pageable pageable);
 
     /**
      * Get the "id" auto.

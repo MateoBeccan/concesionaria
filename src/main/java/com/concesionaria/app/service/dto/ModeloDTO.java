@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.dto;
 
+import com.concesionaria.app.domain.enumeration.Carroceria;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.util.HashSet;
@@ -19,7 +20,7 @@ public class ModeloDTO implements Serializable {
 
     private Integer anioLanzamiento;
 
-    private String carroceria;
+    private Carroceria carroceria;
 
     private MarcaDTO marca;
 
@@ -49,11 +50,11 @@ public class ModeloDTO implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public String getCarroceria() {
+    public Carroceria getCarroceria() {
         return carroceria;
     }
 
-    public void setCarroceria(String carroceria) {
+    public void setCarroceria(Carroceria carroceria) {
         this.carroceria = carroceria;
     }
 

@@ -6,7 +6,6 @@ import com.concesionaria.app.repository.CombustibleRepository;
 import com.concesionaria.app.service.criteria.CombustibleCriteria;
 import com.concesionaria.app.service.dto.CombustibleDTO;
 import com.concesionaria.app.service.mapper.CombustibleMapper;
-import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -73,10 +72,7 @@ public class CombustibleQueryService extends QueryService<Combustible> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Combustible_.id),
-                buildStringSpecification(criteria.getNombre(), Combustible_.nombre),
-                buildStringSpecification(criteria.getDescripcion(), Combustible_.descripcion),
-                buildSpecification(criteria.getMotorId(), root -> root.join(Combustible_.motor, JoinType.LEFT).get(Motor_.id))
+                buildRangeSpecification(criteria.getId(), Combustible_.id)
             );
         }
         return specification;

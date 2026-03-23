@@ -1,6 +1,6 @@
 {
   "annotations": {
-    "changelogDate": "20260320230055"
+    "changelogDate": "20260320220000"
   },
   "applications": ["*"],
   "dto": "mapstruct",
@@ -23,22 +23,20 @@
       "fieldType": "Integer"
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Version",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [
-    {
-      "otherEntityName": "motor",
-      "otherEntityRelationshipName": "versiones",
-      "relationshipName": "motores",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-many"
-    },
     {
       "otherEntityName": "modelo",
       "otherEntityRelationshipName": "versiones",
       "relationshipName": "modelos",
+      "relationshipSide": "right",
+      "relationshipType": "many-to-many"
+    },
+    {
+      "otherEntityName": "motor",
+      "otherEntityRelationshipName": "versiones",
+      "relationshipName": "motores",
       "relationshipSide": "right",
       "relationshipType": "many-to-many"
     }

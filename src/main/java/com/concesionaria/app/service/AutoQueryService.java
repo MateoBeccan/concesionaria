@@ -6,7 +6,6 @@ import com.concesionaria.app.repository.AutoRepository;
 import com.concesionaria.app.service.criteria.AutoCriteria;
 import com.concesionaria.app.service.dto.AutoDTO;
 import com.concesionaria.app.service.mapper.AutoMapper;
-import jakarta.persistence.criteria.JoinType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -73,17 +72,7 @@ public class AutoQueryService extends QueryService<Auto> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Auto_.id),
-                buildSpecification(criteria.getEstado(), Auto_.estado),
-                buildSpecification(criteria.getCondicion(), Auto_.condicion),
-                buildRangeSpecification(criteria.getFechaFabricacion(), Auto_.fechaFabricacion),
-                buildRangeSpecification(criteria.getKm(), Auto_.km),
-                buildStringSpecification(criteria.getPatente(), Auto_.patente),
-                buildRangeSpecification(criteria.getPrecio(), Auto_.precio),
-                buildSpecification(criteria.getMarcaId(), root -> root.join(Auto_.marca, JoinType.LEFT).get(Marca_.id)),
-                buildSpecification(criteria.getModeloId(), root -> root.join(Auto_.modelo, JoinType.LEFT).get(Modelo_.id)),
-                buildSpecification(criteria.getVersionId(), root -> root.join(Auto_.version, JoinType.LEFT).get(Version_.id)),
-                buildSpecification(criteria.getMotorId(), root -> root.join(Auto_.motor, JoinType.LEFT).get(Motor_.id))
+                buildRangeSpecification(criteria.getId(), Auto_.id)
             );
         }
         return specification;

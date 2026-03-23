@@ -16,13 +16,12 @@
     },
     {
       "fieldName": "carroceria",
-      "fieldType": "String"
+      "fieldType": "Carroceria",
+      "fieldValues": "SEDAN,HATCHBACK,SUV,PICKUP,COUPE,CONVERTIBLE,VAN,ROADSTER,SPORTS_CAR,MINIVAN,STATION_WAGON,OTHER"
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Modelo",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [
     {
       "otherEntityName": "marca",
@@ -34,7 +33,7 @@
       "otherEntityName": "version",
       "otherEntityRelationshipName": "modelos",
       "relationshipName": "versiones",
-      "relationshipSide": "left",
+      "relationshipSide": "right",
       "relationshipType": "many-to-many"
     }
   ],

@@ -13,8 +13,10 @@ public class MarcaDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(max = 100)
     private String nombre;
 
+    @Size(max = 100)
     private String paisOrigen;
 
     public Long getId() {

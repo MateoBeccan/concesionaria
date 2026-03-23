@@ -14,34 +14,8 @@
             <column name="id" type="bigint" autoIncrement="true" startWith="1500">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="nombre" type="varchar(255)">
-                <constraints nullable="false" />
-            </column>
-            <column name="descripcion" type="varchar(255)">
-                <constraints nullable="true" />
-            </column>
-            <column name="anio_inicio" type="integer">
-                <constraints nullable="true" />
-            </column>
-            <column name="anio_fin" type="integer">
-                <constraints nullable="true" />
-            </column>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here -->
         </createTable>
-    </changeSet>
-
-    <changeSet id="20260320230055-1-relations" author="jhipster">
-
-        <createTable tableName="rel_version__motores">
-            <column name="motores_id" type="bigint">
-                <constraints nullable="false"/>
-            </column>
-            <column name="version_id" type="bigint">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-
-        <addPrimaryKey columnNames="version_id, motores_id" tableName="rel_version__motores"/>
     </changeSet>
 
     <!-- jhipster-needle-liquibase-add-changeset - JHipster will add changesets here -->
@@ -61,10 +35,6 @@
                   tableName="version"
                   usePreparedStatements="true">
             <column name="id" type="numeric"/>
-            <column name="nombre" type="string"/>
-            <column name="descripcion" type="string"/>
-            <column name="anio_inicio" type="numeric"/>
-            <column name="anio_fin" type="numeric"/>
             <!-- jhipster-needle-liquibase-add-loadcolumn - JHipster (and/or extensions) can add load columns here -->
         </loadData>
     </changeSet>

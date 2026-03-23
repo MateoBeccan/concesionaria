@@ -76,29 +76,19 @@ class MarcaCriteriaTest {
 
     private static void setAllFilters(MarcaCriteria marcaCriteria) {
         marcaCriteria.id();
-        marcaCriteria.nombre();
-        marcaCriteria.paisOrigen();
         marcaCriteria.distinct();
     }
 
     private static Condition<MarcaCriteria> criteriaFiltersAre(Function<Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId()) &&
-                condition.apply(criteria.getNombre()) &&
-                condition.apply(criteria.getPaisOrigen()) &&
-                condition.apply(criteria.getDistinct()),
+            criteria -> condition.apply(criteria.getId()) && condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
     }
 
     private static Condition<MarcaCriteria> copyFiltersAre(MarcaCriteria copy, BiFunction<Object, Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId(), copy.getId()) &&
-                condition.apply(criteria.getNombre(), copy.getNombre()) &&
-                condition.apply(criteria.getPaisOrigen(), copy.getPaisOrigen()) &&
-                condition.apply(criteria.getDistinct(), copy.getDistinct()),
+            criteria -> condition.apply(criteria.getId(), copy.getId()) && condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );
     }

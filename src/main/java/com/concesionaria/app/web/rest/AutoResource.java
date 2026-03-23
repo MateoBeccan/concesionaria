@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.AutoRepository;
-import com.concesionaria.app.service.AutoQueryService;
 import com.concesionaria.app.service.AutoService;
-import com.concesionaria.app.service.criteria.AutoCriteria;
 import com.concesionaria.app.service.dto.AutoDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,12 +42,9 @@ public class AutoResource {
 
     private final AutoRepository autoRepository;
 
-    private final AutoQueryService autoQueryService;
-
-    public AutoResource(AutoService autoService, AutoRepository autoRepository, AutoQueryService autoQueryService) {
+    public AutoResource(AutoService autoService, AutoRepository autoRepository) {
         this.autoService = autoService;
         this.autoRepository = autoRepository;
-        this.autoQueryService = autoQueryService;
     }
 
     /**
@@ -144,31 +139,14 @@ public class AutoResource {
      * {@code GET  /autos} : get all the Autos.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Autos in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<AutoDTO>> getAllAutos(
-        AutoCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Autos by criteria: {}", criteria);
-
-        Page<AutoDTO> page = autoQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<AutoDTO>> getAllAutos(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Autos");
+        Page<AutoDTO> page = autoService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /autos/count} : count all the autos.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countAutos(AutoCriteria criteria) {
-        LOG.debug("REST request to count Autos by criteria: {}", criteria);
-        return ResponseEntity.ok().body(autoQueryService.countByCriteria(criteria));
     }
 
     /**

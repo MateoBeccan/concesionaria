@@ -26,21 +26,12 @@ public class CombustibleCriteria implements Serializable, Criteria {
 
     private LongFilter id;
 
-    private StringFilter nombre;
-
-    private StringFilter descripcion;
-
-    private LongFilter motorId;
-
     private Boolean distinct;
 
     public CombustibleCriteria() {}
 
     public CombustibleCriteria(CombustibleCriteria other) {
         this.id = other.optionalId().map(LongFilter::copy).orElse(null);
-        this.nombre = other.optionalNombre().map(StringFilter::copy).orElse(null);
-        this.descripcion = other.optionalDescripcion().map(StringFilter::copy).orElse(null);
-        this.motorId = other.optionalMotorId().map(LongFilter::copy).orElse(null);
         this.distinct = other.distinct;
     }
 
@@ -66,63 +57,6 @@ public class CombustibleCriteria implements Serializable, Criteria {
 
     public void setId(LongFilter id) {
         this.id = id;
-    }
-
-    public StringFilter getNombre() {
-        return nombre;
-    }
-
-    public Optional<StringFilter> optionalNombre() {
-        return Optional.ofNullable(nombre);
-    }
-
-    public StringFilter nombre() {
-        if (nombre == null) {
-            setNombre(new StringFilter());
-        }
-        return nombre;
-    }
-
-    public void setNombre(StringFilter nombre) {
-        this.nombre = nombre;
-    }
-
-    public StringFilter getDescripcion() {
-        return descripcion;
-    }
-
-    public Optional<StringFilter> optionalDescripcion() {
-        return Optional.ofNullable(descripcion);
-    }
-
-    public StringFilter descripcion() {
-        if (descripcion == null) {
-            setDescripcion(new StringFilter());
-        }
-        return descripcion;
-    }
-
-    public void setDescripcion(StringFilter descripcion) {
-        this.descripcion = descripcion;
-    }
-
-    public LongFilter getMotorId() {
-        return motorId;
-    }
-
-    public Optional<LongFilter> optionalMotorId() {
-        return Optional.ofNullable(motorId);
-    }
-
-    public LongFilter motorId() {
-        if (motorId == null) {
-            setMotorId(new LongFilter());
-        }
-        return motorId;
-    }
-
-    public void setMotorId(LongFilter motorId) {
-        this.motorId = motorId;
     }
 
     public Boolean getDistinct() {
@@ -153,18 +87,12 @@ public class CombustibleCriteria implements Serializable, Criteria {
             return false;
         }
         final CombustibleCriteria that = (CombustibleCriteria) o;
-        return (
-            Objects.equals(id, that.id) &&
-            Objects.equals(nombre, that.nombre) &&
-            Objects.equals(descripcion, that.descripcion) &&
-            Objects.equals(motorId, that.motorId) &&
-            Objects.equals(distinct, that.distinct)
-        );
+        return Objects.equals(id, that.id) && Objects.equals(distinct, that.distinct);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nombre, descripcion, motorId, distinct);
+        return Objects.hash(id, distinct);
     }
 
     // prettier-ignore
@@ -172,9 +100,6 @@ public class CombustibleCriteria implements Serializable, Criteria {
     public String toString() {
         return "CombustibleCriteria{" +
             optionalId().map(f -> "id=" + f + ", ").orElse("") +
-            optionalNombre().map(f -> "nombre=" + f + ", ").orElse("") +
-            optionalDescripcion().map(f -> "descripcion=" + f + ", ").orElse("") +
-            optionalMotorId().map(f -> "motorId=" + f + ", ").orElse("") +
             optionalDistinct().map(f -> "distinct=" + f + ", ").orElse("") +
         "}";
     }

@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.MotorRepository;
-import com.concesionaria.app.service.MotorQueryService;
 import com.concesionaria.app.service.MotorService;
-import com.concesionaria.app.service.criteria.MotorCriteria;
 import com.concesionaria.app.service.dto.MotorDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,12 +42,9 @@ public class MotorResource {
 
     private final MotorRepository motorRepository;
 
-    private final MotorQueryService motorQueryService;
-
-    public MotorResource(MotorService motorService, MotorRepository motorRepository, MotorQueryService motorQueryService) {
+    public MotorResource(MotorService motorService, MotorRepository motorRepository) {
         this.motorService = motorService;
         this.motorRepository = motorRepository;
-        this.motorQueryService = motorQueryService;
     }
 
     /**
@@ -144,31 +139,14 @@ public class MotorResource {
      * {@code GET  /motors} : get all the Motors.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Motors in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<MotorDTO>> getAllMotors(
-        MotorCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Motors by criteria: {}", criteria);
-
-        Page<MotorDTO> page = motorQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<MotorDTO>> getAllMotors(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Motors");
+        Page<MotorDTO> page = motorService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /motors/count} : count all the motors.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countMotors(MotorCriteria criteria) {
-        LOG.debug("REST request to count Motors by criteria: {}", criteria);
-        return ResponseEntity.ok().body(motorQueryService.countByCriteria(criteria));
     }
 
     /**

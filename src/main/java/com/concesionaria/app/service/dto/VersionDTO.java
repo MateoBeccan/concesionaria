@@ -23,9 +23,9 @@ public class VersionDTO implements Serializable {
 
     private Integer anioFin;
 
-    private Set<MotorDTO> motoreses = new HashSet<>();
-
     private Set<ModeloDTO> modeloses = new HashSet<>();
+
+    private Set<MotorDTO> motoreses = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -67,20 +67,20 @@ public class VersionDTO implements Serializable {
         this.anioFin = anioFin;
     }
 
-    public Set<MotorDTO> getMotoreses() {
-        return motoreses;
-    }
-
-    public void setMotoreses(Set<MotorDTO> motoreses) {
-        this.motoreses = motoreses;
-    }
-
     public Set<ModeloDTO> getModeloses() {
         return modeloses;
     }
 
     public void setModeloses(Set<ModeloDTO> modeloses) {
         this.modeloses = modeloses;
+    }
+
+    public Set<MotorDTO> getMotoreses() {
+        return motoreses;
+    }
+
+    public void setMotoreses(Set<MotorDTO> motoreses) {
+        this.motoreses = motoreses;
     }
 
     @Override
@@ -113,8 +113,8 @@ public class VersionDTO implements Serializable {
             ", descripcion='" + getDescripcion() + "'" +
             ", anioInicio=" + getAnioInicio() +
             ", anioFin=" + getAnioFin() +
-            ", motoreses=" + getMotoreses() +
             ", modeloses=" + getModeloses() +
+            ", motoreses=" + getMotoreses() +
             "}";
     }
 }

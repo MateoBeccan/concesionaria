@@ -76,41 +76,19 @@ class VersionCriteriaTest {
 
     private static void setAllFilters(VersionCriteria versionCriteria) {
         versionCriteria.id();
-        versionCriteria.nombre();
-        versionCriteria.descripcion();
-        versionCriteria.anioInicio();
-        versionCriteria.anioFin();
-        versionCriteria.motoresId();
-        versionCriteria.modelosId();
         versionCriteria.distinct();
     }
 
     private static Condition<VersionCriteria> criteriaFiltersAre(Function<Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId()) &&
-                condition.apply(criteria.getNombre()) &&
-                condition.apply(criteria.getDescripcion()) &&
-                condition.apply(criteria.getAnioInicio()) &&
-                condition.apply(criteria.getAnioFin()) &&
-                condition.apply(criteria.getMotoresId()) &&
-                condition.apply(criteria.getModelosId()) &&
-                condition.apply(criteria.getDistinct()),
+            criteria -> condition.apply(criteria.getId()) && condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
     }
 
     private static Condition<VersionCriteria> copyFiltersAre(VersionCriteria copy, BiFunction<Object, Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId(), copy.getId()) &&
-                condition.apply(criteria.getNombre(), copy.getNombre()) &&
-                condition.apply(criteria.getDescripcion(), copy.getDescripcion()) &&
-                condition.apply(criteria.getAnioInicio(), copy.getAnioInicio()) &&
-                condition.apply(criteria.getAnioFin(), copy.getAnioFin()) &&
-                condition.apply(criteria.getMotoresId(), copy.getMotoresId()) &&
-                condition.apply(criteria.getModelosId(), copy.getModelosId()) &&
-                condition.apply(criteria.getDistinct(), copy.getDistinct()),
+            criteria -> condition.apply(criteria.getId(), copy.getId()) && condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );
     }

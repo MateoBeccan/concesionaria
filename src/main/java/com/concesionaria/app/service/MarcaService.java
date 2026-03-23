@@ -2,6 +2,8 @@ package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.MarcaDTO;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service Interface for managing {@link com.concesionaria.app.domain.Marca}.
@@ -30,6 +32,14 @@ public interface MarcaService {
      * @return the persisted entity.
      */
     Optional<MarcaDTO> partialUpdate(MarcaDTO marcaDTO);
+
+    /**
+     * Get all the marcas.
+     *
+     * @param pageable the pagination information.
+     * @return the list of entities.
+     */
+    Page<MarcaDTO> findAll(Pageable pageable);
 
     /**
      * Get the "id" marca.

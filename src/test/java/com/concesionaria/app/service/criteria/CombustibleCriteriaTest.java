@@ -76,32 +76,19 @@ class CombustibleCriteriaTest {
 
     private static void setAllFilters(CombustibleCriteria combustibleCriteria) {
         combustibleCriteria.id();
-        combustibleCriteria.nombre();
-        combustibleCriteria.descripcion();
-        combustibleCriteria.motorId();
         combustibleCriteria.distinct();
     }
 
     private static Condition<CombustibleCriteria> criteriaFiltersAre(Function<Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId()) &&
-                condition.apply(criteria.getNombre()) &&
-                condition.apply(criteria.getDescripcion()) &&
-                condition.apply(criteria.getMotorId()) &&
-                condition.apply(criteria.getDistinct()),
+            criteria -> condition.apply(criteria.getId()) && condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
     }
 
     private static Condition<CombustibleCriteria> copyFiltersAre(CombustibleCriteria copy, BiFunction<Object, Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId(), copy.getId()) &&
-                condition.apply(criteria.getNombre(), copy.getNombre()) &&
-                condition.apply(criteria.getDescripcion(), copy.getDescripcion()) &&
-                condition.apply(criteria.getMotorId(), copy.getMotorId()) &&
-                condition.apply(criteria.getDistinct(), copy.getDistinct()),
+            criteria -> condition.apply(criteria.getId(), copy.getId()) && condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );
     }

@@ -62,7 +62,7 @@ public class VersionAsserts {
     public static void assertVersionUpdatableRelationshipsEquals(Version expected, Version actual) {
         assertThat(actual)
             .as("Verify Version relationships")
-            .satisfies(a -> assertThat(a.getMotoreses()).as("check motoreses").isEqualTo(expected.getMotoreses()))
-            .satisfies(a -> assertThat(a.getModeloses()).as("check modeloses").isEqualTo(expected.getModeloses()));
+            .satisfies(a -> assertThat(a.getModeloses()).as("check modeloses").isEqualTo(expected.getModeloses()))
+            .satisfies(a -> assertThat(a.getMotoreses()).as("check motoreses").isEqualTo(expected.getMotoreses()));
     }
 }

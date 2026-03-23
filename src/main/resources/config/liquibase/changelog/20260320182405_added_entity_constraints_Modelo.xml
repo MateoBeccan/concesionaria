@@ -16,19 +16,5 @@
                                  referencedColumnNames="id"
                                  referencedTableName="marca"
                                  />
-
-        <addForeignKeyConstraint baseColumnNames="modelo_id"
-                                 baseTableName="rel_modelo__versiones"
-                                 constraintName="fk_rel_modelo__versiones__modelo_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="modelo"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="versiones_id"
-                                 baseTableName="rel_modelo__versiones"
-                                 constraintName="fk_rel_modelo__versiones__versiones_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="version"
-                                 />
     </changeSet>
 </databaseChangeLog>

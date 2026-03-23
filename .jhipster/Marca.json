@@ -8,17 +8,18 @@
     {
       "fieldName": "nombre",
       "fieldType": "String",
-      "fieldValidateRules": ["required"]
+      "fieldValidateRules": ["required", "maxlength"],
+      "fieldValidateRulesMaxlength": 100
     },
     {
       "fieldName": "paisOrigen",
-      "fieldType": "String"
+      "fieldType": "String",
+      "fieldValidateRules": ["maxlength"],
+      "fieldValidateRulesMaxlength": 100
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Marca",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [],
   "searchEngine": "no",
   "service": "serviceImpl"

@@ -38,15 +38,16 @@
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="modelo">Carroceria</label>
-            <input
-              type="text"
+            <select
               class="form-control"
               name="carroceria"
-              id="modelo-carroceria"
-              data-cy="carroceria"
               :class="{ valid: !v$.carroceria.$invalid, invalid: v$.carroceria.$invalid }"
               v-model="v$.carroceria.$model"
-            />
+              id="modelo-carroceria"
+              data-cy="carroceria"
+            >
+              <option v-for="carroceria in carroceriaValues" :key="carroceria" :value="carroceria">{{ carroceria }}</option>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="modelo">Marca</label>

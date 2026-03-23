@@ -23,6 +23,12 @@
             <span>{{ auto.fechaFabricacion }}</span>
           </dd>
           <dt>
+            <span>Fecha Ingreso</span>
+          </dt>
+          <dd>
+            <span>{{ auto.fechaIngreso }}</span>
+          </dd>
+          <dt>
             <span>Km</span>
           </dt>
           <dd>
@@ -70,6 +76,14 @@
           <dd>
             <div v-if="auto.motor">
               <router-link :to="{ name: 'MotorView', params: { motorId: auto.motor.id } }">{{ auto.motor.id }}</router-link>
+            </div>
+          </dd>
+          <dt>
+            <span>Moneda</span>
+          </dt>
+          <dd>
+            <div v-if="auto.moneda">
+              <router-link :to="{ name: 'MonedaView', params: { monedaId: auto.moneda.id } }">{{ auto.moneda.id }}</router-link>
             </div>
           </dd>
         </dl>

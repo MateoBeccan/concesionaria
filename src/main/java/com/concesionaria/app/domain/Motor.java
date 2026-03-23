@@ -28,12 +28,15 @@ public class Motor implements Serializable {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
+    @Min(value = 0)
     @Column(name = "cilindrada_cc")
     private Integer cilindradaCc;
 
+    @Min(value = 0)
     @Column(name = "cilindro_cant")
     private Integer cilindroCant;
 
+    @Min(value = 0)
     @Column(name = "potencia_hp")
     private Integer potenciaHp;
 
@@ -41,8 +44,12 @@ public class Motor implements Serializable {
     private Boolean turbo;
 
     @ManyToMany(fetch = FetchType.LAZY, mappedBy = "motoreses")
-    @JsonIgnoreProperties(value = { "motoreses", "modeloses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
     private Set<Version> versioneses = new HashSet<>();
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "motor")
+    @JsonIgnoreProperties(value = { "motor" }, allowSetters = true)
+    private Set<Combustible> combustibleses = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -130,10 +137,10 @@ public class Motor implements Serializable {
 
     public void setVersioneses(Set<Version> versions) {
         if (this.versioneses != null) {
-            this.versioneses.forEach(i -> i.removeMotores(this));
+            this.versioneses.forEach(i -> i.removeMotor(this));
         }
         if (versions != null) {
-            versions.forEach(i -> i.addMotores(this));
+            versions.forEach(i -> i.addMotor(this));
         }
         this.versioneses = versions;
     }
@@ -152,6 +159,37 @@ public class Motor implements Serializable {
     public Motor removeVersiones(Version version) {
         this.versioneses.remove(version);
         version.getMotoreses().remove(this);
+        return this;
+    }
+
+    public Set<Combustible> getCombustibleses() {
+        return this.combustibleses;
+    }
+
+    public void setCombustibleses(Set<Combustible> combustibles) {
+        if (this.combustibleses != null) {
+            this.combustibleses.forEach(i -> i.setMotor(null));
+        }
+        if (combustibles != null) {
+            combustibles.forEach(i -> i.setMotor(this));
+        }
+        this.combustibleses = combustibles;
+    }
+
+    public Motor combustibleses(Set<Combustible> combustibles) {
+        this.setCombustibleses(combustibles);
+        return this;
+    }
+
+    public Motor addCombustibles(Combustible combustible) {
+        this.combustibleses.add(combustible);
+        combustible.setMotor(this);
+        return this;
+    }
+
+    public Motor removeCombustibles(Combustible combustible) {
+        this.combustibleses.remove(combustible);
+        combustible.setMotor(null);
         return this;
     }
 

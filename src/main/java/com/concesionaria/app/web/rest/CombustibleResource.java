@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.CombustibleRepository;
-import com.concesionaria.app.service.CombustibleQueryService;
 import com.concesionaria.app.service.CombustibleService;
-import com.concesionaria.app.service.criteria.CombustibleCriteria;
 import com.concesionaria.app.service.dto.CombustibleDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,16 +42,9 @@ public class CombustibleResource {
 
     private final CombustibleRepository combustibleRepository;
 
-    private final CombustibleQueryService combustibleQueryService;
-
-    public CombustibleResource(
-        CombustibleService combustibleService,
-        CombustibleRepository combustibleRepository,
-        CombustibleQueryService combustibleQueryService
-    ) {
+    public CombustibleResource(CombustibleService combustibleService, CombustibleRepository combustibleRepository) {
         this.combustibleService = combustibleService;
         this.combustibleRepository = combustibleRepository;
-        this.combustibleQueryService = combustibleQueryService;
     }
 
     /**
@@ -148,31 +139,14 @@ public class CombustibleResource {
      * {@code GET  /combustibles} : get all the Combustibles.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Combustibles in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<CombustibleDTO>> getAllCombustibles(
-        CombustibleCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Combustibles by criteria: {}", criteria);
-
-        Page<CombustibleDTO> page = combustibleQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<CombustibleDTO>> getAllCombustibles(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Combustibles");
+        Page<CombustibleDTO> page = combustibleService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /combustibles/count} : count all the combustibles.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countCombustibles(CombustibleCriteria criteria) {
-        LOG.debug("REST request to count Combustibles by criteria: {}", criteria);
-        return ResponseEntity.ok().body(combustibleQueryService.countByCriteria(criteria));
     }
 
     /**

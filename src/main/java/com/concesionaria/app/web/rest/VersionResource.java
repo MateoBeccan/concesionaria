@@ -1,9 +1,7 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.VersionRepository;
-import com.concesionaria.app.service.VersionQueryService;
 import com.concesionaria.app.service.VersionService;
-import com.concesionaria.app.service.criteria.VersionCriteria;
 import com.concesionaria.app.service.dto.VersionDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -44,12 +42,9 @@ public class VersionResource {
 
     private final VersionRepository versionRepository;
 
-    private final VersionQueryService versionQueryService;
-
-    public VersionResource(VersionService versionService, VersionRepository versionRepository, VersionQueryService versionQueryService) {
+    public VersionResource(VersionService versionService, VersionRepository versionRepository) {
         this.versionService = versionService;
         this.versionRepository = versionRepository;
-        this.versionQueryService = versionQueryService;
     }
 
     /**
@@ -144,31 +139,14 @@ public class VersionResource {
      * {@code GET  /versions} : get all the Versions.
      *
      * @param pageable the pagination information.
-     * @param criteria the criteria which the requested entities should match.
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Versions in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<VersionDTO>> getAllVersions(
-        VersionCriteria criteria,
-        @org.springdoc.core.annotations.ParameterObject Pageable pageable
-    ) {
-        LOG.debug("REST request to get Versions by criteria: {}", criteria);
-
-        Page<VersionDTO> page = versionQueryService.findByCriteria(criteria, pageable);
+    public ResponseEntity<List<VersionDTO>> getAllVersions(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+        LOG.debug("REST request to get a page of Versions");
+        Page<VersionDTO> page = versionService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
-    }
-
-    /**
-     * {@code GET  /versions/count} : count all the versions.
-     *
-     * @param criteria the criteria which the requested entities should match.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the count in body.
-     */
-    @GetMapping("/count")
-    public ResponseEntity<Long> countVersions(VersionCriteria criteria) {
-        LOG.debug("REST request to count Versions by criteria: {}", criteria);
-        return ResponseEntity.ok().body(versionQueryService.countByCriteria(criteria));
     }
 
     /**

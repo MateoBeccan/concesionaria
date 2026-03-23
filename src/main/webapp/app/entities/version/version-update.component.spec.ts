@@ -53,12 +53,12 @@ describe('Component Tests', () => {
         provide: {
           alertService,
           versionService: () => versionServiceStub,
-          motorService: () =>
-            sinon.createStubInstance<MotorService>(MotorService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
           modeloService: () =>
             sinon.createStubInstance<ModeloService>(ModeloService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
+          motorService: () =>
+            sinon.createStubInstance<MotorService>(MotorService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

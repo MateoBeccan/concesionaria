@@ -76,38 +76,19 @@ class ModeloCriteriaTest {
 
     private static void setAllFilters(ModeloCriteria modeloCriteria) {
         modeloCriteria.id();
-        modeloCriteria.nombre();
-        modeloCriteria.anioLanzamiento();
-        modeloCriteria.carroceria();
-        modeloCriteria.marcaId();
-        modeloCriteria.versionesId();
         modeloCriteria.distinct();
     }
 
     private static Condition<ModeloCriteria> criteriaFiltersAre(Function<Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId()) &&
-                condition.apply(criteria.getNombre()) &&
-                condition.apply(criteria.getAnioLanzamiento()) &&
-                condition.apply(criteria.getCarroceria()) &&
-                condition.apply(criteria.getMarcaId()) &&
-                condition.apply(criteria.getVersionesId()) &&
-                condition.apply(criteria.getDistinct()),
+            criteria -> condition.apply(criteria.getId()) && condition.apply(criteria.getDistinct()),
             "every filter matches"
         );
     }
 
     private static Condition<ModeloCriteria> copyFiltersAre(ModeloCriteria copy, BiFunction<Object, Object, Boolean> condition) {
         return new Condition<>(
-            criteria ->
-                condition.apply(criteria.getId(), copy.getId()) &&
-                condition.apply(criteria.getNombre(), copy.getNombre()) &&
-                condition.apply(criteria.getAnioLanzamiento(), copy.getAnioLanzamiento()) &&
-                condition.apply(criteria.getCarroceria(), copy.getCarroceria()) &&
-                condition.apply(criteria.getMarcaId(), copy.getMarcaId()) &&
-                condition.apply(criteria.getVersionesId(), copy.getVersionesId()) &&
-                condition.apply(criteria.getDistinct(), copy.getDistinct()),
+            criteria -> condition.apply(criteria.getId(), copy.getId()) && condition.apply(criteria.getDistinct(), copy.getDistinct()),
             "every filter matches"
         );
     }

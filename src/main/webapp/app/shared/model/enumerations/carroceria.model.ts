@@ -1,0 +1,25 @@
+export enum Carroceria {
+  SEDAN = 'SEDAN',
+
+  HATCHBACK = 'HATCHBACK',
+
+  SUV = 'SUV',
+
+  PICKUP = 'PICKUP',
+
+  COUPE = 'COUPE',
+
+  CONVERTIBLE = 'CONVERTIBLE',
+
+  VAN = 'VAN',
+
+  ROADSTER = 'ROADSTER',
+
+  SPORTS_CAR = 'SPORTS_CAR',
+
+  MINIVAN = 'MINIVAN',
+
+  STATION_WAGON = 'STATION_WAGON',
+
+  OTHER = 'OTHER',
+}

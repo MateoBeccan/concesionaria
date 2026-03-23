@@ -35,6 +35,9 @@
               :class="{ valid: !v$.cilindradaCc.$invalid, invalid: v$.cilindradaCc.$invalid }"
               v-model.number="v$.cilindradaCc.$model"
             />
+            <div v-if="v$.cilindradaCc.$anyDirty && v$.cilindradaCc.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.cilindradaCc.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Cilindro Cant</label>
@@ -47,6 +50,9 @@
               :class="{ valid: !v$.cilindroCant.$invalid, invalid: v$.cilindroCant.$invalid }"
               v-model.number="v$.cilindroCant.$model"
             />
+            <div v-if="v$.cilindroCant.$anyDirty && v$.cilindroCant.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.cilindroCant.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Potencia Hp</label>
@@ -59,6 +65,9 @@
               :class="{ valid: !v$.potenciaHp.$invalid, invalid: v$.potenciaHp.$invalid }"
               v-model.number="v$.potenciaHp.$model"
             />
+            <div v-if="v$.potenciaHp.$anyDirty && v$.potenciaHp.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.potenciaHp.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Turbo</label>

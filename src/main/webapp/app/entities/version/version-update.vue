@@ -61,22 +61,6 @@
             />
           </div>
           <div class="mb-3">
-            <label for="version">Motores</label>
-            <select
-              class="form-control"
-              id="version-motoreses"
-              data-cy="motores"
-              multiple
-              name="motores"
-              v-if="version.motoreses !== undefined"
-              v-model="version.motoreses"
-            >
-              <option :value="getSelected(version.motoreses, motorOption, 'id')" v-for="motorOption in motors" :key="motorOption.id">
-                {{ motorOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
             <label for="version">Modelos</label>
             <select
               class="form-control"
@@ -89,6 +73,22 @@
             >
               <option :value="getSelected(version.modeloses, modeloOption, 'id')" v-for="modeloOption in modelos" :key="modeloOption.id">
                 {{ modeloOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="version">Motores</label>
+            <select
+              class="form-control"
+              id="version-motoreses"
+              data-cy="motores"
+              multiple
+              name="motores"
+              v-if="version.motoreses !== undefined"
+              v-model="version.motoreses"
+            >
+              <option :value="getSelected(version.motoreses, motorOption, 'id')" v-for="motorOption in motors" :key="motorOption.id">
+                {{ motorOption.id }}
               </option>
             </select>
           </div>

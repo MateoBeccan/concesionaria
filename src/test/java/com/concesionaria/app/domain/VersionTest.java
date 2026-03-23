@@ -27,33 +27,15 @@ class VersionTest {
     }
 
     @Test
-    void motoresTest() {
-        Version version = getVersionRandomSampleGenerator();
-        Motor motorBack = getMotorRandomSampleGenerator();
-
-        version.addMotores(motorBack);
-        assertThat(version.getMotoreses()).containsOnly(motorBack);
-
-        version.removeMotores(motorBack);
-        assertThat(version.getMotoreses()).doesNotContain(motorBack);
-
-        version.motoreses(new HashSet<>(Set.of(motorBack)));
-        assertThat(version.getMotoreses()).containsOnly(motorBack);
-
-        version.setMotoreses(new HashSet<>());
-        assertThat(version.getMotoreses()).doesNotContain(motorBack);
-    }
-
-    @Test
     void modelosTest() {
         Version version = getVersionRandomSampleGenerator();
         Modelo modeloBack = getModeloRandomSampleGenerator();
 
-        version.addModelos(modeloBack);
+        version.addModelo(modeloBack);
         assertThat(version.getModeloses()).containsOnly(modeloBack);
         assertThat(modeloBack.getVersioneses()).containsOnly(version);
 
-        version.removeModelos(modeloBack);
+        version.removeModelo(modeloBack);
         assertThat(version.getModeloses()).doesNotContain(modeloBack);
         assertThat(modeloBack.getVersioneses()).doesNotContain(version);
 
@@ -64,5 +46,27 @@ class VersionTest {
         version.setModeloses(new HashSet<>());
         assertThat(version.getModeloses()).doesNotContain(modeloBack);
         assertThat(modeloBack.getVersioneses()).doesNotContain(version);
+    }
+
+    @Test
+    void motoresTest() {
+        Version version = getVersionRandomSampleGenerator();
+        Motor motorBack = getMotorRandomSampleGenerator();
+
+        version.addMotor(motorBack);
+        assertThat(version.getMotoreses()).containsOnly(motorBack);
+        assertThat(motorBack.getVersioneses()).containsOnly(version);
+
+        version.removeMotor(motorBack);
+        assertThat(version.getMotoreses()).doesNotContain(motorBack);
+        assertThat(motorBack.getVersioneses()).doesNotContain(version);
+
+        version.motoreses(new HashSet<>(Set.of(motorBack)));
+        assertThat(version.getMotoreses()).containsOnly(motorBack);
+        assertThat(motorBack.getVersioneses()).containsOnly(version);
+
+        version.setMotoreses(new HashSet<>());
+        assertThat(version.getMotoreses()).doesNotContain(motorBack);
+        assertThat(motorBack.getVersioneses()).doesNotContain(version);
     }
 }

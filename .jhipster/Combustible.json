@@ -15,15 +15,14 @@
       "fieldType": "String"
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Combustible",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [
     {
       "otherEntityName": "motor",
+      "otherEntityRelationshipName": "combustibles",
       "relationshipName": "motor",
-      "relationshipSide": "left",
+      "relationshipSide": "right",
       "relationshipType": "many-to-one"
     }
   ],

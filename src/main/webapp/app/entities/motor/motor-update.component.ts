@@ -58,11 +58,21 @@ export default defineComponent({
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
       },
-      cilindradaCc: {},
-      cilindroCant: {},
-      potenciaHp: {},
+      cilindradaCc: {
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+      },
+      cilindroCant: {
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+      },
+      potenciaHp: {
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+      },
       turbo: {},
       versioneses: {},
+      combustibleses: {},
     };
     const v$ = useVuelidate(validationRules, motor as any);
     v$.value.$validate();

@@ -12,25 +12,29 @@
     },
     {
       "fieldName": "cilindradaCc",
-      "fieldType": "Integer"
+      "fieldType": "Integer",
+      "fieldValidateRules": ["min"],
+      "fieldValidateRulesMin": 0
     },
     {
       "fieldName": "cilindroCant",
-      "fieldType": "Integer"
+      "fieldType": "Integer",
+      "fieldValidateRules": ["min"],
+      "fieldValidateRulesMin": 0
     },
     {
       "fieldName": "potenciaHp",
-      "fieldType": "Integer"
+      "fieldType": "Integer",
+      "fieldValidateRules": ["min"],
+      "fieldValidateRulesMin": 0
     },
     {
       "fieldName": "turbo",
       "fieldType": "Boolean"
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Motor",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [
     {
       "otherEntityName": "version",

@@ -62,15 +62,18 @@ public class ModeloServiceImpl implements ModeloService {
             .map(modeloMapper::toDto);
     }
 
-    public Page<ModeloDTO> findAllWithEagerRelationships(Pageable pageable) {
-        return modeloRepository.findAllWithEagerRelationships(pageable).map(modeloMapper::toDto);
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ModeloDTO> findAll(Pageable pageable) {
+        LOG.debug("Request to get all Modelos");
+        return modeloRepository.findAll(pageable).map(modeloMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ModeloDTO> findOne(Long id) {
         LOG.debug("Request to get Modelo : {}", id);
-        return modeloRepository.findOneWithEagerRelationships(id).map(modeloMapper::toDto);
+        return modeloRepository.findById(id).map(modeloMapper::toDto);
     }
 
     @Override

@@ -72,9 +72,7 @@ public class MarcaQueryService extends QueryService<Marca> {
             // This has to be called first, because the distinct method returns null
             specification = Specification.allOf(
                 Boolean.TRUE.equals(criteria.getDistinct()) ? distinct(criteria.getDistinct()) : Specification.unrestricted(),
-                buildRangeSpecification(criteria.getId(), Marca_.id),
-                buildStringSpecification(criteria.getNombre(), Marca_.nombre),
-                buildStringSpecification(criteria.getPaisOrigen(), Marca_.paisOrigen)
+                buildRangeSpecification(criteria.getId(), Marca_.id)
             );
         }
         return specification;

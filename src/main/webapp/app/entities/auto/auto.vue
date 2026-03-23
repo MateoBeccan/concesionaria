@@ -37,6 +37,10 @@
               <span>Fecha Fabricacion</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'fechaFabricacion'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('fechaIngreso')">
+              <span>Fecha Ingreso</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'fechaIngreso'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('km')">
               <span>Km</span> <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'km'"></jhi-sort-indicator>
             </th>
@@ -64,6 +68,10 @@
               <span>Motor</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'motor.id'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('moneda.id')">
+              <span>Moneda</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'moneda.id'"></jhi-sort-indicator>
+            </th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -75,6 +83,7 @@
             <td>{{ auto.estado }}</td>
             <td>{{ auto.condicion }}</td>
             <td>{{ auto.fechaFabricacion }}</td>
+            <td>{{ auto.fechaIngreso }}</td>
             <td>{{ auto.km }}</td>
             <td>{{ auto.patente }}</td>
             <td>{{ auto.precio }}</td>
@@ -96,6 +105,11 @@
             <td>
               <div v-if="auto.motor">
                 <router-link :to="{ name: 'MotorView', params: { motorId: auto.motor.id } }">{{ auto.motor.id }}</router-link>
+              </div>
+            </td>
+            <td>
+              <div v-if="auto.moneda">
+                <router-link :to="{ name: 'MonedaView', params: { monedaId: auto.moneda.id } }">{{ auto.moneda.id }}</router-link>
               </div>
             </td>
             <td class="text-end">

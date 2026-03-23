@@ -1,0 +1,26 @@
+entity Marca
+entity Version
+
+enum Carroceria {
+  SEDAN,
+  HATCHBACK,
+  SUV,
+  PICKUP,
+  COUPE,
+  FURGON,
+  MINIVAN
+}
+
+entity Modelo {
+  nombre String required,
+  anioLanzamiento Integer,
+  carroceria Carroceria
+}
+
+relationship ManyToOne {
+  Modelo{marca} to Marca
+}
+
+relationship ManyToMany {
+  Modelo{versiones} to Version{modelos}
+}

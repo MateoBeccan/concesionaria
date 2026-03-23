@@ -71,6 +71,34 @@
             </b-input-group>
           </div>
           <div class="mb-3">
+            <label class="form-control-label" for="auto">Fecha Ingreso</label>
+            <b-input-group class="mb-3">
+              <b-input-group-prepend>
+                <b-form-datepicker
+                  aria-controls="auto-fechaIngreso"
+                  v-model="v$.fechaIngreso.$model"
+                  name="fechaIngreso"
+                  class="form-control"
+                  :locale="currentLanguage"
+                  button-only
+                  today-button
+                  reset-button
+                  close-button
+                >
+                </b-form-datepicker>
+              </b-input-group-prepend>
+              <b-form-input
+                id="auto-fechaIngreso"
+                data-cy="fechaIngreso"
+                type="text"
+                class="form-control"
+                name="fechaIngreso"
+                :class="{ valid: !v$.fechaIngreso.$invalid, invalid: v$.fechaIngreso.$invalid }"
+                v-model="v$.fechaIngreso.$model"
+              />
+            </b-input-group>
+          </div>
+          <div class="mb-3">
             <label class="form-control-label" for="auto">Km</label>
             <input
               type="number"
@@ -81,6 +109,9 @@
               :class="{ valid: !v$.km.$invalid, invalid: v$.km.$invalid }"
               v-model.number="v$.km.$model"
             />
+            <div v-if="v$.km.$anyDirty && v$.km.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.km.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="auto">Patente</label>
@@ -92,7 +123,11 @@
               data-cy="patente"
               :class="{ valid: !v$.patente.$invalid, invalid: v$.patente.$invalid }"
               v-model="v$.patente.$model"
+              required
             />
+            <div v-if="v$.patente.$anyDirty && v$.patente.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.patente.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="auto">Precio</label>
@@ -104,7 +139,11 @@
               data-cy="precio"
               :class="{ valid: !v$.precio.$invalid, invalid: v$.precio.$invalid }"
               v-model.number="v$.precio.$model"
+              required
             />
+            <div v-if="v$.precio.$anyDirty && v$.precio.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.precio.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="auto">Marca</label>
@@ -155,6 +194,19 @@
                 :key="motorOption.id"
               >
                 {{ motorOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="auto">Moneda</label>
+            <select class="form-control" id="auto-moneda" data-cy="moneda" name="moneda" v-model="auto.moneda">
+              <option :value="null"></option>
+              <option
+                :value="auto.moneda && monedaOption.id === auto.moneda.id ? auto.moneda : monedaOption"
+                v-for="monedaOption in monedas"
+                :key="monedaOption.id"
+              >
+                {{ monedaOption.id }}
               </option>
             </select>
           </div>

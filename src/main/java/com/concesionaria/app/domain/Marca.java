@@ -22,10 +22,12 @@ public class Marca implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(max = 100)
+    @Column(name = "nombre", length = 100, nullable = false)
     private String nombre;
 
-    @Column(name = "pais_origen")
+    @Size(max = 100)
+    @Column(name = "pais_origen", length = 100)
     private String paisOrigen;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

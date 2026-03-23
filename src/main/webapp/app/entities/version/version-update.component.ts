@@ -21,13 +21,13 @@ export default defineComponent({
 
     const version: Ref<IVersion> = ref(new Version());
 
-    const motorService = inject('motorService', () => new MotorService());
-
-    const motors: Ref<IMotor[]> = ref([]);
-
     const modeloService = inject('modeloService', () => new ModeloService());
 
     const modelos: Ref<IModelo[]> = ref([]);
+
+    const motorService = inject('motorService', () => new MotorService());
+
+    const motors: Ref<IMotor[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -50,15 +50,15 @@ export default defineComponent({
     }
 
     const initRelationships = () => {
-      motorService()
-        .retrieve()
-        .then(res => {
-          motors.value = res.data;
-        });
       modeloService()
         .retrieve()
         .then(res => {
           modelos.value = res.data;
+        });
+      motorService()
+        .retrieve()
+        .then(res => {
+          motors.value = res.data;
         });
     };
 
@@ -72,8 +72,8 @@ export default defineComponent({
       descripcion: {},
       anioInicio: {},
       anioFin: {},
-      motoreses: {},
       modeloses: {},
+      motoreses: {},
     };
     const v$ = useVuelidate(validationRules, version as any);
     v$.value.$validate();
@@ -85,14 +85,14 @@ export default defineComponent({
       previousState,
       isSaving,
       currentLanguage,
-      motors,
       modelos,
+      motors,
       v$,
     };
   },
   created(): void {
-    this.version.motoreses = [];
     this.version.modeloses = [];
+    this.version.motoreses = [];
   },
   methods: {
     save(): void {

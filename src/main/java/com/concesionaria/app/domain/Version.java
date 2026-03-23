@@ -37,20 +37,33 @@ public class Version implements Serializable {
     @Column(name = "anio_fin")
     private Integer anioFin;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    // ======================
+    // RELACION CON MODELO
+    // ======================
+    @ManyToMany
     @JoinTable(
-        name = "rel_version__motores",
+        name = "rel_version__modelo",
         joinColumns = @JoinColumn(name = "version_id"),
-        inverseJoinColumns = @JoinColumn(name = "motores_id")
+        inverseJoinColumns = @JoinColumn(name = "modelo_id")
     )
-    @JsonIgnoreProperties(value = { "versioneses" }, allowSetters = true)
-    private Set<Motor> motoreses = new HashSet<>();
-
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "versioneses")
     @JsonIgnoreProperties(value = { "marca", "versioneses" }, allowSetters = true)
     private Set<Modelo> modeloses = new HashSet<>();
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
+    // ======================
+    // RELACION CON MOTOR
+    // ======================
+    @ManyToMany
+    @JoinTable(
+        name = "rel_version__motor",
+        joinColumns = @JoinColumn(name = "version_id"),
+        inverseJoinColumns = @JoinColumn(name = "motor_id")
+    )
+    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
+    private Set<Motor> motoreses = new HashSet<>();
+
+    // ======================
+    // GETTERS / SETTERS
+    // ======================
 
     public Long getId() {
         return this.id;
@@ -117,6 +130,39 @@ public class Version implements Serializable {
         this.anioFin = anioFin;
     }
 
+    // ======================
+    // MODELOS
+    // ======================
+
+    public Set<Modelo> getModeloses() {
+        return this.modeloses;
+    }
+
+    public void setModeloses(Set<Modelo> modelos) {
+        this.modeloses = modelos;
+    }
+
+    public Version modeloses(Set<Modelo> modelos) {
+        this.setModeloses(modelos);
+        return this;
+    }
+
+    public Version addModelo(Modelo modelo) {
+        this.modeloses.add(modelo);
+        modelo.getVersioneses().add(this);
+        return this;
+    }
+
+    public Version removeModelo(Modelo modelo) {
+        this.modeloses.remove(modelo);
+        modelo.getVersioneses().remove(this);
+        return this;
+    }
+
+    // ======================
+    // MOTORES
+    // ======================
+
     public Set<Motor> getMotoreses() {
         return this.motoreses;
     }
@@ -130,67 +176,38 @@ public class Version implements Serializable {
         return this;
     }
 
-    public Version addMotores(Motor motor) {
+    public Version addMotor(Motor motor) {
         this.motoreses.add(motor);
+        motor.getVersioneses().add(this);
         return this;
     }
 
-    public Version removeMotores(Motor motor) {
+    public Version removeMotor(Motor motor) {
         this.motoreses.remove(motor);
+        motor.getVersioneses().remove(this);
         return this;
     }
 
-    public Set<Modelo> getModeloses() {
-        return this.modeloses;
-    }
-
-    public void setModeloses(Set<Modelo> modelos) {
-        if (this.modeloses != null) {
-            this.modeloses.forEach(i -> i.removeVersiones(this));
-        }
-        if (modelos != null) {
-            modelos.forEach(i -> i.addVersiones(this));
-        }
-        this.modeloses = modelos;
-    }
-
-    public Version modeloses(Set<Modelo> modelos) {
-        this.setModeloses(modelos);
-        return this;
-    }
-
-    public Version addModelos(Modelo modelo) {
-        this.modeloses.add(modelo);
-        modelo.getVersioneses().add(this);
-        return this;
-    }
-
-    public Version removeModelos(Modelo modelo) {
-        this.modeloses.remove(modelo);
-        modelo.getVersioneses().remove(this);
-        return this;
-    }
-
-    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
+    // ======================
+    // EQUALS / HASH
+    // ======================
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Version)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof Version)) return false;
         return getId() != null && getId().equals(((Version) o).getId());
     }
 
     @Override
     public int hashCode() {
-        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
         return getClass().hashCode();
     }
 
-    // prettier-ignore
+    // ======================
+    // TO STRING
+    // ======================
+
     @Override
     public String toString() {
         return "Version{" +

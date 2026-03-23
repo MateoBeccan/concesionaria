@@ -39,13 +39,21 @@ public class Auto implements Serializable {
     @Column(name = "fecha_fabricacion")
     private LocalDate fechaFabricacion;
 
+    @Column(name = "fecha_ingreso")
+    private LocalDate fechaIngreso;
+
+    @Min(value = 0)
     @Column(name = "km")
     private Integer km;
 
-    @Column(name = "patente")
+    @NotNull
+    @Size(max = 10)
+    @Column(name = "patente", length = 10, nullable = false)
     private String patente;
 
-    @Column(name = "precio", precision = 21, scale = 2)
+    @NotNull
+    @DecimalMin(value = "0")
+    @Column(name = "precio", precision = 21, scale = 2, nullable = false)
     private BigDecimal precio;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,12 +64,15 @@ public class Auto implements Serializable {
     private Modelo modelo;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "motoreses", "modeloses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
     private Version version;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "versioneses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
     private Motor motor;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Moneda moneda;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -115,6 +126,19 @@ public class Auto implements Serializable {
 
     public void setFechaFabricacion(LocalDate fechaFabricacion) {
         this.fechaFabricacion = fechaFabricacion;
+    }
+
+    public LocalDate getFechaIngreso() {
+        return this.fechaIngreso;
+    }
+
+    public Auto fechaIngreso(LocalDate fechaIngreso) {
+        this.setFechaIngreso(fechaIngreso);
+        return this;
+    }
+
+    public void setFechaIngreso(LocalDate fechaIngreso) {
+        this.fechaIngreso = fechaIngreso;
     }
 
     public Integer getKm() {
@@ -208,6 +232,19 @@ public class Auto implements Serializable {
         return this;
     }
 
+    public Moneda getMoneda() {
+        return this.moneda;
+    }
+
+    public void setMoneda(Moneda moneda) {
+        this.moneda = moneda;
+    }
+
+    public Auto moneda(Moneda moneda) {
+        this.setMoneda(moneda);
+        return this;
+    }
+
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -235,6 +272,7 @@ public class Auto implements Serializable {
             ", estado='" + getEstado() + "'" +
             ", condicion='" + getCondicion() + "'" +
             ", fechaFabricacion='" + getFechaFabricacion() + "'" +
+            ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", km=" + getKm() +
             ", patente='" + getPatente() + "'" +
             ", precio=" + getPrecio() +

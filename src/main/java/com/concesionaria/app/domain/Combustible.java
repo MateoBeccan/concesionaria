@@ -30,7 +30,7 @@ public class Combustible implements Serializable {
     private String descripcion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "versioneses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
     private Motor motor;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

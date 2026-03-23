@@ -22,22 +22,30 @@
       "fieldType": "LocalDate"
     },
     {
+      "fieldName": "fechaIngreso",
+      "fieldType": "LocalDate"
+    },
+    {
       "fieldName": "km",
-      "fieldType": "Integer"
+      "fieldType": "Integer",
+      "fieldValidateRules": ["min"],
+      "fieldValidateRulesMin": 0
     },
     {
       "fieldName": "patente",
-      "fieldType": "String"
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "maxlength"],
+      "fieldValidateRulesMaxlength": 10
     },
     {
       "fieldName": "precio",
-      "fieldType": "BigDecimal"
+      "fieldType": "BigDecimal",
+      "fieldValidateRules": ["required", "min"],
+      "fieldValidateRulesMin": 0
     }
   ],
-  "jpaMetamodelFiltering": true,
   "name": "Auto",
   "pagination": "pagination",
-  "readOnly": false,
   "relationships": [
     {
       "otherEntityName": "marca",
@@ -60,6 +68,12 @@
     {
       "otherEntityName": "motor",
       "relationshipName": "motor",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "moneda",
+      "relationshipName": "moneda",
       "relationshipSide": "left",
       "relationshipType": "many-to-one"
     }

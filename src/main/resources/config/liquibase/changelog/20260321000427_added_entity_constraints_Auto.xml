@@ -37,5 +37,12 @@
                                  referencedColumnNames="id"
                                  referencedTableName="motor"
                                  />
+
+        <addForeignKeyConstraint baseColumnNames="moneda_id"
+                                 baseTableName="auto"
+                                 constraintName="fk_auto__moneda_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="moneda"
+                                 />
     </changeSet>
 </databaseChangeLog>

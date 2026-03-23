@@ -26,30 +26,12 @@ public class MotorCriteria implements Serializable, Criteria {
 
     private LongFilter id;
 
-    private StringFilter nombre;
-
-    private IntegerFilter cilindradaCc;
-
-    private IntegerFilter cilindroCant;
-
-    private IntegerFilter potenciaHp;
-
-    private BooleanFilter turbo;
-
-    private LongFilter versionesId;
-
     private Boolean distinct;
 
     public MotorCriteria() {}
 
     public MotorCriteria(MotorCriteria other) {
         this.id = other.optionalId().map(LongFilter::copy).orElse(null);
-        this.nombre = other.optionalNombre().map(StringFilter::copy).orElse(null);
-        this.cilindradaCc = other.optionalCilindradaCc().map(IntegerFilter::copy).orElse(null);
-        this.cilindroCant = other.optionalCilindroCant().map(IntegerFilter::copy).orElse(null);
-        this.potenciaHp = other.optionalPotenciaHp().map(IntegerFilter::copy).orElse(null);
-        this.turbo = other.optionalTurbo().map(BooleanFilter::copy).orElse(null);
-        this.versionesId = other.optionalVersionesId().map(LongFilter::copy).orElse(null);
         this.distinct = other.distinct;
     }
 
@@ -75,120 +57,6 @@ public class MotorCriteria implements Serializable, Criteria {
 
     public void setId(LongFilter id) {
         this.id = id;
-    }
-
-    public StringFilter getNombre() {
-        return nombre;
-    }
-
-    public Optional<StringFilter> optionalNombre() {
-        return Optional.ofNullable(nombre);
-    }
-
-    public StringFilter nombre() {
-        if (nombre == null) {
-            setNombre(new StringFilter());
-        }
-        return nombre;
-    }
-
-    public void setNombre(StringFilter nombre) {
-        this.nombre = nombre;
-    }
-
-    public IntegerFilter getCilindradaCc() {
-        return cilindradaCc;
-    }
-
-    public Optional<IntegerFilter> optionalCilindradaCc() {
-        return Optional.ofNullable(cilindradaCc);
-    }
-
-    public IntegerFilter cilindradaCc() {
-        if (cilindradaCc == null) {
-            setCilindradaCc(new IntegerFilter());
-        }
-        return cilindradaCc;
-    }
-
-    public void setCilindradaCc(IntegerFilter cilindradaCc) {
-        this.cilindradaCc = cilindradaCc;
-    }
-
-    public IntegerFilter getCilindroCant() {
-        return cilindroCant;
-    }
-
-    public Optional<IntegerFilter> optionalCilindroCant() {
-        return Optional.ofNullable(cilindroCant);
-    }
-
-    public IntegerFilter cilindroCant() {
-        if (cilindroCant == null) {
-            setCilindroCant(new IntegerFilter());
-        }
-        return cilindroCant;
-    }
-
-    public void setCilindroCant(IntegerFilter cilindroCant) {
-        this.cilindroCant = cilindroCant;
-    }
-
-    public IntegerFilter getPotenciaHp() {
-        return potenciaHp;
-    }
-
-    public Optional<IntegerFilter> optionalPotenciaHp() {
-        return Optional.ofNullable(potenciaHp);
-    }
-
-    public IntegerFilter potenciaHp() {
-        if (potenciaHp == null) {
-            setPotenciaHp(new IntegerFilter());
-        }
-        return potenciaHp;
-    }
-
-    public void setPotenciaHp(IntegerFilter potenciaHp) {
-        this.potenciaHp = potenciaHp;
-    }
-
-    public BooleanFilter getTurbo() {
-        return turbo;
-    }
-
-    public Optional<BooleanFilter> optionalTurbo() {
-        return Optional.ofNullable(turbo);
-    }
-
-    public BooleanFilter turbo() {
-        if (turbo == null) {
-            setTurbo(new BooleanFilter());
-        }
-        return turbo;
-    }
-
-    public void setTurbo(BooleanFilter turbo) {
-        this.turbo = turbo;
-    }
-
-    public LongFilter getVersionesId() {
-        return versionesId;
-    }
-
-    public Optional<LongFilter> optionalVersionesId() {
-        return Optional.ofNullable(versionesId);
-    }
-
-    public LongFilter versionesId() {
-        if (versionesId == null) {
-            setVersionesId(new LongFilter());
-        }
-        return versionesId;
-    }
-
-    public void setVersionesId(LongFilter versionesId) {
-        this.versionesId = versionesId;
     }
 
     public Boolean getDistinct() {
@@ -219,21 +87,12 @@ public class MotorCriteria implements Serializable, Criteria {
             return false;
         }
         final MotorCriteria that = (MotorCriteria) o;
-        return (
-            Objects.equals(id, that.id) &&
-            Objects.equals(nombre, that.nombre) &&
-            Objects.equals(cilindradaCc, that.cilindradaCc) &&
-            Objects.equals(cilindroCant, that.cilindroCant) &&
-            Objects.equals(potenciaHp, that.potenciaHp) &&
-            Objects.equals(turbo, that.turbo) &&
-            Objects.equals(versionesId, that.versionesId) &&
-            Objects.equals(distinct, that.distinct)
-        );
+        return Objects.equals(id, that.id) && Objects.equals(distinct, that.distinct);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, nombre, cilindradaCc, cilindroCant, potenciaHp, turbo, versionesId, distinct);
+        return Objects.hash(id, distinct);
     }
 
     // prettier-ignore
@@ -241,12 +100,6 @@ public class MotorCriteria implements Serializable, Criteria {
     public String toString() {
         return "MotorCriteria{" +
             optionalId().map(f -> "id=" + f + ", ").orElse("") +
-            optionalNombre().map(f -> "nombre=" + f + ", ").orElse("") +
-            optionalCilindradaCc().map(f -> "cilindradaCc=" + f + ", ").orElse("") +
-            optionalCilindroCant().map(f -> "cilindroCant=" + f + ", ").orElse("") +
-            optionalPotenciaHp().map(f -> "potenciaHp=" + f + ", ").orElse("") +
-            optionalTurbo().map(f -> "turbo=" + f + ", ").orElse("") +
-            optionalVersionesId().map(f -> "versionesId=" + f + ", ").orElse("") +
             optionalDistinct().map(f -> "distinct=" + f + ", ").orElse("") +
         "}";
     }
