@@ -71,34 +71,6 @@
             </b-input-group>
           </div>
           <div class="mb-3">
-            <label class="form-control-label" for="auto">Fecha Ingreso</label>
-            <b-input-group class="mb-3">
-              <b-input-group-prepend>
-                <b-form-datepicker
-                  aria-controls="auto-fechaIngreso"
-                  v-model="v$.fechaIngreso.$model"
-                  name="fechaIngreso"
-                  class="form-control"
-                  :locale="currentLanguage"
-                  button-only
-                  today-button
-                  reset-button
-                  close-button
-                >
-                </b-form-datepicker>
-              </b-input-group-prepend>
-              <b-form-input
-                id="auto-fechaIngreso"
-                data-cy="fechaIngreso"
-                type="text"
-                class="form-control"
-                name="fechaIngreso"
-                :class="{ valid: !v$.fechaIngreso.$invalid, invalid: v$.fechaIngreso.$invalid }"
-                v-model="v$.fechaIngreso.$model"
-              />
-            </b-input-group>
-          </div>
-          <div class="mb-3">
             <label class="form-control-label" for="auto">Km</label>
             <input
               type="number"
@@ -109,9 +81,6 @@
               :class="{ valid: !v$.km.$invalid, invalid: v$.km.$invalid }"
               v-model.number="v$.km.$model"
             />
-            <div v-if="v$.km.$anyDirty && v$.km.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.km.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="auto">Patente</label>
@@ -123,11 +92,7 @@
               data-cy="patente"
               :class="{ valid: !v$.patente.$invalid, invalid: v$.patente.$invalid }"
               v-model="v$.patente.$model"
-              required
             />
-            <div v-if="v$.patente.$anyDirty && v$.patente.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.patente.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="auto">Precio</label>
@@ -139,74 +104,20 @@
               data-cy="precio"
               :class="{ valid: !v$.precio.$invalid, invalid: v$.precio.$invalid }"
               v-model.number="v$.precio.$model"
-              required
             />
-            <div v-if="v$.precio.$anyDirty && v$.precio.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.precio.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
           </div>
           <div class="mb-3">
-            <label class="form-control-label" for="auto">Marca</label>
-            <select class="form-control" id="auto-marca" data-cy="marca" name="marca" v-model="auto.marca">
+            <label class="form-control-label" for="auto">Configuracion</label>
+            <select class="form-control" id="auto-configuracion" data-cy="configuracion" name="configuracion" v-model="auto.configuracion">
               <option :value="null"></option>
               <option
-                :value="auto.marca && marcaOption.id === auto.marca.id ? auto.marca : marcaOption"
-                v-for="marcaOption in marcas"
-                :key="marcaOption.id"
+                :value="
+                  auto.configuracion && configuracionAutoOption.id === auto.configuracion.id ? auto.configuracion : configuracionAutoOption
+                "
+                v-for="configuracionAutoOption in configuracionAutos"
+                :key="configuracionAutoOption.id"
               >
-                {{ marcaOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="auto">Modelo</label>
-            <select class="form-control" id="auto-modelo" data-cy="modelo" name="modelo" v-model="auto.modelo">
-              <option :value="null"></option>
-              <option
-                :value="auto.modelo && modeloOption.id === auto.modelo.id ? auto.modelo : modeloOption"
-                v-for="modeloOption in modelos"
-                :key="modeloOption.id"
-              >
-                {{ modeloOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="auto">Version</label>
-            <select class="form-control" id="auto-version" data-cy="version" name="version" v-model="auto.version">
-              <option :value="null"></option>
-              <option
-                :value="auto.version && versionOption.id === auto.version.id ? auto.version : versionOption"
-                v-for="versionOption in versions"
-                :key="versionOption.id"
-              >
-                {{ versionOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="auto">Motor</label>
-            <select class="form-control" id="auto-motor" data-cy="motor" name="motor" v-model="auto.motor">
-              <option :value="null"></option>
-              <option
-                :value="auto.motor && motorOption.id === auto.motor.id ? auto.motor : motorOption"
-                v-for="motorOption in motors"
-                :key="motorOption.id"
-              >
-                {{ motorOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="auto">Moneda</label>
-            <select class="form-control" id="auto-moneda" data-cy="moneda" name="moneda" v-model="auto.moneda">
-              <option :value="null"></option>
-              <option
-                :value="auto.moneda && monedaOption.id === auto.moneda.id ? auto.moneda : monedaOption"
-                v-for="monedaOption in monedas"
-                :key="monedaOption.id"
-              >
-                {{ monedaOption.id }}
+                {{ configuracionAutoOption.id }}
               </option>
             </select>
           </div>

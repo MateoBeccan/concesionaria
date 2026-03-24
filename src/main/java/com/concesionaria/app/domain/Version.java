@@ -1,12 +1,9 @@
 package com.concesionaria.app.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A Version.
@@ -37,33 +34,7 @@ public class Version implements Serializable {
     @Column(name = "anio_fin")
     private Integer anioFin;
 
-    // ======================
-    // RELACION CON MODELO
-    // ======================
-    @ManyToMany
-    @JoinTable(
-        name = "rel_version__modelo",
-        joinColumns = @JoinColumn(name = "version_id"),
-        inverseJoinColumns = @JoinColumn(name = "modelo_id")
-    )
-    @JsonIgnoreProperties(value = { "marca", "versioneses" }, allowSetters = true)
-    private Set<Modelo> modeloses = new HashSet<>();
-
-    // ======================
-    // RELACION CON MOTOR
-    // ======================
-    @ManyToMany
-    @JoinTable(
-        name = "rel_version__motor",
-        joinColumns = @JoinColumn(name = "version_id"),
-        inverseJoinColumns = @JoinColumn(name = "motor_id")
-    )
-    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
-    private Set<Motor> motoreses = new HashSet<>();
-
-    // ======================
-    // GETTERS / SETTERS
-    // ======================
+    // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
         return this.id;
@@ -130,84 +101,26 @@ public class Version implements Serializable {
         this.anioFin = anioFin;
     }
 
-    // ======================
-    // MODELOS
-    // ======================
-
-    public Set<Modelo> getModeloses() {
-        return this.modeloses;
-    }
-
-    public void setModeloses(Set<Modelo> modelos) {
-        this.modeloses = modelos;
-    }
-
-    public Version modeloses(Set<Modelo> modelos) {
-        this.setModeloses(modelos);
-        return this;
-    }
-
-    public Version addModelo(Modelo modelo) {
-        this.modeloses.add(modelo);
-        modelo.getVersioneses().add(this);
-        return this;
-    }
-
-    public Version removeModelo(Modelo modelo) {
-        this.modeloses.remove(modelo);
-        modelo.getVersioneses().remove(this);
-        return this;
-    }
-
-    // ======================
-    // MOTORES
-    // ======================
-
-    public Set<Motor> getMotoreses() {
-        return this.motoreses;
-    }
-
-    public void setMotoreses(Set<Motor> motors) {
-        this.motoreses = motors;
-    }
-
-    public Version motoreses(Set<Motor> motors) {
-        this.setMotoreses(motors);
-        return this;
-    }
-
-    public Version addMotor(Motor motor) {
-        this.motoreses.add(motor);
-        motor.getVersioneses().add(this);
-        return this;
-    }
-
-    public Version removeMotor(Motor motor) {
-        this.motoreses.remove(motor);
-        motor.getVersioneses().remove(this);
-        return this;
-    }
-
-    // ======================
-    // EQUALS / HASH
-    // ======================
+    // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Version)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Version)) {
+            return false;
+        }
         return getId() != null && getId().equals(((Version) o).getId());
     }
 
     @Override
     public int hashCode() {
+        // see https://vladmihalcea.com/how-to-implement-equals-and-hashcode-using-the-jpa-entity-identifier/
         return getClass().hashCode();
     }
 
-    // ======================
-    // TO STRING
-    // ======================
-
+    // prettier-ignore
     @Override
     public String toString() {
         return "Version{" +

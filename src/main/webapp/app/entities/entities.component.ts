@@ -10,6 +10,7 @@ import CondicionIvaService from './condicion-iva/condicion-iva.service';
 import MetodoPagoService from './metodo-pago/metodo-pago.service';
 import MonedaService from './moneda/moneda.service';
 import CotizacionService from './cotizacion/cotizacion.service';
+import ConfiguracionAutoService from './configuracion-auto/configuracion-auto.service';
 import DetalleVentaService from './detalle-venta/detalle-venta.service';
 import EstadoVentaService from './estado-venta/estado-venta.service';
 import MarcaService from './marca/marca.service';
@@ -44,6 +45,7 @@ export default defineComponent({
     provide('metodoPagoService', () => new MetodoPagoService());
     provide('monedaService', () => new MonedaService());
     provide('cotizacionService', () => new CotizacionService());
+    provide('configuracionAutoService', () => new ConfiguracionAutoService());
     // jhipster-needle-add-entity-service-to-entities-component - JHipster will import entities services here
   },
 });

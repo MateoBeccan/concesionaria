@@ -31,7 +31,7 @@ describe('Service Tests', () => {
 
     beforeEach(() => {
       service = new ModeloService();
-      elemDefault = new Modelo(123, 'AAAAAAA', 0, 'SEDAN');
+      elemDefault = new Modelo(123, 'AAAAAAA', 0, 'AAAAAAA');
     });
 
     describe('Service methods', () => {

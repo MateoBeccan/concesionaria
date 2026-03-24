@@ -4,7 +4,6 @@ import { type RouteLocation } from 'vue-router';
 import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
-import MotorService from '@/entities/motor/motor.service';
 import AlertService from '@/shared/alert/alert.service';
 
 import CombustibleUpdate from './combustible-update.vue';
@@ -52,10 +51,6 @@ describe('Component Tests', () => {
         provide: {
           alertService,
           combustibleService: () => combustibleServiceStub,
-          motorService: () =>
-            sinon.createStubInstance<MotorService>(MotorService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
         },
       };
     });

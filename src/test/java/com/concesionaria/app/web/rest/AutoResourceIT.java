@@ -49,17 +49,14 @@ class AutoResourceIT {
     private static final LocalDate DEFAULT_FECHA_FABRICACION = LocalDate.ofEpochDay(0L);
     private static final LocalDate UPDATED_FECHA_FABRICACION = LocalDate.now(ZoneId.systemDefault());
 
-    private static final LocalDate DEFAULT_FECHA_INGRESO = LocalDate.ofEpochDay(0L);
-    private static final LocalDate UPDATED_FECHA_INGRESO = LocalDate.now(ZoneId.systemDefault());
-
-    private static final Integer DEFAULT_KM = 0;
-    private static final Integer UPDATED_KM = 1;
+    private static final Integer DEFAULT_KM = 1;
+    private static final Integer UPDATED_KM = 2;
 
     private static final String DEFAULT_PATENTE = "AAAAAAAAAA";
     private static final String UPDATED_PATENTE = "BBBBBBBBBB";
 
-    private static final BigDecimal DEFAULT_PRECIO = new BigDecimal(0);
-    private static final BigDecimal UPDATED_PRECIO = new BigDecimal(1);
+    private static final BigDecimal DEFAULT_PRECIO = new BigDecimal(1);
+    private static final BigDecimal UPDATED_PRECIO = new BigDecimal(2);
 
     private static final String ENTITY_API_URL = "/api/autos";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -97,7 +94,6 @@ class AutoResourceIT {
             .estado(DEFAULT_ESTADO)
             .condicion(DEFAULT_CONDICION)
             .fechaFabricacion(DEFAULT_FECHA_FABRICACION)
-            .fechaIngreso(DEFAULT_FECHA_INGRESO)
             .km(DEFAULT_KM)
             .patente(DEFAULT_PATENTE)
             .precio(DEFAULT_PRECIO);
@@ -114,7 +110,6 @@ class AutoResourceIT {
             .estado(UPDATED_ESTADO)
             .condicion(UPDATED_CONDICION)
             .fechaFabricacion(UPDATED_FECHA_FABRICACION)
-            .fechaIngreso(UPDATED_FECHA_INGRESO)
             .km(UPDATED_KM)
             .patente(UPDATED_PATENTE)
             .precio(UPDATED_PRECIO);
@@ -211,40 +206,6 @@ class AutoResourceIT {
 
     @Test
     @Transactional
-    void checkPatenteIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        auto.setPatente(null);
-
-        // Create the Auto, which fails.
-        AutoDTO autoDTO = autoMapper.toDto(auto);
-
-        restAutoMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(autoDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
-    void checkPrecioIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        auto.setPrecio(null);
-
-        // Create the Auto, which fails.
-        AutoDTO autoDTO = autoMapper.toDto(auto);
-
-        restAutoMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(autoDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllAutos() throws Exception {
         // Initialize the database
         insertedAuto = autoRepository.saveAndFlush(auto);
@@ -258,7 +219,6 @@ class AutoResourceIT {
             .andExpect(jsonPath("$.[*].estado").value(hasItem(DEFAULT_ESTADO.toString())))
             .andExpect(jsonPath("$.[*].condicion").value(hasItem(DEFAULT_CONDICION.toString())))
             .andExpect(jsonPath("$.[*].fechaFabricacion").value(hasItem(DEFAULT_FECHA_FABRICACION.toString())))
-            .andExpect(jsonPath("$.[*].fechaIngreso").value(hasItem(DEFAULT_FECHA_INGRESO.toString())))
             .andExpect(jsonPath("$.[*].km").value(hasItem(DEFAULT_KM)))
             .andExpect(jsonPath("$.[*].patente").value(hasItem(DEFAULT_PATENTE)))
             .andExpect(jsonPath("$.[*].precio").value(hasItem(sameNumber(DEFAULT_PRECIO))));
@@ -279,7 +239,6 @@ class AutoResourceIT {
             .andExpect(jsonPath("$.estado").value(DEFAULT_ESTADO.toString()))
             .andExpect(jsonPath("$.condicion").value(DEFAULT_CONDICION.toString()))
             .andExpect(jsonPath("$.fechaFabricacion").value(DEFAULT_FECHA_FABRICACION.toString()))
-            .andExpect(jsonPath("$.fechaIngreso").value(DEFAULT_FECHA_INGRESO.toString()))
             .andExpect(jsonPath("$.km").value(DEFAULT_KM))
             .andExpect(jsonPath("$.patente").value(DEFAULT_PATENTE))
             .andExpect(jsonPath("$.precio").value(sameNumber(DEFAULT_PRECIO)));
@@ -308,7 +267,6 @@ class AutoResourceIT {
             .estado(UPDATED_ESTADO)
             .condicion(UPDATED_CONDICION)
             .fechaFabricacion(UPDATED_FECHA_FABRICACION)
-            .fechaIngreso(UPDATED_FECHA_INGRESO)
             .km(UPDATED_KM)
             .patente(UPDATED_PATENTE)
             .precio(UPDATED_PRECIO);
@@ -393,7 +351,7 @@ class AutoResourceIT {
         Auto partialUpdatedAuto = new Auto();
         partialUpdatedAuto.setId(auto.getId());
 
-        partialUpdatedAuto.estado(UPDATED_ESTADO).condicion(UPDATED_CONDICION).fechaIngreso(UPDATED_FECHA_INGRESO).precio(UPDATED_PRECIO);
+        partialUpdatedAuto.estado(UPDATED_ESTADO).condicion(UPDATED_CONDICION).km(UPDATED_KM);
 
         restAutoMockMvc
             .perform(
@@ -425,7 +383,6 @@ class AutoResourceIT {
             .estado(UPDATED_ESTADO)
             .condicion(UPDATED_CONDICION)
             .fechaFabricacion(UPDATED_FECHA_FABRICACION)
-            .fechaIngreso(UPDATED_FECHA_INGRESO)
             .km(UPDATED_KM)
             .patente(UPDATED_PATENTE)
             .precio(UPDATED_PRECIO);

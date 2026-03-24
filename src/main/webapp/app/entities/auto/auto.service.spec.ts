@@ -35,16 +35,12 @@ describe('Service Tests', () => {
     beforeEach(() => {
       service = new AutoService();
       currentDate = new Date();
-      elemDefault = new Auto(123, 'NUEVO', 'EN_VENTA', currentDate, currentDate, 0, 'AAAAAAA', 0);
+      elemDefault = new Auto(123, 'NUEVO', 'EN_VENTA', currentDate, 0, 'AAAAAAA', 0);
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
-        const returnedFromService = {
-          fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          fechaIngreso: dayjs(currentDate).format(DATE_FORMAT),
-          ...elemDefault,
-        };
+        const returnedFromService = { fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT), ...elemDefault };
         axiosStub.get.resolves({ data: returnedFromService });
 
         return service.find(123).then(res => {
@@ -63,13 +59,8 @@ describe('Service Tests', () => {
       });
 
       it('should create a Auto', async () => {
-        const returnedFromService = {
-          id: 123,
-          fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          fechaIngreso: dayjs(currentDate).format(DATE_FORMAT),
-          ...elemDefault,
-        };
-        const expected = { fechaFabricacion: currentDate, fechaIngreso: currentDate, ...returnedFromService };
+        const returnedFromService = { id: 123, fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT), ...elemDefault };
+        const expected = { fechaFabricacion: currentDate, ...returnedFromService };
 
         axiosStub.post.resolves({ data: returnedFromService });
         return service.create({}).then(res => {
@@ -93,14 +84,13 @@ describe('Service Tests', () => {
           estado: 'BBBBBB',
           condicion: 'BBBBBB',
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          fechaIngreso: dayjs(currentDate).format(DATE_FORMAT),
           km: 1,
           patente: 'BBBBBB',
           precio: 1,
           ...elemDefault,
         };
 
-        const expected = { fechaFabricacion: currentDate, fechaIngreso: currentDate, ...returnedFromService };
+        const expected = { fechaFabricacion: currentDate, ...returnedFromService };
         axiosStub.put.resolves({ data: returnedFromService });
 
         return service.update(expected).then(res => {
@@ -124,13 +114,13 @@ describe('Service Tests', () => {
           estado: 'BBBBBB',
           condicion: 'BBBBBB',
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          km: 1,
           patente: 'BBBBBB',
+          precio: 1,
           ...new Auto(),
         };
         const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { fechaFabricacion: currentDate, fechaIngreso: currentDate, ...returnedFromService };
+        const expected = { fechaFabricacion: currentDate, ...returnedFromService };
         axiosStub.patch.resolves({ data: returnedFromService });
 
         return service.partialUpdate(patchObject).then(res => {
@@ -154,13 +144,12 @@ describe('Service Tests', () => {
           estado: 'BBBBBB',
           condicion: 'BBBBBB',
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          fechaIngreso: dayjs(currentDate).format(DATE_FORMAT),
           km: 1,
           patente: 'BBBBBB',
           precio: 1,
           ...elemDefault,
         };
-        const expected = { fechaFabricacion: currentDate, fechaIngreso: currentDate, ...returnedFromService };
+        const expected = { fechaFabricacion: currentDate, ...returnedFromService };
         axiosStub.get.resolves([returnedFromService]);
         return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
           expect(res).toContainEqual(expected);

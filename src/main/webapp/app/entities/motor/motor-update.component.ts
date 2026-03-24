@@ -3,11 +3,11 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
-import VersionService from '@/entities/version/version.service';
+import CombustibleService from '@/entities/combustible/combustible.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
+import { type ICombustible } from '@/shared/model/combustible.model';
 import { type IMotor, Motor } from '@/shared/model/motor.model';
-import { type IVersion } from '@/shared/model/version.model';
 
 import MotorService from './motor.service';
 
@@ -19,9 +19,9 @@ export default defineComponent({
 
     const motor: Ref<IMotor> = ref(new Motor());
 
-    const versionService = inject('versionService', () => new VersionService());
+    const combustibleService = inject('combustibleService', () => new CombustibleService());
 
-    const versions: Ref<IVersion[]> = ref([]);
+    const combustibles: Ref<ICombustible[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -44,10 +44,10 @@ export default defineComponent({
     }
 
     const initRelationships = () => {
-      versionService()
+      combustibleService()
         .retrieve()
         .then(res => {
-          versions.value = res.data;
+          combustibles.value = res.data;
         });
     };
 
@@ -58,21 +58,11 @@ export default defineComponent({
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
       },
-      cilindradaCc: {
-        integer: validations.integer('Este campo debe ser un número.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      cilindroCant: {
-        integer: validations.integer('Este campo debe ser un número.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      potenciaHp: {
-        integer: validations.integer('Este campo debe ser un número.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
+      cilindradaCc: {},
+      cilindroCant: {},
+      potenciaHp: {},
       turbo: {},
-      versioneses: {},
-      combustibleses: {},
+      combustible: {},
     };
     const v$ = useVuelidate(validationRules, motor as any);
     v$.value.$validate();
@@ -84,13 +74,11 @@ export default defineComponent({
       previousState,
       isSaving,
       currentLanguage,
-      versions,
+      combustibles,
       v$,
     };
   },
-  created(): void {
-    this.motor.versioneses = [];
-  },
+  created(): void {},
   methods: {
     save(): void {
       this.isSaving = true;
@@ -119,13 +107,6 @@ export default defineComponent({
             this.alertService.showHttpError(error.response);
           });
       }
-    },
-
-    getSelected(selectedVals, option, pkField = 'id'): any {
-      if (selectedVals) {
-        return selectedVals.find(value => option[pkField] === value[pkField]) ?? option;
-      }
-      return option;
     },
   },
 });

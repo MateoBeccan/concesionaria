@@ -61,7 +61,6 @@ public class ModeloAsserts {
     public static void assertModeloUpdatableRelationshipsEquals(Modelo expected, Modelo actual) {
         assertThat(actual)
             .as("Verify Modelo relationships")
-            .satisfies(a -> assertThat(a.getMarca()).as("check marca").isEqualTo(expected.getMarca()))
-            .satisfies(a -> assertThat(a.getVersioneses()).as("check versioneses").isEqualTo(expected.getVersioneses()));
+            .satisfies(a -> assertThat(a.getMarca()).as("check marca").isEqualTo(expected.getMarca()));
     }
 }

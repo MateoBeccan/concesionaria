@@ -1,6 +1,5 @@
 package com.concesionaria.app.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
@@ -28,10 +27,6 @@ public class Combustible implements Serializable {
 
     @Column(name = "descripcion")
     private String descripcion;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
-    private Motor motor;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -72,19 +67,6 @@ public class Combustible implements Serializable {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
-    }
-
-    public Motor getMotor() {
-        return this.motor;
-    }
-
-    public void setMotor(Motor motor) {
-        this.motor = motor;
-    }
-
-    public Combustible motor(Motor motor) {
-        this.setMotor(motor);
-        return this;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

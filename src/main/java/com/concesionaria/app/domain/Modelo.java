@@ -1,13 +1,9 @@
 package com.concesionaria.app.domain;
 
-import com.concesionaria.app.domain.enumeration.Carroceria;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A Modelo.
@@ -32,16 +28,11 @@ public class Modelo implements Serializable {
     @Column(name = "anio_lanzamiento")
     private Integer anioLanzamiento;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "carroceria")
-    private Carroceria carroceria;
+    private String carroceria;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Marca marca;
-
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "modeloses")
-    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
-    private Set<Version> versioneses = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -84,16 +75,16 @@ public class Modelo implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public Carroceria getCarroceria() {
+    public String getCarroceria() {
         return this.carroceria;
     }
 
-    public Modelo carroceria(Carroceria carroceria) {
+    public Modelo carroceria(String carroceria) {
         this.setCarroceria(carroceria);
         return this;
     }
 
-    public void setCarroceria(Carroceria carroceria) {
+    public void setCarroceria(String carroceria) {
         this.carroceria = carroceria;
     }
 
@@ -107,37 +98,6 @@ public class Modelo implements Serializable {
 
     public Modelo marca(Marca marca) {
         this.setMarca(marca);
-        return this;
-    }
-
-    public Set<Version> getVersioneses() {
-        return this.versioneses;
-    }
-
-    public void setVersioneses(Set<Version> versions) {
-        if (this.versioneses != null) {
-            this.versioneses.forEach(i -> i.removeModelo(this));
-        }
-        if (versions != null) {
-            versions.forEach(i -> i.addModelo(this));
-        }
-        this.versioneses = versions;
-    }
-
-    public Modelo versioneses(Set<Version> versions) {
-        this.setVersioneses(versions);
-        return this;
-    }
-
-    public Modelo addVersiones(Version version) {
-        this.versioneses.add(version);
-        version.getModeloses().add(this);
-        return this;
-    }
-
-    public Modelo removeVersiones(Version version) {
-        this.versioneses.remove(version);
-        version.getModeloses().remove(this);
         return this;
     }
 

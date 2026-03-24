@@ -72,6 +72,10 @@
       <font-awesome-icon icon="asterisk" />
       <span>Cotizacion</span>
     </b-dropdown-item>
+    <b-dropdown-item to="/configuracion-auto">
+      <font-awesome-icon icon="asterisk" />
+      <span>Configuracion Auto</span>
+    </b-dropdown-item>
     <!-- jhipster-needle-add-entity-to-menu - JHipster will add entities to the menu here -->
   </div>
 </template>

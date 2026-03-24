@@ -4,13 +4,10 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVuelidate } from '@vuelidate/core';
 
 import MarcaService from '@/entities/marca/marca.service';
-import VersionService from '@/entities/version/version.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
-import { Carroceria } from '@/shared/model/enumerations/carroceria.model';
 import { type IMarca } from '@/shared/model/marca.model';
 import { type IModelo, Modelo } from '@/shared/model/modelo.model';
-import { type IVersion } from '@/shared/model/version.model';
 
 import ModeloService from './modelo.service';
 
@@ -25,11 +22,6 @@ export default defineComponent({
     const marcaService = inject('marcaService', () => new MarcaService());
 
     const marcas: Ref<IMarca[]> = ref([]);
-
-    const versionService = inject('versionService', () => new VersionService());
-
-    const versions: Ref<IVersion[]> = ref([]);
-    const carroceriaValues: Ref<string[]> = ref(Object.keys(Carroceria));
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -57,11 +49,6 @@ export default defineComponent({
         .then(res => {
           marcas.value = res.data;
         });
-      versionService()
-        .retrieve()
-        .then(res => {
-          versions.value = res.data;
-        });
     };
 
     initRelationships();
@@ -74,7 +61,6 @@ export default defineComponent({
       anioLanzamiento: {},
       carroceria: {},
       marca: {},
-      versioneses: {},
     };
     const v$ = useVuelidate(validationRules, modelo as any);
     v$.value.$validate();
@@ -84,17 +70,13 @@ export default defineComponent({
       alertService,
       modelo,
       previousState,
-      carroceriaValues,
       isSaving,
       currentLanguage,
       marcas,
-      versions,
       v$,
     };
   },
-  created(): void {
-    this.modelo.versioneses = [];
-  },
+  created(): void {},
   methods: {
     save(): void {
       this.isSaving = true;
@@ -123,13 +105,6 @@ export default defineComponent({
             this.alertService.showHttpError(error.response);
           });
       }
-    },
-
-    getSelected(selectedVals, option, pkField = 'id'): any {
-      if (selectedVals) {
-        return selectedVals.find(value => option[pkField] === value[pkField]) ?? option;
-      }
-      return option;
     },
   },
 });

@@ -2,9 +2,7 @@ package com.concesionaria.app.service.dto;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A DTO for the {@link com.concesionaria.app.domain.Version} entity.
@@ -22,10 +20,6 @@ public class VersionDTO implements Serializable {
     private Integer anioInicio;
 
     private Integer anioFin;
-
-    private Set<ModeloDTO> modeloses = new HashSet<>();
-
-    private Set<MotorDTO> motoreses = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -67,22 +61,6 @@ public class VersionDTO implements Serializable {
         this.anioFin = anioFin;
     }
 
-    public Set<ModeloDTO> getModeloses() {
-        return modeloses;
-    }
-
-    public void setModeloses(Set<ModeloDTO> modeloses) {
-        this.modeloses = modeloses;
-    }
-
-    public Set<MotorDTO> getMotoreses() {
-        return motoreses;
-    }
-
-    public void setMotoreses(Set<MotorDTO> motoreses) {
-        this.motoreses = motoreses;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -113,8 +91,6 @@ public class VersionDTO implements Serializable {
             ", descripcion='" + getDescripcion() + "'" +
             ", anioInicio=" + getAnioInicio() +
             ", anioFin=" + getAnioFin() +
-            ", modeloses=" + getModeloses() +
-            ", motoreses=" + getMotoreses() +
             "}";
     }
 }

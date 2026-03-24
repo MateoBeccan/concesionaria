@@ -37,10 +37,6 @@
               <span>Fecha Fabricacion</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'fechaFabricacion'"></jhi-sort-indicator>
             </th>
-            <th scope="col" @click="changeOrder('fechaIngreso')">
-              <span>Fecha Ingreso</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'fechaIngreso'"></jhi-sort-indicator>
-            </th>
             <th scope="col" @click="changeOrder('km')">
               <span>Km</span> <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'km'"></jhi-sort-indicator>
             </th>
@@ -52,25 +48,9 @@
               <span>Precio</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'precio'"></jhi-sort-indicator>
             </th>
-            <th scope="col" @click="changeOrder('marca.id')">
-              <span>Marca</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'marca.id'"></jhi-sort-indicator>
-            </th>
-            <th scope="col" @click="changeOrder('modelo.id')">
-              <span>Modelo</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'modelo.id'"></jhi-sort-indicator>
-            </th>
-            <th scope="col" @click="changeOrder('version.id')">
-              <span>Version</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'version.id'"></jhi-sort-indicator>
-            </th>
-            <th scope="col" @click="changeOrder('motor.id')">
-              <span>Motor</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'motor.id'"></jhi-sort-indicator>
-            </th>
-            <th scope="col" @click="changeOrder('moneda.id')">
-              <span>Moneda</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'moneda.id'"></jhi-sort-indicator>
+            <th scope="col" @click="changeOrder('configuracion.id')">
+              <span>Configuracion</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'configuracion.id'"></jhi-sort-indicator>
             </th>
             <th scope="col"></th>
           </tr>
@@ -83,33 +63,14 @@
             <td>{{ auto.estado }}</td>
             <td>{{ auto.condicion }}</td>
             <td>{{ auto.fechaFabricacion }}</td>
-            <td>{{ auto.fechaIngreso }}</td>
             <td>{{ auto.km }}</td>
             <td>{{ auto.patente }}</td>
             <td>{{ auto.precio }}</td>
             <td>
-              <div v-if="auto.marca">
-                <router-link :to="{ name: 'MarcaView', params: { marcaId: auto.marca.id } }">{{ auto.marca.id }}</router-link>
-              </div>
-            </td>
-            <td>
-              <div v-if="auto.modelo">
-                <router-link :to="{ name: 'ModeloView', params: { modeloId: auto.modelo.id } }">{{ auto.modelo.id }}</router-link>
-              </div>
-            </td>
-            <td>
-              <div v-if="auto.version">
-                <router-link :to="{ name: 'VersionView', params: { versionId: auto.version.id } }">{{ auto.version.id }}</router-link>
-              </div>
-            </td>
-            <td>
-              <div v-if="auto.motor">
-                <router-link :to="{ name: 'MotorView', params: { motorId: auto.motor.id } }">{{ auto.motor.id }}</router-link>
-              </div>
-            </td>
-            <td>
-              <div v-if="auto.moneda">
-                <router-link :to="{ name: 'MonedaView', params: { monedaId: auto.moneda.id } }">{{ auto.moneda.id }}</router-link>
+              <div v-if="auto.configuracion">
+                <router-link :to="{ name: 'ConfiguracionAutoView', params: { configuracionAutoId: auto.configuracion.id } }">{{
+                  auto.configuracion.id
+                }}</router-link>
               </div>
             </td>
             <td class="text-end">

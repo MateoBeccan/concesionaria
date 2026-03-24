@@ -12,21 +12,15 @@
     },
     {
       "fieldName": "cilindradaCc",
-      "fieldType": "Integer",
-      "fieldValidateRules": ["min"],
-      "fieldValidateRulesMin": 0
+      "fieldType": "Integer"
     },
     {
       "fieldName": "cilindroCant",
-      "fieldType": "Integer",
-      "fieldValidateRules": ["min"],
-      "fieldValidateRulesMin": 0
+      "fieldType": "Integer"
     },
     {
       "fieldName": "potenciaHp",
-      "fieldType": "Integer",
-      "fieldValidateRules": ["min"],
-      "fieldValidateRulesMin": 0
+      "fieldType": "Integer"
     },
     {
       "fieldName": "turbo",
@@ -37,11 +31,10 @@
   "pagination": "pagination",
   "relationships": [
     {
-      "otherEntityName": "version",
-      "otherEntityRelationshipName": "motores",
-      "relationshipName": "versiones",
-      "relationshipSide": "right",
-      "relationshipType": "many-to-many"
+      "otherEntityName": "combustible",
+      "relationshipName": "combustible",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
     }
   ],
   "searchEngine": "no",

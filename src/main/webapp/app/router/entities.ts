@@ -73,6 +73,10 @@ const Cotizacion = () => import('@/entities/cotizacion/cotizacion.vue');
 const CotizacionUpdate = () => import('@/entities/cotizacion/cotizacion-update.vue');
 const CotizacionDetails = () => import('@/entities/cotizacion/cotizacion-details.vue');
 
+const ConfiguracionAuto = () => import('@/entities/configuracion-auto/configuracion-auto.vue');
+const ConfiguracionAutoUpdate = () => import('@/entities/configuracion-auto/configuracion-auto-update.vue');
+const ConfiguracionAutoDetails = () => import('@/entities/configuracion-auto/configuracion-auto-details.vue');
+
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
 export default {
@@ -509,6 +513,30 @@ export default {
       path: 'cotizacion/:cotizacionId/view',
       name: 'CotizacionView',
       component: CotizacionDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'configuracion-auto',
+      name: 'ConfiguracionAuto',
+      component: ConfiguracionAuto,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'configuracion-auto/new',
+      name: 'ConfiguracionAutoCreate',
+      component: ConfiguracionAutoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'configuracion-auto/:configuracionAutoId/edit',
+      name: 'ConfiguracionAutoEdit',
+      component: ConfiguracionAutoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'configuracion-auto/:configuracionAutoId/view',
+      name: 'ConfiguracionAutoView',
+      component: ConfiguracionAutoDetails,
       meta: { authorities: [Authority.USER] },
     },
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here

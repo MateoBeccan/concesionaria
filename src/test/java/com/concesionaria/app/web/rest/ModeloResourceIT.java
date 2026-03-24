@@ -9,7 +9,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.concesionaria.app.IntegrationTest;
 import com.concesionaria.app.domain.Modelo;
-import com.concesionaria.app.domain.enumeration.Carroceria;
 import com.concesionaria.app.repository.ModeloRepository;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.service.mapper.ModeloMapper;
@@ -41,8 +40,8 @@ class ModeloResourceIT {
     private static final Integer DEFAULT_ANIO_LANZAMIENTO = 1;
     private static final Integer UPDATED_ANIO_LANZAMIENTO = 2;
 
-    private static final Carroceria DEFAULT_CARROCERIA = Carroceria.SEDAN;
-    private static final Carroceria UPDATED_CARROCERIA = Carroceria.HATCHBACK;
+    private static final String DEFAULT_CARROCERIA = "AAAAAAAAAA";
+    private static final String UPDATED_CARROCERIA = "BBBBBBBBBB";
 
     private static final String ENTITY_API_URL = "/api/modelos";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -175,7 +174,7 @@ class ModeloResourceIT {
             .andExpect(jsonPath("$.[*].id").value(hasItem(modelo.getId().intValue())))
             .andExpect(jsonPath("$.[*].nombre").value(hasItem(DEFAULT_NOMBRE)))
             .andExpect(jsonPath("$.[*].anioLanzamiento").value(hasItem(DEFAULT_ANIO_LANZAMIENTO)))
-            .andExpect(jsonPath("$.[*].carroceria").value(hasItem(DEFAULT_CARROCERIA.toString())));
+            .andExpect(jsonPath("$.[*].carroceria").value(hasItem(DEFAULT_CARROCERIA)));
     }
 
     @Test
@@ -192,7 +191,7 @@ class ModeloResourceIT {
             .andExpect(jsonPath("$.id").value(modelo.getId().intValue()))
             .andExpect(jsonPath("$.nombre").value(DEFAULT_NOMBRE))
             .andExpect(jsonPath("$.anioLanzamiento").value(DEFAULT_ANIO_LANZAMIENTO))
-            .andExpect(jsonPath("$.carroceria").value(DEFAULT_CARROCERIA.toString()));
+            .andExpect(jsonPath("$.carroceria").value(DEFAULT_CARROCERIA));
     }
 
     @Test

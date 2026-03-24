@@ -30,15 +30,6 @@
               <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id } }">{{ modelo.marca.id }}</router-link>
             </div>
           </dd>
-          <dt>
-            <span>Versiones</span>
-          </dt>
-          <dd>
-            <span v-for="(versiones, i) in modelo.versioneses" :key="versiones.id"
-              >{{ i > 0 ? ', ' : '' }}
-              <router-link :to="{ name: 'VersionView', params: { versionId: versiones.id } }">{{ versiones.id }}</router-link>
-            </span>
-          </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
           <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>

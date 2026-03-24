@@ -22,58 +22,24 @@
       "fieldType": "LocalDate"
     },
     {
-      "fieldName": "fechaIngreso",
-      "fieldType": "LocalDate"
-    },
-    {
       "fieldName": "km",
-      "fieldType": "Integer",
-      "fieldValidateRules": ["min"],
-      "fieldValidateRulesMin": 0
+      "fieldType": "Integer"
     },
     {
       "fieldName": "patente",
-      "fieldType": "String",
-      "fieldValidateRules": ["required", "maxlength"],
-      "fieldValidateRulesMaxlength": 10
+      "fieldType": "String"
     },
     {
       "fieldName": "precio",
-      "fieldType": "BigDecimal",
-      "fieldValidateRules": ["required", "min"],
-      "fieldValidateRulesMin": 0
+      "fieldType": "BigDecimal"
     }
   ],
   "name": "Auto",
   "pagination": "pagination",
   "relationships": [
     {
-      "otherEntityName": "marca",
-      "relationshipName": "marca",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityName": "modelo",
-      "relationshipName": "modelo",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityName": "version",
-      "relationshipName": "version",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityName": "motor",
-      "relationshipName": "motor",
-      "relationshipSide": "left",
-      "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityName": "moneda",
-      "relationshipName": "moneda",
+      "otherEntityName": "configuracionAuto",
+      "relationshipName": "configuracion",
       "relationshipSide": "left",
       "relationshipType": "many-to-one"
     }

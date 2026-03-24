@@ -25,22 +25,7 @@
   ],
   "name": "Version",
   "pagination": "pagination",
-  "relationships": [
-    {
-      "otherEntityName": "modelo",
-      "otherEntityRelationshipName": "versiones",
-      "relationshipName": "modelos",
-      "relationshipSide": "right",
-      "relationshipType": "many-to-many"
-    },
-    {
-      "otherEntityName": "motor",
-      "otherEntityRelationshipName": "versiones",
-      "relationshipName": "motores",
-      "relationshipSide": "right",
-      "relationshipType": "many-to-many"
-    }
-  ],
+  "relationships": [],
   "searchEngine": "no",
   "service": "serviceImpl"
 }

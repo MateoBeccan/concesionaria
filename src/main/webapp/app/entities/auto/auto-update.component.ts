@@ -3,21 +3,13 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
-import MarcaService from '@/entities/marca/marca.service';
-import ModeloService from '@/entities/modelo/modelo.service';
-import MonedaService from '@/entities/moneda/moneda.service';
-import MotorService from '@/entities/motor/motor.service';
-import VersionService from '@/entities/version/version.service';
+import ConfiguracionAutoService from '@/entities/configuracion-auto/configuracion-auto.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
 import { Auto, type IAuto } from '@/shared/model/auto.model';
+import { type IConfiguracionAuto } from '@/shared/model/configuracion-auto.model';
 import { CondicionAuto } from '@/shared/model/enumerations/condicion-auto.model';
 import { EstadoAuto } from '@/shared/model/enumerations/estado-auto.model';
-import { type IMarca } from '@/shared/model/marca.model';
-import { type IModelo } from '@/shared/model/modelo.model';
-import { type IMoneda } from '@/shared/model/moneda.model';
-import { type IMotor } from '@/shared/model/motor.model';
-import { type IVersion } from '@/shared/model/version.model';
 
 import AutoService from './auto.service';
 
@@ -29,25 +21,9 @@ export default defineComponent({
 
     const auto: Ref<IAuto> = ref(new Auto());
 
-    const marcaService = inject('marcaService', () => new MarcaService());
+    const configuracionAutoService = inject('configuracionAutoService', () => new ConfiguracionAutoService());
 
-    const marcas: Ref<IMarca[]> = ref([]);
-
-    const modeloService = inject('modeloService', () => new ModeloService());
-
-    const modelos: Ref<IModelo[]> = ref([]);
-
-    const versionService = inject('versionService', () => new VersionService());
-
-    const versions: Ref<IVersion[]> = ref([]);
-
-    const motorService = inject('motorService', () => new MotorService());
-
-    const motors: Ref<IMotor[]> = ref([]);
-
-    const monedaService = inject('monedaService', () => new MonedaService());
-
-    const monedas: Ref<IMoneda[]> = ref([]);
+    const configuracionAutos: Ref<IConfiguracionAuto[]> = ref([]);
     const estadoAutoValues: Ref<string[]> = ref(Object.keys(EstadoAuto));
     const condicionAutoValues: Ref<string[]> = ref(Object.keys(CondicionAuto));
     const isSaving = ref(false);
@@ -72,30 +48,10 @@ export default defineComponent({
     }
 
     const initRelationships = () => {
-      marcaService()
+      configuracionAutoService()
         .retrieve()
         .then(res => {
-          marcas.value = res.data;
-        });
-      modeloService()
-        .retrieve()
-        .then(res => {
-          modelos.value = res.data;
-        });
-      versionService()
-        .retrieve()
-        .then(res => {
-          versions.value = res.data;
-        });
-      motorService()
-        .retrieve()
-        .then(res => {
-          motors.value = res.data;
-        });
-      monedaService()
-        .retrieve()
-        .then(res => {
-          monedas.value = res.data;
+          configuracionAutos.value = res.data;
         });
     };
 
@@ -110,24 +66,10 @@ export default defineComponent({
         required: validations.required('Este campo es obligatorio.'),
       },
       fechaFabricacion: {},
-      fechaIngreso: {},
-      km: {
-        integer: validations.integer('Este campo debe ser un número.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      patente: {
-        required: validations.required('Este campo es obligatorio.'),
-        maxLength: validations.maxLength('Este campo no puede superar más de 10 caracteres.', 10),
-      },
-      precio: {
-        required: validations.required('Este campo es obligatorio.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      marca: {},
-      modelo: {},
-      version: {},
-      motor: {},
-      moneda: {},
+      km: {},
+      patente: {},
+      precio: {},
+      configuracion: {},
     };
     const v$ = useVuelidate(validationRules, auto as any);
     v$.value.$validate();
@@ -141,11 +83,7 @@ export default defineComponent({
       condicionAutoValues,
       isSaving,
       currentLanguage,
-      marcas,
-      modelos,
-      versions,
-      motors,
-      monedas,
+      configuracionAutos,
       v$,
     };
   },

@@ -5,7 +5,6 @@ import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
 import MarcaService from '@/entities/marca/marca.service';
-import VersionService from '@/entities/version/version.service';
 import AlertService from '@/shared/alert/alert.service';
 
 import ModeloUpdate from './modelo-update.vue';
@@ -55,10 +54,6 @@ describe('Component Tests', () => {
           modeloService: () => modeloServiceStub,
           marcaService: () =>
             sinon.createStubInstance<MarcaService>(MarcaService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
-          versionService: () =>
-            sinon.createStubInstance<VersionService>(VersionService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

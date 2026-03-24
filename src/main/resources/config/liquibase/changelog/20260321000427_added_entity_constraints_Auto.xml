@@ -10,39 +10,11 @@
     -->
     <changeSet id="20260321000427-2" author="jhipster">
 
-        <addForeignKeyConstraint baseColumnNames="marca_id"
+        <addForeignKeyConstraint baseColumnNames="configuracion_id"
                                  baseTableName="auto"
-                                 constraintName="fk_auto__marca_id"
+                                 constraintName="fk_auto__configuracion_id"
                                  referencedColumnNames="id"
-                                 referencedTableName="marca"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="modelo_id"
-                                 baseTableName="auto"
-                                 constraintName="fk_auto__modelo_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="modelo"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="version_id"
-                                 baseTableName="auto"
-                                 constraintName="fk_auto__version_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="version"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="motor_id"
-                                 baseTableName="auto"
-                                 constraintName="fk_auto__motor_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="motor"
-                                 />
-
-        <addForeignKeyConstraint baseColumnNames="moneda_id"
-                                 baseTableName="auto"
-                                 constraintName="fk_auto__moneda_id"
-                                 referencedColumnNames="id"
-                                 referencedTableName="moneda"
+                                 referencedTableName="configuracion_auto"
                                  />
     </changeSet>
 </databaseChangeLog>

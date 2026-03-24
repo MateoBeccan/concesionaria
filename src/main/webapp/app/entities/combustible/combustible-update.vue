@@ -38,19 +38,6 @@
               v-model="v$.descripcion.$model"
             />
           </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="combustible">Motor</label>
-            <select class="form-control" id="combustible-motor" data-cy="motor" name="motor" v-model="combustible.motor">
-              <option :value="null"></option>
-              <option
-                :value="combustible.motor && motorOption.id === combustible.motor.id ? combustible.motor : motorOption"
-                v-for="motorOption in motors"
-                :key="motorOption.id"
-              >
-                {{ motorOption.id }}
-              </option>
-            </select>
-          </div>
         </div>
         <div>
           <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" @click="previousState()">

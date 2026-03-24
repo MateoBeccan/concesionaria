@@ -51,7 +51,6 @@ public class AutoAsserts {
             .satisfies(a -> assertThat(a.getEstado()).as("check estado").isEqualTo(expected.getEstado()))
             .satisfies(a -> assertThat(a.getCondicion()).as("check condicion").isEqualTo(expected.getCondicion()))
             .satisfies(a -> assertThat(a.getFechaFabricacion()).as("check fechaFabricacion").isEqualTo(expected.getFechaFabricacion()))
-            .satisfies(a -> assertThat(a.getFechaIngreso()).as("check fechaIngreso").isEqualTo(expected.getFechaIngreso()))
             .satisfies(a -> assertThat(a.getKm()).as("check km").isEqualTo(expected.getKm()))
             .satisfies(a -> assertThat(a.getPatente()).as("check patente").isEqualTo(expected.getPatente()))
             .satisfies(a ->
@@ -68,10 +67,6 @@ public class AutoAsserts {
     public static void assertAutoUpdatableRelationshipsEquals(Auto expected, Auto actual) {
         assertThat(actual)
             .as("Verify Auto relationships")
-            .satisfies(a -> assertThat(a.getMarca()).as("check marca").isEqualTo(expected.getMarca()))
-            .satisfies(a -> assertThat(a.getModelo()).as("check modelo").isEqualTo(expected.getModelo()))
-            .satisfies(a -> assertThat(a.getVersion()).as("check version").isEqualTo(expected.getVersion()))
-            .satisfies(a -> assertThat(a.getMotor()).as("check motor").isEqualTo(expected.getMotor()))
-            .satisfies(a -> assertThat(a.getMoneda()).as("check moneda").isEqualTo(expected.getMoneda()));
+            .satisfies(a -> assertThat(a.getConfiguracion()).as("check configuracion").isEqualTo(expected.getConfiguracion()));
     }
 }

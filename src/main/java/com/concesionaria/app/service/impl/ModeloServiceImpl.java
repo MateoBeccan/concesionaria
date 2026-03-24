@@ -6,9 +6,12 @@ import com.concesionaria.app.service.ModeloService;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.service.mapper.ModeloMapper;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,13 +67,6 @@ public class ModeloServiceImpl implements ModeloService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<ModeloDTO> findAll(Pageable pageable) {
-        LOG.debug("Request to get all Modelos");
-        return modeloRepository.findAll(pageable).map(modeloMapper::toDto);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
     public Optional<ModeloDTO> findOne(Long id) {
         LOG.debug("Request to get Modelo : {}", id);
         return modeloRepository.findById(id).map(modeloMapper::toDto);
@@ -80,5 +76,16 @@ public class ModeloServiceImpl implements ModeloService {
     public void delete(Long id) {
         LOG.debug("Request to delete Modelo : {}", id);
         modeloRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ModeloDTO> findAll(Pageable pageable) {
+        return modeloRepository.findAllWithMarca()
+            .stream()
+            .map(modeloMapper::toDto)
+            .collect(Collectors.collectingAndThen(Collectors.toList(),
+                list -> new PageImpl<>(list, pageable, list.size())
+            ));
     }
 }

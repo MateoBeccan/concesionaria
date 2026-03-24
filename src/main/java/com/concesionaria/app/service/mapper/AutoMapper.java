@@ -1,17 +1,9 @@
 package com.concesionaria.app.service.mapper;
 
 import com.concesionaria.app.domain.Auto;
-import com.concesionaria.app.domain.Marca;
-import com.concesionaria.app.domain.Modelo;
-import com.concesionaria.app.domain.Moneda;
-import com.concesionaria.app.domain.Motor;
-import com.concesionaria.app.domain.Version;
+import com.concesionaria.app.domain.ConfiguracionAuto;
 import com.concesionaria.app.service.dto.AutoDTO;
-import com.concesionaria.app.service.dto.MarcaDTO;
-import com.concesionaria.app.service.dto.ModeloDTO;
-import com.concesionaria.app.service.dto.MonedaDTO;
-import com.concesionaria.app.service.dto.MotorDTO;
-import com.concesionaria.app.service.dto.VersionDTO;
+import com.concesionaria.app.service.dto.ConfiguracionAutoDTO;
 import org.mapstruct.*;
 
 /**
@@ -19,35 +11,11 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring")
 public interface AutoMapper extends EntityMapper<AutoDTO, Auto> {
-    @Mapping(target = "marca", source = "marca", qualifiedByName = "marcaId")
-    @Mapping(target = "modelo", source = "modelo", qualifiedByName = "modeloId")
-    @Mapping(target = "version", source = "version", qualifiedByName = "versionId")
-    @Mapping(target = "motor", source = "motor", qualifiedByName = "motorId")
-    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaId")
+    @Mapping(target = "configuracion", source = "configuracion", qualifiedByName = "configuracionAutoId")
     AutoDTO toDto(Auto s);
 
-    @Named("marcaId")
+    @Named("configuracionAutoId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MarcaDTO toDtoMarcaId(Marca marca);
-
-    @Named("modeloId")
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", source = "id")
-    ModeloDTO toDtoModeloId(Modelo modelo);
-
-    @Named("versionId")
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", source = "id")
-    VersionDTO toDtoVersionId(Version version);
-
-    @Named("motorId")
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", source = "id")
-    MotorDTO toDtoMotorId(Motor motor);
-
-    @Named("monedaId")
-    @BeanMapping(ignoreByDefault = true)
-    @Mapping(target = "id", source = "id")
-    MonedaDTO toDtoMonedaId(Moneda moneda);
+    ConfiguracionAutoDTO toDtoConfiguracionAutoId(ConfiguracionAuto configuracionAuto);
 }

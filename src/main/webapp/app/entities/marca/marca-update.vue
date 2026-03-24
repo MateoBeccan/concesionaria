@@ -35,9 +35,6 @@
               :class="{ valid: !v$.paisOrigen.$invalid, invalid: v$.paisOrigen.$invalid }"
               v-model="v$.paisOrigen.$model"
             />
-            <div v-if="v$.paisOrigen.$anyDirty && v$.paisOrigen.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.paisOrigen.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
           </div>
         </div>
         <div>

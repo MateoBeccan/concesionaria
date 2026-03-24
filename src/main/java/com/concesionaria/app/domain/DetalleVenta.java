@@ -43,7 +43,7 @@ public class DetalleVenta implements Serializable {
     private Venta venta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "marca", "modelo", "version", "motor", "moneda" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "configuracion" }, allowSetters = true)
     private Auto auto;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

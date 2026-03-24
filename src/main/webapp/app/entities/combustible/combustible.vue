@@ -38,10 +38,6 @@
               <span>Descripcion</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'descripcion'"></jhi-sort-indicator>
             </th>
-            <th scope="col" @click="changeOrder('motor.id')">
-              <span>Motor</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'motor.id'"></jhi-sort-indicator>
-            </th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -52,11 +48,6 @@
             </td>
             <td>{{ combustible.nombre }}</td>
             <td>{{ combustible.descripcion }}</td>
-            <td>
-              <div v-if="combustible.motor">
-                <router-link :to="{ name: 'MotorView', params: { motorId: combustible.motor.id } }">{{ combustible.motor.id }}</router-link>
-              </div>
-            </td>
             <td class="text-end">
               <div class="btn-group">
                 <router-link :to="{ name: 'CombustibleView', params: { combustibleId: combustible.id } }" custom v-slot="{ navigate }">

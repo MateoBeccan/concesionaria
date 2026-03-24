@@ -16,14 +16,6 @@
           <dd>
             <span>{{ combustible.descripcion }}</span>
           </dd>
-          <dt>
-            <span>Motor</span>
-          </dt>
-          <dd>
-            <div v-if="combustible.motor">
-              <router-link :to="{ name: 'MotorView', params: { motorId: combustible.motor.id } }">{{ combustible.motor.id }}</router-link>
-            </div>
-          </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
           <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>

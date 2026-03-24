@@ -63,6 +63,6 @@ public class MotorAsserts {
     public static void assertMotorUpdatableRelationshipsEquals(Motor expected, Motor actual) {
         assertThat(actual)
             .as("Verify Motor relationships")
-            .satisfies(a -> assertThat(a.getVersioneses()).as("check versioneses").isEqualTo(expected.getVersioneses()));
+            .satisfies(a -> assertThat(a.getCombustible()).as("check combustible").isEqualTo(expected.getCombustible()));
     }
 }

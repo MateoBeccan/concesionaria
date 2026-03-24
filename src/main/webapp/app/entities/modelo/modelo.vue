@@ -59,7 +59,9 @@
             <td>{{ modelo.carroceria }}</td>
             <td>
               <div v-if="modelo.marca">
-                <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id } }">{{ modelo.marca.id }}</router-link>
+                <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id  } }">
+  {{ modelo.marca.nombre }}
+</router-link>
               </div>
             </td>
             <td class="text-end">

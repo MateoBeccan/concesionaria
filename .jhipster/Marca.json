@@ -8,14 +8,11 @@
     {
       "fieldName": "nombre",
       "fieldType": "String",
-      "fieldValidateRules": ["required", "maxlength"],
-      "fieldValidateRulesMaxlength": 100
+      "fieldValidateRules": ["required"]
     },
     {
       "fieldName": "paisOrigen",
-      "fieldType": "String",
-      "fieldValidateRules": ["maxlength"],
-      "fieldValidateRulesMaxlength": 100
+      "fieldType": "String"
     }
   ],
   "name": "Marca",

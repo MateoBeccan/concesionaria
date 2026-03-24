@@ -3,12 +3,8 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
-import ModeloService from '@/entities/modelo/modelo.service';
-import MotorService from '@/entities/motor/motor.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
-import { type IModelo } from '@/shared/model/modelo.model';
-import { type IMotor } from '@/shared/model/motor.model';
 import { type IVersion, Version } from '@/shared/model/version.model';
 
 import VersionService from './version.service';
@@ -20,14 +16,6 @@ export default defineComponent({
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const version: Ref<IVersion> = ref(new Version());
-
-    const modeloService = inject('modeloService', () => new ModeloService());
-
-    const modelos: Ref<IModelo[]> = ref([]);
-
-    const motorService = inject('motorService', () => new MotorService());
-
-    const motors: Ref<IMotor[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -49,21 +37,6 @@ export default defineComponent({
       retrieveVersion(route.params.versionId);
     }
 
-    const initRelationships = () => {
-      modeloService()
-        .retrieve()
-        .then(res => {
-          modelos.value = res.data;
-        });
-      motorService()
-        .retrieve()
-        .then(res => {
-          motors.value = res.data;
-        });
-    };
-
-    initRelationships();
-
     const validations = useValidation();
     const validationRules = {
       nombre: {
@@ -72,8 +45,6 @@ export default defineComponent({
       descripcion: {},
       anioInicio: {},
       anioFin: {},
-      modeloses: {},
-      motoreses: {},
     };
     const v$ = useVuelidate(validationRules, version as any);
     v$.value.$validate();
@@ -85,15 +56,10 @@ export default defineComponent({
       previousState,
       isSaving,
       currentLanguage,
-      modelos,
-      motors,
       v$,
     };
   },
-  created(): void {
-    this.version.modeloses = [];
-    this.version.motoreses = [];
-  },
+  created(): void {},
   methods: {
     save(): void {
       this.isSaving = true;
@@ -122,13 +88,6 @@ export default defineComponent({
             this.alertService.showHttpError(error.response);
           });
       }
-    },
-
-    getSelected(selectedVals, option, pkField = 'id'): any {
-      if (selectedVals) {
-        return selectedVals.find(value => option[pkField] === value[pkField]) ?? option;
-      }
-      return option;
     },
   },
 });

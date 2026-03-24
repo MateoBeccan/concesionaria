@@ -60,38 +60,6 @@
               v-model.number="v$.anioFin.$model"
             />
           </div>
-          <div class="mb-3">
-            <label for="version">Modelos</label>
-            <select
-              class="form-control"
-              id="version-modeloses"
-              data-cy="modelos"
-              multiple
-              name="modelos"
-              v-if="version.modeloses !== undefined"
-              v-model="version.modeloses"
-            >
-              <option :value="getSelected(version.modeloses, modeloOption, 'id')" v-for="modeloOption in modelos" :key="modeloOption.id">
-                {{ modeloOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="version">Motores</label>
-            <select
-              class="form-control"
-              id="version-motoreses"
-              data-cy="motores"
-              multiple
-              name="motores"
-              v-if="version.motoreses !== undefined"
-              v-model="version.motoreses"
-            >
-              <option :value="getSelected(version.motoreses, motorOption, 'id')" v-for="motorOption in motors" :key="motorOption.id">
-                {{ motorOption.id }}
-              </option>
-            </select>
-          </div>
         </div>
         <div>
           <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" @click="previousState()">

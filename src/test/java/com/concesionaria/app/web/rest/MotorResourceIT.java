@@ -37,14 +37,14 @@ class MotorResourceIT {
     private static final String DEFAULT_NOMBRE = "AAAAAAAAAA";
     private static final String UPDATED_NOMBRE = "BBBBBBBBBB";
 
-    private static final Integer DEFAULT_CILINDRADA_CC = 0;
-    private static final Integer UPDATED_CILINDRADA_CC = 1;
+    private static final Integer DEFAULT_CILINDRADA_CC = 1;
+    private static final Integer UPDATED_CILINDRADA_CC = 2;
 
-    private static final Integer DEFAULT_CILINDRO_CANT = 0;
-    private static final Integer UPDATED_CILINDRO_CANT = 1;
+    private static final Integer DEFAULT_CILINDRO_CANT = 1;
+    private static final Integer UPDATED_CILINDRO_CANT = 2;
 
-    private static final Integer DEFAULT_POTENCIA_HP = 0;
-    private static final Integer UPDATED_POTENCIA_HP = 1;
+    private static final Integer DEFAULT_POTENCIA_HP = 1;
+    private static final Integer UPDATED_POTENCIA_HP = 2;
 
     private static final Boolean DEFAULT_TURBO = false;
     private static final Boolean UPDATED_TURBO = true;

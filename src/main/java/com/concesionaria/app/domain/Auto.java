@@ -39,40 +39,18 @@ public class Auto implements Serializable {
     @Column(name = "fecha_fabricacion")
     private LocalDate fechaFabricacion;
 
-    @Column(name = "fecha_ingreso")
-    private LocalDate fechaIngreso;
-
-    @Min(value = 0)
     @Column(name = "km")
     private Integer km;
 
-    @NotNull
-    @Size(max = 10)
-    @Column(name = "patente", length = 10, nullable = false)
+    @Column(name = "patente")
     private String patente;
 
-    @NotNull
-    @DecimalMin(value = "0")
-    @Column(name = "precio", precision = 21, scale = 2, nullable = false)
+    @Column(name = "precio", precision = 21, scale = 2)
     private BigDecimal precio;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private Marca marca;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "marca", "versioneses" }, allowSetters = true)
-    private Modelo modelo;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
-    private Version version;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "versioneses", "combustibleses" }, allowSetters = true)
-    private Motor motor;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private Moneda moneda;
+    @JsonIgnoreProperties(value = { "modelo", "version", "motor" }, allowSetters = true)
+    private ConfiguracionAuto configuracion;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -128,19 +106,6 @@ public class Auto implements Serializable {
         this.fechaFabricacion = fechaFabricacion;
     }
 
-    public LocalDate getFechaIngreso() {
-        return this.fechaIngreso;
-    }
-
-    public Auto fechaIngreso(LocalDate fechaIngreso) {
-        this.setFechaIngreso(fechaIngreso);
-        return this;
-    }
-
-    public void setFechaIngreso(LocalDate fechaIngreso) {
-        this.fechaIngreso = fechaIngreso;
-    }
-
     public Integer getKm() {
         return this.km;
     }
@@ -180,68 +145,16 @@ public class Auto implements Serializable {
         this.precio = precio;
     }
 
-    public Marca getMarca() {
-        return this.marca;
+    public ConfiguracionAuto getConfiguracion() {
+        return this.configuracion;
     }
 
-    public void setMarca(Marca marca) {
-        this.marca = marca;
+    public void setConfiguracion(ConfiguracionAuto configuracionAuto) {
+        this.configuracion = configuracionAuto;
     }
 
-    public Auto marca(Marca marca) {
-        this.setMarca(marca);
-        return this;
-    }
-
-    public Modelo getModelo() {
-        return this.modelo;
-    }
-
-    public void setModelo(Modelo modelo) {
-        this.modelo = modelo;
-    }
-
-    public Auto modelo(Modelo modelo) {
-        this.setModelo(modelo);
-        return this;
-    }
-
-    public Version getVersion() {
-        return this.version;
-    }
-
-    public void setVersion(Version version) {
-        this.version = version;
-    }
-
-    public Auto version(Version version) {
-        this.setVersion(version);
-        return this;
-    }
-
-    public Motor getMotor() {
-        return this.motor;
-    }
-
-    public void setMotor(Motor motor) {
-        this.motor = motor;
-    }
-
-    public Auto motor(Motor motor) {
-        this.setMotor(motor);
-        return this;
-    }
-
-    public Moneda getMoneda() {
-        return this.moneda;
-    }
-
-    public void setMoneda(Moneda moneda) {
-        this.moneda = moneda;
-    }
-
-    public Auto moneda(Moneda moneda) {
-        this.setMoneda(moneda);
+    public Auto configuracion(ConfiguracionAuto configuracionAuto) {
+        this.setConfiguracion(configuracionAuto);
         return this;
     }
 
@@ -272,7 +185,6 @@ public class Auto implements Serializable {
             ", estado='" + getEstado() + "'" +
             ", condicion='" + getCondicion() + "'" +
             ", fechaFabricacion='" + getFechaFabricacion() + "'" +
-            ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", km=" + getKm() +
             ", patente='" + getPatente() + "'" +
             ", precio=" + getPrecio() +

@@ -1,12 +1,9 @@
 package com.concesionaria.app.domain;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A Motor.
@@ -28,28 +25,20 @@ public class Motor implements Serializable {
     @Column(name = "nombre", nullable = false)
     private String nombre;
 
-    @Min(value = 0)
     @Column(name = "cilindrada_cc")
     private Integer cilindradaCc;
 
-    @Min(value = 0)
     @Column(name = "cilindro_cant")
     private Integer cilindroCant;
 
-    @Min(value = 0)
     @Column(name = "potencia_hp")
     private Integer potenciaHp;
 
     @Column(name = "turbo")
     private Boolean turbo;
 
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "motoreses")
-    @JsonIgnoreProperties(value = { "modeloses", "motoreses" }, allowSetters = true)
-    private Set<Version> versioneses = new HashSet<>();
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "motor")
-    @JsonIgnoreProperties(value = { "motor" }, allowSetters = true)
-    private Set<Combustible> combustibleses = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Combustible combustible;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -131,65 +120,16 @@ public class Motor implements Serializable {
         this.turbo = turbo;
     }
 
-    public Set<Version> getVersioneses() {
-        return this.versioneses;
+    public Combustible getCombustible() {
+        return this.combustible;
     }
 
-    public void setVersioneses(Set<Version> versions) {
-        if (this.versioneses != null) {
-            this.versioneses.forEach(i -> i.removeMotor(this));
-        }
-        if (versions != null) {
-            versions.forEach(i -> i.addMotor(this));
-        }
-        this.versioneses = versions;
+    public void setCombustible(Combustible combustible) {
+        this.combustible = combustible;
     }
 
-    public Motor versioneses(Set<Version> versions) {
-        this.setVersioneses(versions);
-        return this;
-    }
-
-    public Motor addVersiones(Version version) {
-        this.versioneses.add(version);
-        version.getMotoreses().add(this);
-        return this;
-    }
-
-    public Motor removeVersiones(Version version) {
-        this.versioneses.remove(version);
-        version.getMotoreses().remove(this);
-        return this;
-    }
-
-    public Set<Combustible> getCombustibleses() {
-        return this.combustibleses;
-    }
-
-    public void setCombustibleses(Set<Combustible> combustibles) {
-        if (this.combustibleses != null) {
-            this.combustibleses.forEach(i -> i.setMotor(null));
-        }
-        if (combustibles != null) {
-            combustibles.forEach(i -> i.setMotor(this));
-        }
-        this.combustibleses = combustibles;
-    }
-
-    public Motor combustibleses(Set<Combustible> combustibles) {
-        this.setCombustibleses(combustibles);
-        return this;
-    }
-
-    public Motor addCombustibles(Combustible combustible) {
-        this.combustibleses.add(combustible);
-        combustible.setMotor(this);
-        return this;
-    }
-
-    public Motor removeCombustibles(Combustible combustible) {
-        this.combustibleses.remove(combustible);
-        combustible.setMotor(null);
+    public Motor combustible(Combustible combustible) {
+        this.setCombustible(combustible);
         return this;
     }
 

@@ -58,8 +58,6 @@ public class CombustibleAsserts {
      * @param actual the actual entity
      */
     public static void assertCombustibleUpdatableRelationshipsEquals(Combustible expected, Combustible actual) {
-        assertThat(actual)
-            .as("Verify Combustible relationships")
-            .satisfies(a -> assertThat(a.getMotor()).as("check motor").isEqualTo(expected.getMotor()));
+        // empty method
     }
 }

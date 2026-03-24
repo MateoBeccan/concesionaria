@@ -1,11 +1,8 @@
 package com.concesionaria.app.service.dto;
 
-import com.concesionaria.app.domain.enumeration.Carroceria;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A DTO for the {@link com.concesionaria.app.domain.Modelo} entity.
@@ -20,11 +17,9 @@ public class ModeloDTO implements Serializable {
 
     private Integer anioLanzamiento;
 
-    private Carroceria carroceria;
+    private String carroceria;
 
     private MarcaDTO marca;
-
-    private Set<VersionDTO> versioneses = new HashSet<>();
 
     public Long getId() {
         return id;
@@ -50,11 +45,11 @@ public class ModeloDTO implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public Carroceria getCarroceria() {
+    public String getCarroceria() {
         return carroceria;
     }
 
-    public void setCarroceria(Carroceria carroceria) {
+    public void setCarroceria(String carroceria) {
         this.carroceria = carroceria;
     }
 
@@ -64,14 +59,6 @@ public class ModeloDTO implements Serializable {
 
     public void setMarca(MarcaDTO marca) {
         this.marca = marca;
-    }
-
-    public Set<VersionDTO> getVersioneses() {
-        return versioneses;
-    }
-
-    public void setVersioneses(Set<VersionDTO> versioneses) {
-        this.versioneses = versioneses;
     }
 
     @Override
@@ -104,7 +91,6 @@ public class ModeloDTO implements Serializable {
             ", anioLanzamiento=" + getAnioLanzamiento() +
             ", carroceria='" + getCarroceria() + "'" +
             ", marca=" + getMarca() +
-            ", versioneses=" + getVersioneses() +
             "}";
     }
 }

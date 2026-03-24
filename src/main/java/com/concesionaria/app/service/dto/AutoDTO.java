@@ -24,28 +24,13 @@ public class AutoDTO implements Serializable {
 
     private LocalDate fechaFabricacion;
 
-    private LocalDate fechaIngreso;
-
-    @Min(value = 0)
     private Integer km;
 
-    @NotNull
-    @Size(max = 10)
     private String patente;
 
-    @NotNull
-    @DecimalMin(value = "0")
     private BigDecimal precio;
 
-    private MarcaDTO marca;
-
-    private ModeloDTO modelo;
-
-    private VersionDTO version;
-
-    private MotorDTO motor;
-
-    private MonedaDTO moneda;
+    private ConfiguracionAutoDTO configuracion;
 
     public Long getId() {
         return id;
@@ -79,14 +64,6 @@ public class AutoDTO implements Serializable {
         this.fechaFabricacion = fechaFabricacion;
     }
 
-    public LocalDate getFechaIngreso() {
-        return fechaIngreso;
-    }
-
-    public void setFechaIngreso(LocalDate fechaIngreso) {
-        this.fechaIngreso = fechaIngreso;
-    }
-
     public Integer getKm() {
         return km;
     }
@@ -111,44 +88,12 @@ public class AutoDTO implements Serializable {
         this.precio = precio;
     }
 
-    public MarcaDTO getMarca() {
-        return marca;
+    public ConfiguracionAutoDTO getConfiguracion() {
+        return configuracion;
     }
 
-    public void setMarca(MarcaDTO marca) {
-        this.marca = marca;
-    }
-
-    public ModeloDTO getModelo() {
-        return modelo;
-    }
-
-    public void setModelo(ModeloDTO modelo) {
-        this.modelo = modelo;
-    }
-
-    public VersionDTO getVersion() {
-        return version;
-    }
-
-    public void setVersion(VersionDTO version) {
-        this.version = version;
-    }
-
-    public MotorDTO getMotor() {
-        return motor;
-    }
-
-    public void setMotor(MotorDTO motor) {
-        this.motor = motor;
-    }
-
-    public MonedaDTO getMoneda() {
-        return moneda;
-    }
-
-    public void setMoneda(MonedaDTO moneda) {
-        this.moneda = moneda;
+    public void setConfiguracion(ConfiguracionAutoDTO configuracion) {
+        this.configuracion = configuracion;
     }
 
     @Override
@@ -180,15 +125,10 @@ public class AutoDTO implements Serializable {
             ", estado='" + getEstado() + "'" +
             ", condicion='" + getCondicion() + "'" +
             ", fechaFabricacion='" + getFechaFabricacion() + "'" +
-            ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", km=" + getKm() +
             ", patente='" + getPatente() + "'" +
             ", precio=" + getPrecio() +
-            ", marca=" + getMarca() +
-            ", modelo=" + getModelo() +
-            ", version=" + getVersion() +
-            ", motor=" + getMotor() +
-            ", moneda=" + getMoneda() +
+            ", configuracion=" + getConfiguracion() +
             "}";
     }
 }

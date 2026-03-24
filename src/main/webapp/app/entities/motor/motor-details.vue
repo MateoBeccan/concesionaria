@@ -35,13 +35,14 @@
             <span>{{ motor.turbo }}</span>
           </dd>
           <dt>
-            <span>Versiones</span>
+            <span>Combustible</span>
           </dt>
           <dd>
-            <span v-for="(versiones, i) in motor.versioneses" :key="versiones.id"
-              >{{ i > 0 ? ', ' : '' }}
-              <router-link :to="{ name: 'VersionView', params: { versionId: versiones.id } }">{{ versiones.id }}</router-link>
-            </span>
+            <div v-if="motor.combustible">
+              <router-link :to="{ name: 'CombustibleView', params: { combustibleId: motor.combustible.id } }">{{
+                motor.combustible.id
+              }}</router-link>
+            </div>
           </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">

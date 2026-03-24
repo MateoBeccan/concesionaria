@@ -3,11 +3,9 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
-import MotorService from '@/entities/motor/motor.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
 import { Combustible, type ICombustible } from '@/shared/model/combustible.model';
-import { type IMotor } from '@/shared/model/motor.model';
 
 import CombustibleService from './combustible.service';
 
@@ -18,10 +16,6 @@ export default defineComponent({
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const combustible: Ref<ICombustible> = ref(new Combustible());
-
-    const motorService = inject('motorService', () => new MotorService());
-
-    const motors: Ref<IMotor[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -43,23 +37,12 @@ export default defineComponent({
       retrieveCombustible(route.params.combustibleId);
     }
 
-    const initRelationships = () => {
-      motorService()
-        .retrieve()
-        .then(res => {
-          motors.value = res.data;
-        });
-    };
-
-    initRelationships();
-
     const validations = useValidation();
     const validationRules = {
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
       },
       descripcion: {},
-      motor: {},
     };
     const v$ = useVuelidate(validationRules, combustible as any);
     v$.value.$validate();
@@ -71,7 +54,6 @@ export default defineComponent({
       previousState,
       isSaving,
       currentLanguage,
-      motors,
       v$,
     };
   },

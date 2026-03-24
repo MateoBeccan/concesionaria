@@ -23,31 +23,16 @@
             <column name="fecha_fabricacion" type="date">
                 <constraints nullable="true" />
             </column>
-            <column name="fecha_ingreso" type="date">
-                <constraints nullable="true" />
-            </column>
             <column name="km" type="integer">
                 <constraints nullable="true" />
             </column>
-            <column name="patente" type="varchar(10)">
-                <constraints nullable="false" />
+            <column name="patente" type="varchar(255)">
+                <constraints nullable="true" />
             </column>
             <column name="precio" type="decimal(21,2)">
-                <constraints nullable="false" />
-            </column>
-            <column name="marca_id" type="bigint">
                 <constraints nullable="true" />
             </column>
-            <column name="modelo_id" type="bigint">
-                <constraints nullable="true" />
-            </column>
-            <column name="version_id" type="bigint">
-                <constraints nullable="true" />
-            </column>
-            <column name="motor_id" type="bigint">
-                <constraints nullable="true" />
-            </column>
-            <column name="moneda_id" type="bigint">
+            <column name="configuracion_id" type="bigint">
                 <constraints nullable="true" />
             </column>
             <!-- jhipster-needle-liquibase-add-column - JHipster will add columns here -->
@@ -74,7 +59,6 @@
             <column name="estado" type="string"/>
             <column name="condicion" type="string"/>
             <column name="fecha_fabricacion" type="date"/>
-            <column name="fecha_ingreso" type="date"/>
             <column name="km" type="numeric"/>
             <column name="patente" type="string"/>
             <column name="precio" type="numeric"/>

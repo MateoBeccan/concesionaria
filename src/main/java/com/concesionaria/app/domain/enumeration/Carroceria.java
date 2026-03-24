@@ -16,4 +16,5 @@ public enum Carroceria {
     MINIVAN,
     STATION_WAGON,
     OTHER,
+    UTILITARIO,
 }

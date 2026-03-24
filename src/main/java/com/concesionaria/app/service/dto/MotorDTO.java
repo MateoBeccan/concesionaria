@@ -2,9 +2,7 @@ package com.concesionaria.app.service.dto;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A DTO for the {@link com.concesionaria.app.domain.Motor} entity.
@@ -17,18 +15,15 @@ public class MotorDTO implements Serializable {
     @NotNull
     private String nombre;
 
-    @Min(value = 0)
     private Integer cilindradaCc;
 
-    @Min(value = 0)
     private Integer cilindroCant;
 
-    @Min(value = 0)
     private Integer potenciaHp;
 
     private Boolean turbo;
 
-    private Set<VersionDTO> versioneses = new HashSet<>();
+    private CombustibleDTO combustible;
 
     public Long getId() {
         return id;
@@ -78,12 +73,12 @@ public class MotorDTO implements Serializable {
         this.turbo = turbo;
     }
 
-    public Set<VersionDTO> getVersioneses() {
-        return versioneses;
+    public CombustibleDTO getCombustible() {
+        return combustible;
     }
 
-    public void setVersioneses(Set<VersionDTO> versioneses) {
-        this.versioneses = versioneses;
+    public void setCombustible(CombustibleDTO combustible) {
+        this.combustible = combustible;
     }
 
     @Override
@@ -117,7 +112,7 @@ public class MotorDTO implements Serializable {
             ", cilindroCant=" + getCilindroCant() +
             ", potenciaHp=" + getPotenciaHp() +
             ", turbo='" + getTurbo() + "'" +
-            ", versioneses=" + getVersioneses() +
+            ", combustible=" + getCombustible() +
             "}";
     }
 }

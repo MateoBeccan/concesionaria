@@ -1,3 +1,7 @@
+// ======================
+// ENTIDADES BASE
+// ======================
+
 entity Marca {
   nombre String required,
   paisOrigen String
@@ -29,6 +33,17 @@ entity Combustible {
   descripcion String
 }
 
+// ======================
+// NUEVA ENTIDAD CLAVE 🔥
+// ======================
+
+entity ConfiguracionAuto {
+}
+
+// ======================
+// AUTO (MODIFICADO)
+// ======================
+
 entity Auto {
   estado EstadoAuto required,
   condicion CondicionAuto required,
@@ -49,16 +64,151 @@ enum CondicionAuto {
   VENDIDO
 }
 
+// ======================
+// RELACIONES BASE
+// ======================
+
 relationship ManyToOne {
   Modelo{marca} to Marca
   Combustible{motor} to Motor
-  Auto{marca} to Marca
-  Auto{modelo} to Modelo
-  Auto{version} to Version
-  Auto{motor} to Motor
+
+  // 🔥 NUEVA RELACIÓN
+  ConfiguracionAuto{modelo} to Modelo
+  ConfiguracionAuto{version} to Version
+  ConfiguracionAuto{motor} to Motor
+
+  // 🔥 AUTO AHORA USA CONFIGURACION
+  Auto{configuracion} to ConfiguracionAuto
 }
 
-relationship ManyToMany {
-  Modelo{versiones} to Version{modelos}
-  Version{motores} to Motor{versiones}
+// ❌ ELIMINADAS (IMPORTANTÍSIMO)
+// Modelo ↔ Version
+// Version ↔ Motor
+// Auto → version
+// Auto → motor
+// Auto → modelo
+// Auto → marca
+
+// ======================
+// ENTIDADES DE NEGOCIO
+// ======================
+
+entity Cliente {
+  nombre String required minlength(2) maxlength(100)
+  apellido String required minlength(2) maxlength(100)
+  nroDocumento String required minlength(7) maxlength(20)
+  telefono String maxlength(50)
+  email String pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
+  direccion String maxlength(255)
+  ciudad String maxlength(100)
+  provincia String maxlength(100)
+  pais String maxlength(100)
+  activo Boolean required
+  fechaAlta Instant required
 }
+
+entity CondicionIva {
+  codigo String required minlength(3) maxlength(50)
+  descripcion String maxlength(100)
+}
+
+entity EstadoVenta {
+  codigo String required minlength(3) maxlength(50)
+  descripcion String maxlength(100)
+}
+
+entity Venta {
+  fecha Instant required
+  cotizacion BigDecimal required min(0)
+
+  importeNeto BigDecimal required min(0)
+  impuesto BigDecimal required min(0)
+  total BigDecimal required min(0)
+  porcentajeImpuesto BigDecimal min(0)
+
+  totalPagado BigDecimal min(0)
+  saldo BigDecimal min(0)
+
+  observaciones String maxlength(500)
+}
+
+entity DetalleVenta {
+  precioUnitario BigDecimal required min(0)
+  cantidad Integer required min(1)
+  subtotal BigDecimal required min(0)
+}
+
+entity Comprobante {
+  numeroComprobante String required minlength(3) maxlength(50)
+  fechaEmision Instant required
+
+  importeNeto BigDecimal min(0)
+  impuesto BigDecimal min(0)
+  total BigDecimal min(0)
+}
+
+entity TipoComprobante {
+  codigo String required minlength(2) maxlength(30)
+  descripcion String maxlength(100)
+}
+
+entity Pago {
+  monto BigDecimal required min(0)
+  fecha Instant required
+  referencia String maxlength(100)
+}
+
+entity MetodoPago {
+  codigo String required minlength(2) maxlength(30)
+  descripcion String maxlength(100)
+  activo Boolean required
+  requiereReferencia Boolean
+}
+
+entity Moneda {
+  codigo String required minlength(2) maxlength(10)
+  descripcion String maxlength(50)
+  simbolo String maxlength(5)
+  activo Boolean required
+}
+
+entity Cotizacion {
+  fecha Instant required
+  valorCompra BigDecimal required min(0)
+  valorVenta BigDecimal required min(0)
+  activo Boolean required
+}
+
+// ======================
+// RELACIONES DE NEGOCIO
+// ======================
+
+relationship ManyToOne {
+  Cliente{condicionIva} to CondicionIva
+
+  Venta{cliente} to Cliente
+  Venta{estadoVenta} to EstadoVenta
+  Venta{moneda} to Moneda
+  Venta{user(login)} to User with builtInEntity
+
+  DetalleVenta{venta} to Venta
+  DetalleVenta{auto} to Auto
+
+  Comprobante{venta} to Venta
+  Comprobante{tipoComprobante} to TipoComprobante
+  Comprobante{moneda} to Moneda
+
+  Pago{venta} to Venta
+  Pago{metodoPago} to MetodoPago
+  Pago{moneda} to Moneda
+
+  Cotizacion{moneda} to Moneda
+}
+
+// ======================
+// CONFIG GLOBAL
+// ======================
+
+dto * with mapstruct
+service * with serviceImpl
+paginate * with pagination

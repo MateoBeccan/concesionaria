@@ -23,12 +23,6 @@
             <span>{{ auto.fechaFabricacion }}</span>
           </dd>
           <dt>
-            <span>Fecha Ingreso</span>
-          </dt>
-          <dd>
-            <span>{{ auto.fechaIngreso }}</span>
-          </dd>
-          <dt>
             <span>Km</span>
           </dt>
           <dd>
@@ -47,43 +41,13 @@
             <span>{{ auto.precio }}</span>
           </dd>
           <dt>
-            <span>Marca</span>
+            <span>Configuracion</span>
           </dt>
           <dd>
-            <div v-if="auto.marca">
-              <router-link :to="{ name: 'MarcaView', params: { marcaId: auto.marca.id } }">{{ auto.marca.id }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Modelo</span>
-          </dt>
-          <dd>
-            <div v-if="auto.modelo">
-              <router-link :to="{ name: 'ModeloView', params: { modeloId: auto.modelo.id } }">{{ auto.modelo.id }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Version</span>
-          </dt>
-          <dd>
-            <div v-if="auto.version">
-              <router-link :to="{ name: 'VersionView', params: { versionId: auto.version.id } }">{{ auto.version.id }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Motor</span>
-          </dt>
-          <dd>
-            <div v-if="auto.motor">
-              <router-link :to="{ name: 'MotorView', params: { motorId: auto.motor.id } }">{{ auto.motor.id }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Moneda</span>
-          </dt>
-          <dd>
-            <div v-if="auto.moneda">
-              <router-link :to="{ name: 'MonedaView', params: { monedaId: auto.moneda.id } }">{{ auto.moneda.id }}</router-link>
+            <div v-if="auto.configuracion">
+              <router-link :to="{ name: 'ConfiguracionAutoView', params: { configuracionAutoId: auto.configuracion.id } }">{{
+                auto.configuracion.id
+              }}</router-link>
             </div>
           </dd>
         </dl>

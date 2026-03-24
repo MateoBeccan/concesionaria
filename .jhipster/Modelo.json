@@ -16,8 +16,7 @@
     },
     {
       "fieldName": "carroceria",
-      "fieldType": "Carroceria",
-      "fieldValues": "SEDAN,HATCHBACK,SUV,PICKUP,COUPE,CONVERTIBLE,VAN,ROADSTER,SPORTS_CAR,MINIVAN,STATION_WAGON,OTHER"
+      "fieldType": "String"
     }
   ],
   "name": "Modelo",
@@ -28,13 +27,6 @@
       "relationshipName": "marca",
       "relationshipSide": "left",
       "relationshipType": "many-to-one"
-    },
-    {
-      "otherEntityName": "version",
-      "otherEntityRelationshipName": "modelos",
-      "relationshipName": "versiones",
-      "relationshipSide": "right",
-      "relationshipType": "many-to-many"
     }
   ],
   "searchEngine": "no",

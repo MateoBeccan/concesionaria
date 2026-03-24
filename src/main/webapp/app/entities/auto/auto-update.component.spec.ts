@@ -4,11 +4,7 @@ import { type RouteLocation } from 'vue-router';
 import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
-import MarcaService from '@/entities/marca/marca.service';
-import ModeloService from '@/entities/modelo/modelo.service';
-import MonedaService from '@/entities/moneda/moneda.service';
-import MotorService from '@/entities/motor/motor.service';
-import VersionService from '@/entities/version/version.service';
+import ConfiguracionAutoService from '@/entities/configuracion-auto/configuracion-auto.service';
 import AlertService from '@/shared/alert/alert.service';
 
 import AutoUpdate from './auto-update.vue';
@@ -56,24 +52,8 @@ describe('Component Tests', () => {
         provide: {
           alertService,
           autoService: () => autoServiceStub,
-          marcaService: () =>
-            sinon.createStubInstance<MarcaService>(MarcaService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
-          modeloService: () =>
-            sinon.createStubInstance<ModeloService>(ModeloService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
-          versionService: () =>
-            sinon.createStubInstance<VersionService>(VersionService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
-          motorService: () =>
-            sinon.createStubInstance<MotorService>(MotorService, {
-              retrieve: sinon.stub().resolves({}),
-            } as any),
-          monedaService: () =>
-            sinon.createStubInstance<MonedaService>(MonedaService, {
+          configuracionAutoService: () =>
+            sinon.createStubInstance<ConfiguracionAutoService>(ConfiguracionAutoService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

@@ -28,24 +28,6 @@
           <dd>
             <span>{{ version.anioFin }}</span>
           </dd>
-          <dt>
-            <span>Modelos</span>
-          </dt>
-          <dd>
-            <span v-for="(modelos, i) in version.modeloses" :key="modelos.id"
-              >{{ i > 0 ? ', ' : '' }}
-              <router-link :to="{ name: 'ModeloView', params: { modeloId: modelos.id } }">{{ modelos.id }}</router-link>
-            </span>
-          </dd>
-          <dt>
-            <span>Motores</span>
-          </dt>
-          <dd>
-            <span v-for="(motores, i) in version.motoreses" :key="motores.id"
-              >{{ i > 0 ? ', ' : '' }}
-              <router-link :to="{ name: 'MotorView', params: { motorId: motores.id } }">{{ motores.id }}</router-link>
-            </span>
-          </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
           <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>

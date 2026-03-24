@@ -17,8 +17,6 @@ public class CombustibleDTO implements Serializable {
 
     private String descripcion;
 
-    private MotorDTO motor;
-
     public Long getId() {
         return id;
     }
@@ -41,14 +39,6 @@ public class CombustibleDTO implements Serializable {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
-    }
-
-    public MotorDTO getMotor() {
-        return motor;
-    }
-
-    public void setMotor(MotorDTO motor) {
-        this.motor = motor;
     }
 
     @Override
@@ -79,7 +69,6 @@ public class CombustibleDTO implements Serializable {
             "id=" + getId() +
             ", nombre='" + getNombre() + "'" +
             ", descripcion='" + getDescripcion() + "'" +
-            ", motor=" + getMotor() +
             "}";
     }
 }

@@ -17,15 +17,7 @@
   ],
   "name": "Combustible",
   "pagination": "pagination",
-  "relationships": [
-    {
-      "otherEntityName": "motor",
-      "otherEntityRelationshipName": "combustibles",
-      "relationshipName": "motor",
-      "relationshipSide": "right",
-      "relationshipType": "many-to-one"
-    }
-  ],
+  "relationships": [],
   "searchEngine": "no",
   "service": "serviceImpl"
 }

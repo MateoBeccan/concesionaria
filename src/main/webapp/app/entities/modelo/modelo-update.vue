@@ -38,16 +38,15 @@
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="modelo">Carroceria</label>
-            <select
+            <input
+              type="text"
               class="form-control"
               name="carroceria"
-              :class="{ valid: !v$.carroceria.$invalid, invalid: v$.carroceria.$invalid }"
-              v-model="v$.carroceria.$model"
               id="modelo-carroceria"
               data-cy="carroceria"
-            >
-              <option v-for="carroceria in carroceriaValues" :key="carroceria" :value="carroceria">{{ carroceria }}</option>
-            </select>
+              :class="{ valid: !v$.carroceria.$invalid, invalid: v$.carroceria.$invalid }"
+              v-model="v$.carroceria.$model"
+            />
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="modelo">Marca</label>
@@ -59,26 +58,6 @@
                 :key="marcaOption.id"
               >
                 {{ marcaOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label for="modelo">Versiones</label>
-            <select
-              class="form-control"
-              id="modelo-versioneses"
-              data-cy="versiones"
-              multiple
-              name="versiones"
-              v-if="modelo.versioneses !== undefined"
-              v-model="modelo.versioneses"
-            >
-              <option
-                :value="getSelected(modelo.versioneses, versionOption, 'id')"
-                v-for="versionOption in versions"
-                :key="versionOption.id"
-              >
-                {{ versionOption.id }}
               </option>
             </select>
           </div>
