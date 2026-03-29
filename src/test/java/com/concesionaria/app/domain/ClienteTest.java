@@ -2,6 +2,7 @@ package com.concesionaria.app.domain;
 
 import static com.concesionaria.app.domain.ClienteTestSamples.*;
 import static com.concesionaria.app.domain.CondicionIvaTestSamples.*;
+import static com.concesionaria.app.domain.TipoDocumentoTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.concesionaria.app.web.rest.TestUtil;
@@ -33,5 +34,17 @@ class ClienteTest {
 
         cliente.condicionIva(null);
         assertThat(cliente.getCondicionIva()).isNull();
+    }
+
+    @Test
+    void tipoDocumentoTest() {
+        Cliente cliente = getClienteRandomSampleGenerator();
+        TipoDocumento tipoDocumentoBack = getTipoDocumentoRandomSampleGenerator();
+
+        cliente.setTipoDocumento(tipoDocumentoBack);
+        assertThat(cliente.getTipoDocumento()).isEqualTo(tipoDocumentoBack);
+
+        cliente.tipoDocumento(null);
+        assertThat(cliente.getTipoDocumento()).isNull();
     }
 }

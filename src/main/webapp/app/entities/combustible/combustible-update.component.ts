@@ -41,8 +41,12 @@ export default defineComponent({
     const validationRules = {
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
+        minLength: validations.minLength('Este campo requiere al menos 3 caracteres.', 3),
+        maxLength: validations.maxLength('Este campo no puede superar más de 50 caracteres.', 50),
       },
-      descripcion: {},
+      descripcion: {
+        maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
+      },
     };
     const v$ = useVuelidate(validationRules, combustible as any);
     v$.value.$validate();

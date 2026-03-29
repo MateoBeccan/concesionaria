@@ -13,17 +13,32 @@ public class MotorDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(min = 2, max = 100)
     private String nombre;
 
+    @NotNull
+    @Min(value = 50)
+    @Max(value = 10000)
     private Integer cilindradaCc;
 
+    @NotNull
+    @Min(value = 1)
+    @Max(value = 16)
     private Integer cilindroCant;
 
+    @NotNull
+    @Min(value = 1)
+    @Max(value = 2000)
     private Integer potenciaHp;
 
+    @NotNull
     private Boolean turbo;
 
     private CombustibleDTO combustible;
+
+    private TipoCajaDTO tipoCaja;
+
+    private TraccionDTO traccion;
 
     public Long getId() {
         return id;
@@ -81,6 +96,22 @@ public class MotorDTO implements Serializable {
         this.combustible = combustible;
     }
 
+    public TipoCajaDTO getTipoCaja() {
+        return tipoCaja;
+    }
+
+    public void setTipoCaja(TipoCajaDTO tipoCaja) {
+        this.tipoCaja = tipoCaja;
+    }
+
+    public TraccionDTO getTraccion() {
+        return traccion;
+    }
+
+    public void setTraccion(TraccionDTO traccion) {
+        this.traccion = traccion;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -113,6 +144,8 @@ public class MotorDTO implements Serializable {
             ", potenciaHp=" + getPotenciaHp() +
             ", turbo='" + getTurbo() + "'" +
             ", combustible=" + getCombustible() +
+            ", tipoCaja=" + getTipoCaja() +
+            ", traccion=" + getTraccion() +
             "}";
     }
 }

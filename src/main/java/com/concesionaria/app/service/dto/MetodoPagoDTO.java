@@ -22,6 +22,7 @@ public class MetodoPagoDTO implements Serializable {
     @NotNull
     private Boolean activo;
 
+    @NotNull
     private Boolean requiereReferencia;
 
     public Long getId() {

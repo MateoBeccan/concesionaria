@@ -47,6 +47,9 @@ class PagoResourceIT {
     private static final String DEFAULT_REFERENCIA = "AAAAAAAAAA";
     private static final String UPDATED_REFERENCIA = "BBBBBBBBBB";
 
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
     private static final String ENTITY_API_URL = "/api/pagos";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
 
@@ -79,7 +82,7 @@ class PagoResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Pago createEntity() {
-        return new Pago().monto(DEFAULT_MONTO).fecha(DEFAULT_FECHA).referencia(DEFAULT_REFERENCIA);
+        return new Pago().monto(DEFAULT_MONTO).fecha(DEFAULT_FECHA).referencia(DEFAULT_REFERENCIA).createdDate(DEFAULT_CREATED_DATE);
     }
 
     /**
@@ -89,7 +92,7 @@ class PagoResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Pago createUpdatedEntity() {
-        return new Pago().monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA);
+        return new Pago().monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA).createdDate(UPDATED_CREATED_DATE);
     }
 
     @BeforeEach
@@ -195,7 +198,8 @@ class PagoResourceIT {
             .andExpect(jsonPath("$.[*].id").value(hasItem(pago.getId().intValue())))
             .andExpect(jsonPath("$.[*].monto").value(hasItem(sameNumber(DEFAULT_MONTO))))
             .andExpect(jsonPath("$.[*].fecha").value(hasItem(DEFAULT_FECHA.toString())))
-            .andExpect(jsonPath("$.[*].referencia").value(hasItem(DEFAULT_REFERENCIA)));
+            .andExpect(jsonPath("$.[*].referencia").value(hasItem(DEFAULT_REFERENCIA)))
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())));
     }
 
     @Test
@@ -212,7 +216,8 @@ class PagoResourceIT {
             .andExpect(jsonPath("$.id").value(pago.getId().intValue()))
             .andExpect(jsonPath("$.monto").value(sameNumber(DEFAULT_MONTO)))
             .andExpect(jsonPath("$.fecha").value(DEFAULT_FECHA.toString()))
-            .andExpect(jsonPath("$.referencia").value(DEFAULT_REFERENCIA));
+            .andExpect(jsonPath("$.referencia").value(DEFAULT_REFERENCIA))
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()));
     }
 
     @Test
@@ -234,7 +239,7 @@ class PagoResourceIT {
         Pago updatedPago = pagoRepository.findById(pago.getId()).orElseThrow();
         // Disconnect from session so that the updates on updatedPago are not directly saved in db
         em.detach(updatedPago);
-        updatedPago.monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA);
+        updatedPago.monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA).createdDate(UPDATED_CREATED_DATE);
         PagoDTO pagoDTO = pagoMapper.toDto(updatedPago);
 
         restPagoMockMvc
@@ -316,6 +321,8 @@ class PagoResourceIT {
         Pago partialUpdatedPago = new Pago();
         partialUpdatedPago.setId(pago.getId());
 
+        partialUpdatedPago.createdDate(UPDATED_CREATED_DATE);
+
         restPagoMockMvc
             .perform(
                 patch(ENTITY_API_URL_ID, partialUpdatedPago.getId())
@@ -342,7 +349,7 @@ class PagoResourceIT {
         Pago partialUpdatedPago = new Pago();
         partialUpdatedPago.setId(pago.getId());
 
-        partialUpdatedPago.monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA);
+        partialUpdatedPago.monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA).createdDate(UPDATED_CREATED_DATE);
 
         restPagoMockMvc
             .perform(

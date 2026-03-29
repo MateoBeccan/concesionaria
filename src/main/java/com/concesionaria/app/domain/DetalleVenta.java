@@ -30,6 +30,7 @@ public class DetalleVenta implements Serializable {
 
     @NotNull
     @Min(value = 1)
+    @Max(value = 1)
     @Column(name = "cantidad", nullable = false)
     private Integer cantidad;
 
@@ -43,8 +44,8 @@ public class DetalleVenta implements Serializable {
     private Venta venta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "configuracion" }, allowSetters = true)
-    private Auto auto;
+    @JsonIgnoreProperties(value = { "version", "motor", "tipoVehiculo", "inventario" }, allowSetters = true)
+    private Vehiculo vehiculo;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -113,16 +114,16 @@ public class DetalleVenta implements Serializable {
         return this;
     }
 
-    public Auto getAuto() {
-        return this.auto;
+    public Vehiculo getVehiculo() {
+        return this.vehiculo;
     }
 
-    public void setAuto(Auto auto) {
-        this.auto = auto;
+    public void setVehiculo(Vehiculo vehiculo) {
+        this.vehiculo = vehiculo;
     }
 
-    public DetalleVenta auto(Auto auto) {
-        this.setAuto(auto);
+    public DetalleVenta vehiculo(Vehiculo vehiculo) {
+        this.setVehiculo(vehiculo);
         return this;
     }
 

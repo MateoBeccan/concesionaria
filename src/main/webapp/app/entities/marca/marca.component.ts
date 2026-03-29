@@ -1,6 +1,7 @@
 import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
+import { useDateFormat } from '@/shared/composables';
 import { type IMarca } from '@/shared/model/marca.model';
 
 import MarcaService from './marca.service';
@@ -8,6 +9,7 @@ import MarcaService from './marca.service';
 export default defineComponent({
   name: 'Marca',
   setup() {
+    const dateFormat = useDateFormat();
     const marcaService = inject('marcaService', () => new MarcaService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
@@ -114,6 +116,7 @@ export default defineComponent({
       isFetching,
       retrieveMarcas,
       clear,
+      ...dateFormat,
       removeId,
       removeEntity,
       prepareRemove,

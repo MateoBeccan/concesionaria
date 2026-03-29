@@ -19,6 +19,7 @@ public class DetalleVentaDTO implements Serializable {
 
     @NotNull
     @Min(value = 1)
+    @Max(value = 1)
     private Integer cantidad;
 
     @NotNull
@@ -27,7 +28,7 @@ public class DetalleVentaDTO implements Serializable {
 
     private VentaDTO venta;
 
-    private AutoDTO auto;
+    private VehiculoDTO vehiculo;
 
     public Long getId() {
         return id;
@@ -69,12 +70,12 @@ public class DetalleVentaDTO implements Serializable {
         this.venta = venta;
     }
 
-    public AutoDTO getAuto() {
-        return auto;
+    public VehiculoDTO getVehiculo() {
+        return vehiculo;
     }
 
-    public void setAuto(AutoDTO auto) {
-        this.auto = auto;
+    public void setVehiculo(VehiculoDTO vehiculo) {
+        this.vehiculo = vehiculo;
     }
 
     @Override
@@ -107,7 +108,7 @@ public class DetalleVentaDTO implements Serializable {
             ", cantidad=" + getCantidad() +
             ", subtotal=" + getSubtotal() +
             ", venta=" + getVenta() +
-            ", auto=" + getAuto() +
+            ", vehiculo=" + getVehiculo() +
             "}";
     }
 }

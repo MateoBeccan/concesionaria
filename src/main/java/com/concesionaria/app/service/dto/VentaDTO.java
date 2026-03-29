@@ -34,6 +34,7 @@ public class VentaDTO implements Serializable {
     private BigDecimal total;
 
     @DecimalMin(value = "0")
+    @DecimalMax(value = "100")
     private BigDecimal porcentajeImpuesto;
 
     @DecimalMin(value = "0")
@@ -44,6 +45,10 @@ public class VentaDTO implements Serializable {
 
     @Size(max = 500)
     private String observaciones;
+
+    private Instant createdDate;
+
+    private Instant lastModifiedDate;
 
     private ClienteDTO cliente;
 
@@ -133,6 +138,22 @@ public class VentaDTO implements Serializable {
         this.observaciones = observaciones;
     }
 
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
     public ClienteDTO getCliente() {
         return cliente;
     }
@@ -200,6 +221,8 @@ public class VentaDTO implements Serializable {
             ", totalPagado=" + getTotalPagado() +
             ", saldo=" + getSaldo() +
             ", observaciones='" + getObservaciones() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", cliente=" + getCliente() +
             ", estadoVenta=" + getEstadoVenta() +
             ", moneda=" + getMoneda() +

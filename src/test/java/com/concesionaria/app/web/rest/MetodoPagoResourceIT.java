@@ -190,6 +190,23 @@ class MetodoPagoResourceIT {
 
     @Test
     @Transactional
+    void checkRequiereReferenciaIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        metodoPago.setRequiereReferencia(null);
+
+        // Create the MetodoPago, which fails.
+        MetodoPagoDTO metodoPagoDTO = metodoPagoMapper.toDto(metodoPago);
+
+        restMetodoPagoMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(metodoPagoDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
     void getAllMetodoPagos() throws Exception {
         // Initialize the database
         insertedMetodoPago = metodoPagoRepository.saveAndFlush(metodoPago);

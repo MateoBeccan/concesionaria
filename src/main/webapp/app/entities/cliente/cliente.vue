@@ -73,9 +73,21 @@
               <span>Fecha Alta</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'fechaAlta'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('lastModifiedDate')">
+              <span>Last Modified Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'lastModifiedDate'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('condicionIva.id')">
               <span>Condicion Iva</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'condicionIva.id'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('tipoDocumento.id')">
+              <span>Tipo Documento</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'tipoDocumento.id'"></jhi-sort-indicator>
             </th>
             <th scope="col"></th>
           </tr>
@@ -96,10 +108,19 @@
             <td>{{ cliente.pais }}</td>
             <td>{{ cliente.activo }}</td>
             <td>{{ formatDateShort(cliente.fechaAlta) || '' }}</td>
+            <td>{{ formatDateShort(cliente.createdDate) || '' }}</td>
+            <td>{{ formatDateShort(cliente.lastModifiedDate) || '' }}</td>
             <td>
               <div v-if="cliente.condicionIva">
                 <router-link :to="{ name: 'CondicionIvaView', params: { condicionIvaId: cliente.condicionIva.id } }">{{
                   cliente.condicionIva.id
+                }}</router-link>
+              </div>
+            </td>
+            <td>
+              <div v-if="cliente.tipoDocumento">
+                <router-link :to="{ name: 'TipoDocumentoView', params: { tipoDocumentoId: cliente.tipoDocumento.id } }">{{
+                  cliente.tipoDocumento.id
                 }}</router-link>
               </div>
             </td>

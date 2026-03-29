@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * A Marca.
@@ -22,11 +23,19 @@ public class Marca implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(min = 2, max = 100)
+    @Column(name = "nombre", length = 100, nullable = false)
     private String nombre;
 
-    @Column(name = "pais_origen")
+    @Size(max = 100)
+    @Column(name = "pais_origen", length = 100)
     private String paisOrigen;
+
+    @Column(name = "created_date")
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -69,6 +78,32 @@ public class Marca implements Serializable {
         this.paisOrigen = paisOrigen;
     }
 
+    public Instant getCreatedDate() {
+        return this.createdDate;
+    }
+
+    public Marca createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return this.lastModifiedDate;
+    }
+
+    public Marca lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -95,6 +130,8 @@ public class Marca implements Serializable {
             "id=" + getId() +
             ", nombre='" + getNombre() + "'" +
             ", paisOrigen='" + getPaisOrigen() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

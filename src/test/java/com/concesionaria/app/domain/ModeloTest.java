@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import static com.concesionaria.app.domain.CarroceriaTestSamples.*;
 import static com.concesionaria.app.domain.MarcaTestSamples.*;
 import static com.concesionaria.app.domain.ModeloTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,5 +34,17 @@ class ModeloTest {
 
         modelo.marca(null);
         assertThat(modelo.getMarca()).isNull();
+    }
+
+    @Test
+    void carroceriaTest() {
+        Modelo modelo = getModeloRandomSampleGenerator();
+        Carroceria carroceriaBack = getCarroceriaRandomSampleGenerator();
+
+        modelo.setCarroceria(carroceriaBack);
+        assertThat(modelo.getCarroceria()).isEqualTo(carroceriaBack);
+
+        modelo.carroceria(null);
+        assertThat(modelo.getCarroceria()).isNull();
     }
 }

@@ -34,7 +34,8 @@ public class MetodoPago implements Serializable {
     @Column(name = "activo", nullable = false)
     private Boolean activo;
 
-    @Column(name = "requiere_referencia")
+    @NotNull
+    @Column(name = "requiere_referencia", nullable = false)
     private Boolean requiereReferencia;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

@@ -38,6 +38,14 @@
               <span>Pais Origen</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'paisOrigen'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('lastModifiedDate')">
+              <span>Last Modified Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'lastModifiedDate'"></jhi-sort-indicator>
+            </th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -48,6 +56,8 @@
             </td>
             <td>{{ marca.nombre }}</td>
             <td>{{ marca.paisOrigen }}</td>
+            <td>{{ formatDateShort(marca.createdDate) || '' }}</td>
+            <td>{{ formatDateShort(marca.lastModifiedDate) || '' }}</td>
             <td class="text-end">
               <div class="btn-group">
                 <router-link :to="{ name: 'MarcaView', params: { marcaId: marca.id } }" custom v-slot="{ navigate }">

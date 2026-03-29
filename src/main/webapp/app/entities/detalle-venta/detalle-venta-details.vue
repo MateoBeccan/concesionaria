@@ -31,11 +31,13 @@
             </div>
           </dd>
           <dt>
-            <span>Auto</span>
+            <span>Vehiculo</span>
           </dt>
           <dd>
-            <div v-if="detalleVenta.auto">
-              <router-link :to="{ name: 'AutoView', params: { autoId: detalleVenta.auto.id } }">{{ detalleVenta.auto.id }}</router-link>
+            <div v-if="detalleVenta.vehiculo">
+              <router-link :to="{ name: 'VehiculoView', params: { vehiculoId: detalleVenta.vehiculo.id } }">{{
+                detalleVenta.vehiculo.id
+              }}</router-link>
             </div>
           </dd>
         </dl>

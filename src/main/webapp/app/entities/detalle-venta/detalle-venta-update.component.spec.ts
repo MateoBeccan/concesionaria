@@ -4,7 +4,7 @@ import { type RouteLocation } from 'vue-router';
 import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
-import AutoService from '@/entities/auto/auto.service';
+import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import VentaService from '@/entities/venta/venta.service';
 import AlertService from '@/shared/alert/alert.service';
 
@@ -57,8 +57,8 @@ describe('Component Tests', () => {
             sinon.createStubInstance<VentaService>(VentaService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
-          autoService: () =>
-            sinon.createStubInstance<AutoService>(AutoService, {
+          vehiculoService: () =>
+            sinon.createStubInstance<VehiculoService>(VehiculoService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

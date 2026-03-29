@@ -3,8 +3,10 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
+import ModeloService from '@/entities/modelo/modelo.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
+import { type IModelo } from '@/shared/model/modelo.model';
 import { type IVersion, Version } from '@/shared/model/version.model';
 
 import VersionService from './version.service';
@@ -16,6 +18,10 @@ export default defineComponent({
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const version: Ref<IVersion> = ref(new Version());
+
+    const modeloService = inject('modeloService', () => new ModeloService());
+
+    const modelos: Ref<IModelo[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -37,14 +43,38 @@ export default defineComponent({
       retrieveVersion(route.params.versionId);
     }
 
+    const initRelationships = () => {
+      modeloService()
+        .retrieve()
+        .then(res => {
+          modelos.value = res.data;
+        });
+    };
+
+    initRelationships();
+
     const validations = useValidation();
     const validationRules = {
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
+        minLength: validations.minLength('Este campo requiere al menos 1 caracteres.', 1),
+        maxLength: validations.maxLength('Este campo no puede superar más de 50 caracteres.', 50),
       },
-      descripcion: {},
-      anioInicio: {},
-      anioFin: {},
+      descripcion: {
+        maxLength: validations.maxLength('Este campo no puede superar más de 150 caracteres.', 150),
+      },
+      anioInicio: {
+        required: validations.required('Este campo es obligatorio.'),
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 1950.', 1950),
+        max: validations.maxValue('Este campo no puede ser mayor que 2100.', 2100),
+      },
+      anioFin: {
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 1950.', 1950),
+        max: validations.maxValue('Este campo no puede ser mayor que 2100.', 2100),
+      },
+      modelo: {},
     };
     const v$ = useVuelidate(validationRules, version as any);
     v$.value.$validate();
@@ -56,6 +86,7 @@ export default defineComponent({
       previousState,
       isSaving,
       currentLanguage,
+      modelos,
       v$,
     };
   },

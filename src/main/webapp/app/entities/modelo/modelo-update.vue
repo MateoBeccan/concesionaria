@@ -34,19 +34,43 @@
               data-cy="anioLanzamiento"
               :class="{ valid: !v$.anioLanzamiento.$invalid, invalid: v$.anioLanzamiento.$invalid }"
               v-model.number="v$.anioLanzamiento.$model"
+              required
             />
+            <div v-if="v$.anioLanzamiento.$anyDirty && v$.anioLanzamiento.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.anioLanzamiento.$errors" :key="error.$uid">{{
+                error.$message
+              }}</small>
+            </div>
           </div>
           <div class="mb-3">
-            <label class="form-control-label" for="modelo">Carroceria</label>
-            <input
-              type="text"
-              class="form-control"
-              name="carroceria"
-              id="modelo-carroceria"
-              data-cy="carroceria"
-              :class="{ valid: !v$.carroceria.$invalid, invalid: v$.carroceria.$invalid }"
-              v-model="v$.carroceria.$model"
-            />
+            <label class="form-control-label" for="modelo">Created Date</label>
+            <div class="d-flex">
+              <input
+                id="modelo-createdDate"
+                data-cy="createdDate"
+                type="datetime-local"
+                class="form-control"
+                name="createdDate"
+                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.createdDate.$model)"
+                @change="updateInstantField('createdDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="modelo">Last Modified Date</label>
+            <div class="d-flex">
+              <input
+                id="modelo-lastModifiedDate"
+                data-cy="lastModifiedDate"
+                type="datetime-local"
+                class="form-control"
+                name="lastModifiedDate"
+                :class="{ valid: !v$.lastModifiedDate.$invalid, invalid: v$.lastModifiedDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.lastModifiedDate.$model)"
+                @change="updateInstantField('lastModifiedDate', $event)"
+              />
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="modelo">Marca</label>
@@ -58,6 +82,19 @@
                 :key="marcaOption.id"
               >
                 {{ marcaOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="modelo">Carroceria</label>
+            <select class="form-control" id="modelo-carroceria" data-cy="carroceria" name="carroceria" v-model="modelo.carroceria">
+              <option :value="null"></option>
+              <option
+                :value="modelo.carroceria && carroceriaOption.id === modelo.carroceria.id ? modelo.carroceria : carroceriaOption"
+                v-for="carroceriaOption in carrocerias"
+                :key="carroceriaOption.id"
+              >
+                {{ carroceriaOption.id }}
               </option>
             </select>
           </div>

@@ -3,63 +3,103 @@
 // ======================
 
 entity Marca {
-  nombre String required,
-  paisOrigen String
+  nombre String required minlength(2) maxlength(100),
+  paisOrigen String maxlength(100),
+  createdDate Instant,
+  lastModifiedDate Instant
+}
+
+entity Carroceria {
+  nombre String required minlength(3) maxlength(50),
+  descripcion String maxlength(100)
 }
 
 entity Modelo {
-  nombre String required,
-  anioLanzamiento Integer,
-  carroceria String
+  nombre String required minlength(2) maxlength(100),
+  anioLanzamiento Integer required min(1950) max(2100),
+  createdDate Instant,
+  lastModifiedDate Instant
 }
 
 entity Version {
-  nombre String required,
-  descripcion String,
-  anioInicio Integer,
-  anioFin Integer
-}
-
-entity Motor {
-  nombre String required,
-  cilindradaCc Integer,
-  cilindroCant Integer,
-  potenciaHp Integer,
-  turbo Boolean
+  nombre String required minlength(1) maxlength(50),
+  descripcion String maxlength(150),
+  anioInicio Integer required min(1950) max(2100),
+  anioFin Integer min(1950) max(2100)
 }
 
 entity Combustible {
-  nombre String required,
-  descripcion String
+  nombre String required minlength(3) maxlength(50),
+  descripcion String maxlength(100)
+}
+
+entity TipoCaja {
+  nombre String required minlength(3) maxlength(50),
+  descripcion String maxlength(100)
+}
+
+entity Traccion {
+  nombre String required minlength(2) maxlength(50),
+  descripcion String maxlength(100)
+}
+
+entity TipoVehiculo {
+  nombre String required minlength(3) maxlength(50),
+  descripcion String maxlength(100)
+}
+
+entity Motor {
+  nombre String required minlength(2) maxlength(100),
+  cilindradaCc Integer required min(50) max(10000),
+  cilindroCant Integer required min(1) max(16),
+  potenciaHp Integer required min(1) max(2000),
+  turbo Boolean required
 }
 
 // ======================
-// NUEVA ENTIDAD CLAVE 🔥
+// VEHICULO
 // ======================
 
-entity ConfiguracionAuto {
+entity Vehiculo {
+  estado EstadoVehiculo required,
+
+  fechaFabricacion LocalDate required,
+
+  km Integer required min(0) max(1000000),
+
+  patente String required
+    pattern(/(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)/),
+
+  precio BigDecimal required min(0),
+
+  createdDate Instant,
+  lastModifiedDate Instant
 }
 
-// ======================
-// AUTO (MODIFICADO)
-// ======================
+entity Inventario {
+  fechaIngreso Instant required,
+  ubicacion String maxlength(100),
+  estadoInventario EstadoInventario required,
+  observaciones String maxlength(255),
+  disponible Boolean required,
 
-entity Auto {
-  estado EstadoAuto required,
-  condicion CondicionAuto required,
-  fechaFabricacion LocalDate,
-  km Integer,
-  patente String,
-  precio BigDecimal
+  createdDate Instant,
+  lastModifiedDate Instant
 }
 
-enum EstadoAuto {
+enum EstadoVehiculo {
   NUEVO,
   USADO
 }
 
-enum CondicionAuto {
+enum CondicionVehiculo {
   EN_VENTA,
+  RESERVADO,
+  VENDIDO
+}
+
+enum EstadoInventario {
+  DISPONIBLE,
   RESERVADO,
   VENDIDO
 }
@@ -69,113 +109,153 @@ enum CondicionAuto {
 // ======================
 
 relationship ManyToOne {
+
   Modelo{marca} to Marca
-  Combustible{motor} to Motor
+  Modelo{carroceria} to Carroceria
 
-  // 🔥 NUEVA RELACIÓN
-  ConfiguracionAuto{modelo} to Modelo
-  ConfiguracionAuto{version} to Version
-  ConfiguracionAuto{motor} to Motor
+  Version{modelo} to Modelo
 
-  // 🔥 AUTO AHORA USA CONFIGURACION
-  Auto{configuracion} to ConfiguracionAuto
+  Motor{combustible} to Combustible
+  Motor{tipoCaja} to TipoCaja
+  Motor{traccion} to Traccion
+
+  Vehiculo{version} to Version
+  Vehiculo{motor} to Motor
+  Vehiculo{tipoVehiculo} to TipoVehiculo
 }
 
-// ❌ ELIMINADAS (IMPORTANTÍSIMO)
-// Modelo ↔ Version
-// Version ↔ Motor
-// Auto → version
-// Auto → motor
-// Auto → modelo
-// Auto → marca
-
-// ======================
-// ENTIDADES DE NEGOCIO
-// ======================
-
-entity Cliente {
-  nombre String required minlength(2) maxlength(100)
-  apellido String required minlength(2) maxlength(100)
-  nroDocumento String required minlength(7) maxlength(20)
-  telefono String maxlength(50)
-  email String pattern(/^[^@\s]+@[^@\s]+\.[^@\s]+$/)
-  direccion String maxlength(255)
-  ciudad String maxlength(100)
-  provincia String maxlength(100)
-  pais String maxlength(100)
-  activo Boolean required
-  fechaAlta Instant required
+relationship OneToOne {
+  Inventario{vehiculo} to Vehiculo
 }
 
-entity CondicionIva {
-  codigo String required minlength(3) maxlength(50)
+// ======================
+// CLIENTE
+// ======================
+
+entity TipoDocumento {
+  codigo String required minlength(2) maxlength(20),
   descripcion String maxlength(100)
 }
 
+entity Cliente {
+  nombre String required minlength(2) maxlength(100),
+  apellido String required minlength(2) maxlength(100),
+
+  nroDocumento String required
+    pattern(/^[0-9]{7,11}$/),
+
+  telefono String pattern(/^[0-9+\-\s]{6,20}$/),
+
+  email String required
+    pattern(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/),
+
+  direccion String maxlength(255),
+  ciudad String maxlength(100),
+  provincia String maxlength(100),
+  pais String maxlength(100),
+
+  activo Boolean required,
+  fechaAlta Instant required,
+
+  createdDate Instant,
+  lastModifiedDate Instant
+}
+
+entity CondicionIva {
+  codigo String required minlength(3) maxlength(50),
+  descripcion String maxlength(100)
+}
+
+// ======================
+// VENTAS
+// ======================
+
 entity EstadoVenta {
-  codigo String required minlength(3) maxlength(50)
+  codigo String required minlength(3) maxlength(50),
   descripcion String maxlength(100)
 }
 
 entity Venta {
-  fecha Instant required
-  cotizacion BigDecimal required min(0)
+  fecha Instant required,
 
-  importeNeto BigDecimal required min(0)
-  impuesto BigDecimal required min(0)
-  total BigDecimal required min(0)
-  porcentajeImpuesto BigDecimal min(0)
+  cotizacion BigDecimal required min(0),
 
-  totalPagado BigDecimal min(0)
-  saldo BigDecimal min(0)
+  importeNeto BigDecimal required min(0),
+  impuesto BigDecimal required min(0),
+  total BigDecimal required min(0),
 
-  observaciones String maxlength(500)
+  porcentajeImpuesto BigDecimal min(0) max(100),
+
+  totalPagado BigDecimal min(0),
+  saldo BigDecimal min(0),
+
+  observaciones String maxlength(500),
+
+  createdDate Instant,
+  lastModifiedDate Instant
 }
 
 entity DetalleVenta {
-  precioUnitario BigDecimal required min(0)
-  cantidad Integer required min(1)
+  precioUnitario BigDecimal required min(0),
+  cantidad Integer required min(1) max(1),
   subtotal BigDecimal required min(0)
 }
 
-entity Comprobante {
-  numeroComprobante String required minlength(3) maxlength(50)
-  fechaEmision Instant required
+// ======================
+// FACTURACIÓN
+// ======================
 
-  importeNeto BigDecimal min(0)
-  impuesto BigDecimal min(0)
-  total BigDecimal min(0)
+entity Comprobante {
+  numeroComprobante String required minlength(3) maxlength(50),
+
+  fechaEmision Instant required,
+
+  importeNeto BigDecimal required min(0),
+  impuesto BigDecimal required min(0),
+  total BigDecimal required min(0),
+
+  createdDate Instant
 }
 
 entity TipoComprobante {
-  codigo String required minlength(2) maxlength(30)
+  codigo String required minlength(2) maxlength(30),
   descripcion String maxlength(100)
 }
 
+// ======================
+// PAGOS
+// ======================
+
 entity Pago {
-  monto BigDecimal required min(0)
-  fecha Instant required
-  referencia String maxlength(100)
+  monto BigDecimal required min(0),
+  fecha Instant required,
+  referencia String maxlength(100),
+
+  createdDate Instant
 }
 
 entity MetodoPago {
-  codigo String required minlength(2) maxlength(30)
-  descripcion String maxlength(100)
-  activo Boolean required
-  requiereReferencia Boolean
+  codigo String required minlength(2) maxlength(30),
+  descripcion String maxlength(100),
+  activo Boolean required,
+  requiereReferencia Boolean required
 }
 
+// ======================
+// MONEDA
+// ======================
+
 entity Moneda {
-  codigo String required minlength(2) maxlength(10)
-  descripcion String maxlength(50)
-  simbolo String maxlength(5)
+  codigo String required minlength(2) maxlength(10),
+  descripcion String maxlength(50),
+  simbolo String maxlength(5),
   activo Boolean required
 }
 
 entity Cotizacion {
-  fecha Instant required
-  valorCompra BigDecimal required min(0)
-  valorVenta BigDecimal required min(0)
+  fecha Instant required,
+  valorCompra BigDecimal required min(0),
+  valorVenta BigDecimal required min(0),
   activo Boolean required
 }
 
@@ -184,7 +264,9 @@ entity Cotizacion {
 // ======================
 
 relationship ManyToOne {
+
   Cliente{condicionIva} to CondicionIva
+  Cliente{tipoDocumento} to TipoDocumento
 
   Venta{cliente} to Cliente
   Venta{estadoVenta} to EstadoVenta
@@ -192,7 +274,7 @@ relationship ManyToOne {
   Venta{user(login)} to User with builtInEntity
 
   DetalleVenta{venta} to Venta
-  DetalleVenta{auto} to Auto
+  DetalleVenta{vehiculo} to Vehiculo
 
   Comprobante{venta} to Venta
   Comprobante{tipoComprobante} to TipoComprobante

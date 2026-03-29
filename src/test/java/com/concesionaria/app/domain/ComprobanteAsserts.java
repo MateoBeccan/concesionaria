@@ -59,7 +59,8 @@ public class ComprobanteAsserts {
             .satisfies(a ->
                 assertThat(a.getImpuesto()).as("check impuesto").usingComparator(bigDecimalCompareTo).isEqualTo(expected.getImpuesto())
             )
-            .satisfies(a -> assertThat(a.getTotal()).as("check total").usingComparator(bigDecimalCompareTo).isEqualTo(expected.getTotal()));
+            .satisfies(a -> assertThat(a.getTotal()).as("check total").usingComparator(bigDecimalCompareTo).isEqualTo(expected.getTotal()))
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()));
     }
 
     /**

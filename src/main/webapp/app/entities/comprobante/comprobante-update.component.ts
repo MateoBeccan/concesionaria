@@ -46,6 +46,7 @@ export default defineComponent({
       try {
         const res = await comprobanteService().find(comprobanteId);
         res.fechaEmision = new Date(res.fechaEmision);
+        res.createdDate = new Date(res.createdDate);
         comprobante.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -87,14 +88,18 @@ export default defineComponent({
         required: validations.required('Este campo es obligatorio.'),
       },
       importeNeto: {
+        required: validations.required('Este campo es obligatorio.'),
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
       },
       impuesto: {
+        required: validations.required('Este campo es obligatorio.'),
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
       },
       total: {
+        required: validations.required('Este campo es obligatorio.'),
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
       },
+      createdDate: {},
       venta: {},
       tipoComprobante: {},
       moneda: {},

@@ -48,12 +48,19 @@ describe('Service Tests', () => {
         'AAAAAAA',
         false,
         currentDate,
+        currentDate,
+        currentDate,
       );
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
-        const returnedFromService = { fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
+        const returnedFromService = {
+          fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
         axiosStub.get.resolves({ data: returnedFromService });
 
         return service.find(123).then(res => {
@@ -72,8 +79,14 @@ describe('Service Tests', () => {
       });
 
       it('should create a Cliente', async () => {
-        const returnedFromService = { id: 123, fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
-        const expected = { fechaAlta: currentDate, ...returnedFromService };
+        const returnedFromService = {
+          id: 123,
+          fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
+        const expected = { fechaAlta: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
 
         axiosStub.post.resolves({ data: returnedFromService });
         return service.create({}).then(res => {
@@ -105,10 +118,12 @@ describe('Service Tests', () => {
           pais: 'BBBBBB',
           activo: true,
           fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
 
-        const expected = { fechaAlta: currentDate, ...returnedFromService };
+        const expected = { fechaAlta: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.put.resolves({ data: returnedFromService });
 
         return service.update(expected).then(res => {
@@ -136,11 +151,13 @@ describe('Service Tests', () => {
           provincia: 'BBBBBB',
           activo: true,
           fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...new Cliente(),
         };
         const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { fechaAlta: currentDate, ...returnedFromService };
+        const expected = { fechaAlta: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.patch.resolves({ data: returnedFromService });
 
         return service.partialUpdate(patchObject).then(res => {
@@ -172,9 +189,11 @@ describe('Service Tests', () => {
           pais: 'BBBBBB',
           activo: true,
           fechaAlta: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
-        const expected = { fechaAlta: currentDate, ...returnedFromService };
+        const expected = { fechaAlta: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.get.resolves([returnedFromService]);
         return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
           expect(res).toContainEqual(expected);

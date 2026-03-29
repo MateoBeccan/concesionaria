@@ -57,7 +57,9 @@ public class ClienteAsserts {
             .satisfies(a -> assertThat(a.getProvincia()).as("check provincia").isEqualTo(expected.getProvincia()))
             .satisfies(a -> assertThat(a.getPais()).as("check pais").isEqualTo(expected.getPais()))
             .satisfies(a -> assertThat(a.getActivo()).as("check activo").isEqualTo(expected.getActivo()))
-            .satisfies(a -> assertThat(a.getFechaAlta()).as("check fechaAlta").isEqualTo(expected.getFechaAlta()));
+            .satisfies(a -> assertThat(a.getFechaAlta()).as("check fechaAlta").isEqualTo(expected.getFechaAlta()))
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))
+            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()));
     }
 
     /**
@@ -69,6 +71,7 @@ public class ClienteAsserts {
     public static void assertClienteUpdatableRelationshipsEquals(Cliente expected, Cliente actual) {
         assertThat(actual)
             .as("Verify Cliente relationships")
-            .satisfies(a -> assertThat(a.getCondicionIva()).as("check condicionIva").isEqualTo(expected.getCondicionIva()));
+            .satisfies(a -> assertThat(a.getCondicionIva()).as("check condicionIva").isEqualTo(expected.getCondicionIva()))
+            .satisfies(a -> assertThat(a.getTipoDocumento()).as("check tipoDocumento").isEqualTo(expected.getTipoDocumento()));
     }
 }

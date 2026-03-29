@@ -37,6 +37,10 @@
               <span>Referencia</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'referencia'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('venta.id')">
               <span>Venta</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'venta.id'"></jhi-sort-indicator>
@@ -60,6 +64,7 @@
             <td>{{ pago.monto }}</td>
             <td>{{ formatDateShort(pago.fecha) || '' }}</td>
             <td>{{ pago.referencia }}</td>
+            <td>{{ formatDateShort(pago.createdDate) || '' }}</td>
             <td>
               <div v-if="pago.venta">
                 <router-link :to="{ name: 'VentaView', params: { ventaId: pago.venta.id } }">{{ pago.venta.id }}</router-link>

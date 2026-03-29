@@ -48,7 +48,9 @@ public class MarcaAsserts {
         assertThat(actual)
             .as("Verify Marca relevant properties")
             .satisfies(a -> assertThat(a.getNombre()).as("check nombre").isEqualTo(expected.getNombre()))
-            .satisfies(a -> assertThat(a.getPaisOrigen()).as("check paisOrigen").isEqualTo(expected.getPaisOrigen()));
+            .satisfies(a -> assertThat(a.getPaisOrigen()).as("check paisOrigen").isEqualTo(expected.getPaisOrigen()))
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))
+            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()));
     }
 
     /**

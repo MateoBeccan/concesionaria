@@ -4,6 +4,7 @@ import { type RouteLocation } from 'vue-router';
 import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
+import ModeloService from '@/entities/modelo/modelo.service';
 import AlertService from '@/shared/alert/alert.service';
 
 import VersionUpdate from './version-update.vue';
@@ -51,6 +52,10 @@ describe('Component Tests', () => {
         provide: {
           alertService,
           versionService: () => versionServiceStub,
+          modeloService: () =>
+            sinon.createStubInstance<ModeloService>(ModeloService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
         },
       };
     });

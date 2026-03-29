@@ -57,6 +57,7 @@
               data-cy="importeNeto"
               :class="{ valid: !v$.importeNeto.$invalid, invalid: v$.importeNeto.$invalid }"
               v-model.number="v$.importeNeto.$model"
+              required
             />
             <div v-if="v$.importeNeto.$anyDirty && v$.importeNeto.$invalid">
               <small class="form-text text-danger" v-for="error of v$.importeNeto.$errors" :key="error.$uid">{{ error.$message }}</small>
@@ -72,6 +73,7 @@
               data-cy="impuesto"
               :class="{ valid: !v$.impuesto.$invalid, invalid: v$.impuesto.$invalid }"
               v-model.number="v$.impuesto.$model"
+              required
             />
             <div v-if="v$.impuesto.$anyDirty && v$.impuesto.$invalid">
               <small class="form-text text-danger" v-for="error of v$.impuesto.$errors" :key="error.$uid">{{ error.$message }}</small>
@@ -87,9 +89,25 @@
               data-cy="total"
               :class="{ valid: !v$.total.$invalid, invalid: v$.total.$invalid }"
               v-model.number="v$.total.$model"
+              required
             />
             <div v-if="v$.total.$anyDirty && v$.total.$invalid">
               <small class="form-text text-danger" v-for="error of v$.total.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="comprobante">Created Date</label>
+            <div class="d-flex">
+              <input
+                id="comprobante-createdDate"
+                data-cy="createdDate"
+                type="datetime-local"
+                class="form-control"
+                name="createdDate"
+                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.createdDate.$model)"
+                @change="updateInstantField('createdDate', $event)"
+              />
             </div>
           </div>
           <div class="mb-3">

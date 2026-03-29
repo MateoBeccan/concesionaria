@@ -5,6 +5,8 @@ import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
 import CombustibleService from '@/entities/combustible/combustible.service';
+import TipoCajaService from '@/entities/tipo-caja/tipo-caja.service';
+import TraccionService from '@/entities/traccion/traccion.service';
 import AlertService from '@/shared/alert/alert.service';
 
 import MotorUpdate from './motor-update.vue';
@@ -54,6 +56,14 @@ describe('Component Tests', () => {
           motorService: () => motorServiceStub,
           combustibleService: () =>
             sinon.createStubInstance<CombustibleService>(CombustibleService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
+          tipoCajaService: () =>
+            sinon.createStubInstance<TipoCajaService>(TipoCajaService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
+          traccionService: () =>
+            sinon.createStubInstance<TraccionService>(TraccionService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

@@ -1,6 +1,7 @@
 import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
+import { useDateFormat } from '@/shared/composables';
 import { type IModelo } from '@/shared/model/modelo.model';
 
 import ModeloService from './modelo.service';
@@ -8,6 +9,7 @@ import ModeloService from './modelo.service';
 export default defineComponent({
   name: 'Modelo',
   setup() {
+    const dateFormat = useDateFormat();
     const modeloService = inject('modeloService', () => new ModeloService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
@@ -114,6 +116,7 @@ export default defineComponent({
       isFetching,
       retrieveModelos,
       clear,
+      ...dateFormat,
       removeId,
       removeEntity,
       prepareRemove,

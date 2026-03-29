@@ -35,6 +35,12 @@
             <span>{{ comprobante.total }}</span>
           </dd>
           <dt>
+            <span>Created Date</span>
+          </dt>
+          <dd>
+            <span v-if="comprobante.createdDate">{{ formatDateLong(comprobante.createdDate) }}</span>
+          </dd>
+          <dt>
             <span>Venta</span>
           </dt>
           <dd>

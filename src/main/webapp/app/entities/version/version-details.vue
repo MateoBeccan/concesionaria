@@ -28,6 +28,14 @@
           <dd>
             <span>{{ version.anioFin }}</span>
           </dd>
+          <dt>
+            <span>Modelo</span>
+          </dt>
+          <dd>
+            <div v-if="version.modelo">
+              <router-link :to="{ name: 'ModeloView', params: { modeloId: version.modelo.id } }">{{ version.modelo.id }}</router-link>
+            </div>
+          </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
           <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>

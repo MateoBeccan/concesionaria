@@ -3,12 +3,12 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
-import AutoService from '@/entities/auto/auto.service';
+import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import VentaService from '@/entities/venta/venta.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
-import { type IAuto } from '@/shared/model/auto.model';
 import { DetalleVenta, type IDetalleVenta } from '@/shared/model/detalle-venta.model';
+import { type IVehiculo } from '@/shared/model/vehiculo.model';
 import { type IVenta } from '@/shared/model/venta.model';
 
 import DetalleVentaService from './detalle-venta.service';
@@ -25,9 +25,9 @@ export default defineComponent({
 
     const ventas: Ref<IVenta[]> = ref([]);
 
-    const autoService = inject('autoService', () => new AutoService());
+    const vehiculoService = inject('vehiculoService', () => new VehiculoService());
 
-    const autos: Ref<IAuto[]> = ref([]);
+    const vehiculos: Ref<IVehiculo[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -55,10 +55,10 @@ export default defineComponent({
         .then(res => {
           ventas.value = res.data;
         });
-      autoService()
+      vehiculoService()
         .retrieve()
         .then(res => {
-          autos.value = res.data;
+          vehiculos.value = res.data;
         });
     };
 
@@ -74,13 +74,14 @@ export default defineComponent({
         required: validations.required('Este campo es obligatorio.'),
         integer: validations.integer('Este campo debe ser un número.'),
         min: validations.minValue('Este campo debe ser mayor que 1.', 1),
+        max: validations.maxValue('Este campo no puede ser mayor que 1.', 1),
       },
       subtotal: {
         required: validations.required('Este campo es obligatorio.'),
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
       },
       venta: {},
-      auto: {},
+      vehiculo: {},
     };
     const v$ = useVuelidate(validationRules, detalleVenta as any);
     v$.value.$validate();
@@ -93,7 +94,7 @@ export default defineComponent({
       isSaving,
       currentLanguage,
       ventas,
-      autos,
+      vehiculos,
       v$,
     };
   },

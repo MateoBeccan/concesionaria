@@ -1,10 +1,10 @@
 package com.concesionaria.app.service.mapper;
 
-import com.concesionaria.app.domain.Auto;
 import com.concesionaria.app.domain.DetalleVenta;
+import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
-import com.concesionaria.app.service.dto.AutoDTO;
 import com.concesionaria.app.service.dto.DetalleVentaDTO;
+import com.concesionaria.app.service.dto.VehiculoDTO;
 import com.concesionaria.app.service.dto.VentaDTO;
 import org.mapstruct.*;
 
@@ -14,7 +14,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface DetalleVentaMapper extends EntityMapper<DetalleVentaDTO, DetalleVenta> {
     @Mapping(target = "venta", source = "venta", qualifiedByName = "ventaId")
-    @Mapping(target = "auto", source = "auto", qualifiedByName = "autoId")
+    @Mapping(target = "vehiculo", source = "vehiculo", qualifiedByName = "vehiculoId")
     DetalleVentaDTO toDto(DetalleVenta s);
 
     @Named("ventaId")
@@ -22,8 +22,8 @@ public interface DetalleVentaMapper extends EntityMapper<DetalleVentaDTO, Detall
     @Mapping(target = "id", source = "id")
     VentaDTO toDtoVentaId(Venta venta);
 
-    @Named("autoId")
+    @Named("vehiculoId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    AutoDTO toDtoAutoId(Auto auto);
+    VehiculoDTO toDtoVehiculoId(Vehiculo vehiculo);
 }

@@ -14,6 +14,8 @@ import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.service.mapper.ModeloMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
@@ -37,11 +39,14 @@ class ModeloResourceIT {
     private static final String DEFAULT_NOMBRE = "AAAAAAAAAA";
     private static final String UPDATED_NOMBRE = "BBBBBBBBBB";
 
-    private static final Integer DEFAULT_ANIO_LANZAMIENTO = 1;
-    private static final Integer UPDATED_ANIO_LANZAMIENTO = 2;
+    private static final Integer DEFAULT_ANIO_LANZAMIENTO = 1950;
+    private static final Integer UPDATED_ANIO_LANZAMIENTO = 1951;
 
-    private static final String DEFAULT_CARROCERIA = "AAAAAAAAAA";
-    private static final String UPDATED_CARROCERIA = "BBBBBBBBBB";
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final Instant DEFAULT_LAST_MODIFIED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_LAST_MODIFIED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private static final String ENTITY_API_URL = "/api/modelos";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -75,7 +80,11 @@ class ModeloResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Modelo createEntity() {
-        return new Modelo().nombre(DEFAULT_NOMBRE).anioLanzamiento(DEFAULT_ANIO_LANZAMIENTO).carroceria(DEFAULT_CARROCERIA);
+        return new Modelo()
+            .nombre(DEFAULT_NOMBRE)
+            .anioLanzamiento(DEFAULT_ANIO_LANZAMIENTO)
+            .createdDate(DEFAULT_CREATED_DATE)
+            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE);
     }
 
     /**
@@ -85,7 +94,11 @@ class ModeloResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Modelo createUpdatedEntity() {
-        return new Modelo().nombre(UPDATED_NOMBRE).anioLanzamiento(UPDATED_ANIO_LANZAMIENTO).carroceria(UPDATED_CARROCERIA);
+        return new Modelo()
+            .nombre(UPDATED_NOMBRE)
+            .anioLanzamiento(UPDATED_ANIO_LANZAMIENTO)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
     }
 
     @BeforeEach
@@ -162,6 +175,23 @@ class ModeloResourceIT {
 
     @Test
     @Transactional
+    void checkAnioLanzamientoIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        modelo.setAnioLanzamiento(null);
+
+        // Create the Modelo, which fails.
+        ModeloDTO modeloDTO = modeloMapper.toDto(modelo);
+
+        restModeloMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(modeloDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
     void getAllModelos() throws Exception {
         // Initialize the database
         insertedModelo = modeloRepository.saveAndFlush(modelo);
@@ -174,7 +204,8 @@ class ModeloResourceIT {
             .andExpect(jsonPath("$.[*].id").value(hasItem(modelo.getId().intValue())))
             .andExpect(jsonPath("$.[*].nombre").value(hasItem(DEFAULT_NOMBRE)))
             .andExpect(jsonPath("$.[*].anioLanzamiento").value(hasItem(DEFAULT_ANIO_LANZAMIENTO)))
-            .andExpect(jsonPath("$.[*].carroceria").value(hasItem(DEFAULT_CARROCERIA)));
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
+            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())));
     }
 
     @Test
@@ -191,7 +222,8 @@ class ModeloResourceIT {
             .andExpect(jsonPath("$.id").value(modelo.getId().intValue()))
             .andExpect(jsonPath("$.nombre").value(DEFAULT_NOMBRE))
             .andExpect(jsonPath("$.anioLanzamiento").value(DEFAULT_ANIO_LANZAMIENTO))
-            .andExpect(jsonPath("$.carroceria").value(DEFAULT_CARROCERIA));
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
+            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()));
     }
 
     @Test
@@ -213,7 +245,11 @@ class ModeloResourceIT {
         Modelo updatedModelo = modeloRepository.findById(modelo.getId()).orElseThrow();
         // Disconnect from session so that the updates on updatedModelo are not directly saved in db
         em.detach(updatedModelo);
-        updatedModelo.nombre(UPDATED_NOMBRE).anioLanzamiento(UPDATED_ANIO_LANZAMIENTO).carroceria(UPDATED_CARROCERIA);
+        updatedModelo
+            .nombre(UPDATED_NOMBRE)
+            .anioLanzamiento(UPDATED_ANIO_LANZAMIENTO)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
         ModeloDTO modeloDTO = modeloMapper.toDto(updatedModelo);
 
         restModeloMockMvc
@@ -327,7 +363,11 @@ class ModeloResourceIT {
         Modelo partialUpdatedModelo = new Modelo();
         partialUpdatedModelo.setId(modelo.getId());
 
-        partialUpdatedModelo.nombre(UPDATED_NOMBRE).anioLanzamiento(UPDATED_ANIO_LANZAMIENTO).carroceria(UPDATED_CARROCERIA);
+        partialUpdatedModelo
+            .nombre(UPDATED_NOMBRE)
+            .anioLanzamiento(UPDATED_ANIO_LANZAMIENTO)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restModeloMockMvc
             .perform(

@@ -33,16 +33,17 @@ public class Cliente implements Serializable {
     private String apellido;
 
     @NotNull
-    @Size(min = 7, max = 20)
-    @Column(name = "nro_documento", length = 20, nullable = false)
+    @Pattern(regexp = "^[0-9]{7,11}$")
+    @Column(name = "nro_documento", nullable = false)
     private String nroDocumento;
 
-    @Size(max = 50)
-    @Column(name = "telefono", length = 50)
+    @Pattern(regexp = "^[0-9+\\-\\s]{6,20}$")
+    @Column(name = "telefono")
     private String telefono;
 
-    @Pattern(regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
-    @Column(name = "email")
+    @NotNull
+    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    @Column(name = "email", nullable = false)
     private String email;
 
     @Size(max = 255)
@@ -69,8 +70,17 @@ public class Cliente implements Serializable {
     @Column(name = "fecha_alta", nullable = false)
     private Instant fechaAlta;
 
+    @Column(name = "created_date")
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     private CondicionIva condicionIva;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private TipoDocumento tipoDocumento;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -230,6 +240,32 @@ public class Cliente implements Serializable {
         this.fechaAlta = fechaAlta;
     }
 
+    public Instant getCreatedDate() {
+        return this.createdDate;
+    }
+
+    public Cliente createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return this.lastModifiedDate;
+    }
+
+    public Cliente lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
     public CondicionIva getCondicionIva() {
         return this.condicionIva;
     }
@@ -240,6 +276,19 @@ public class Cliente implements Serializable {
 
     public Cliente condicionIva(CondicionIva condicionIva) {
         this.setCondicionIva(condicionIva);
+        return this;
+    }
+
+    public TipoDocumento getTipoDocumento() {
+        return this.tipoDocumento;
+    }
+
+    public void setTipoDocumento(TipoDocumento tipoDocumento) {
+        this.tipoDocumento = tipoDocumento;
+    }
+
+    public Cliente tipoDocumento(TipoDocumento tipoDocumento) {
+        this.setTipoDocumento(tipoDocumento);
         return this;
     }
 
@@ -278,6 +327,8 @@ public class Cliente implements Serializable {
             ", pais='" + getPais() + "'" +
             ", activo='" + getActivo() + "'" +
             ", fechaAlta='" + getFechaAlta() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

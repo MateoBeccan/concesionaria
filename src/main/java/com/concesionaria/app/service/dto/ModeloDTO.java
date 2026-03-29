@@ -2,6 +2,7 @@ package com.concesionaria.app.service.dto;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -13,13 +14,21 @@ public class ModeloDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(min = 2, max = 100)
     private String nombre;
 
+    @NotNull
+    @Min(value = 1950)
+    @Max(value = 2100)
     private Integer anioLanzamiento;
 
-    private String carroceria;
+    private Instant createdDate;
+
+    private Instant lastModifiedDate;
 
     private MarcaDTO marca;
+
+    private CarroceriaDTO carroceria;
 
     public Long getId() {
         return id;
@@ -45,12 +54,20 @@ public class ModeloDTO implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public String getCarroceria() {
-        return carroceria;
+    public Instant getCreatedDate() {
+        return createdDate;
     }
 
-    public void setCarroceria(String carroceria) {
-        this.carroceria = carroceria;
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
     }
 
     public MarcaDTO getMarca() {
@@ -59,6 +76,14 @@ public class ModeloDTO implements Serializable {
 
     public void setMarca(MarcaDTO marca) {
         this.marca = marca;
+    }
+
+    public CarroceriaDTO getCarroceria() {
+        return carroceria;
+    }
+
+    public void setCarroceria(CarroceriaDTO carroceria) {
+        this.carroceria = carroceria;
     }
 
     @Override
@@ -89,8 +114,10 @@ public class ModeloDTO implements Serializable {
             "id=" + getId() +
             ", nombre='" + getNombre() + "'" +
             ", anioLanzamiento=" + getAnioLanzamiento() +
-            ", carroceria='" + getCarroceria() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", marca=" + getMarca() +
+            ", carroceria=" + getCarroceria() +
             "}";
     }
 }

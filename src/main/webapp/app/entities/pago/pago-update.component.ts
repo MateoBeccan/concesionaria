@@ -46,6 +46,7 @@ export default defineComponent({
       try {
         const res = await pagoService().find(pagoId);
         res.fecha = new Date(res.fecha);
+        res.createdDate = new Date(res.createdDate);
         pago.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -88,6 +89,7 @@ export default defineComponent({
       referencia: {
         maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
       },
+      createdDate: {},
       venta: {},
       metodoPago: {},
       moneda: {},

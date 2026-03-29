@@ -40,11 +40,11 @@ class VersionResourceIT {
     private static final String DEFAULT_DESCRIPCION = "AAAAAAAAAA";
     private static final String UPDATED_DESCRIPCION = "BBBBBBBBBB";
 
-    private static final Integer DEFAULT_ANIO_INICIO = 1;
-    private static final Integer UPDATED_ANIO_INICIO = 2;
+    private static final Integer DEFAULT_ANIO_INICIO = 1950;
+    private static final Integer UPDATED_ANIO_INICIO = 1951;
 
-    private static final Integer DEFAULT_ANIO_FIN = 1;
-    private static final Integer UPDATED_ANIO_FIN = 2;
+    private static final Integer DEFAULT_ANIO_FIN = 1950;
+    private static final Integer UPDATED_ANIO_FIN = 1951;
 
     private static final String ENTITY_API_URL = "/api/versions";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -160,6 +160,23 @@ class VersionResourceIT {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
         version.setNombre(null);
+
+        // Create the Version, which fails.
+        VersionDTO versionDTO = versionMapper.toDto(version);
+
+        restVersionMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(versionDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkAnioInicioIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        version.setAnioInicio(null);
 
         // Create the Version, which fails.
         VersionDTO versionDTO = versionMapper.toDto(version);

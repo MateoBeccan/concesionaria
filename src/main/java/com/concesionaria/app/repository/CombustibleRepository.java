@@ -9,4 +9,4 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface CombustibleRepository extends JpaRepository<Combustible, Long>,JpaSpecificationExecutor<Combustible> {}
+public interface CombustibleRepository extends JpaRepository<Combustible, Long>, JpaSpecificationExecutor<Combustible>{}

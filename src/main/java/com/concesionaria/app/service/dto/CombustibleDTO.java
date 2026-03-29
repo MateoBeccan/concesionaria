@@ -13,8 +13,10 @@ public class CombustibleDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(min = 3, max = 50)
     private String nombre;
 
+    @Size(max = 100)
     private String descripcion;
 
     public Long getId() {

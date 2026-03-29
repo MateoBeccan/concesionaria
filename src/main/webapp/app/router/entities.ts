@@ -1,10 +1,6 @@
 import { Authority } from '@/shared/jhipster/constants';
 const Entities = () => import('@/entities/entities.vue');
 
-const Prueba1 = () => import('@/entities/prueba-1/prueba-1.vue');
-const Prueba1Update = () => import('@/entities/prueba-1/prueba-1-update.vue');
-const Prueba1Details = () => import('@/entities/prueba-1/prueba-1-details.vue');
-
 const Marca = () => import('@/entities/marca/marca.vue');
 const MarcaUpdate = () => import('@/entities/marca/marca-update.vue');
 const MarcaDetails = () => import('@/entities/marca/marca-details.vue');
@@ -24,10 +20,6 @@ const MotorDetails = () => import('@/entities/motor/motor-details.vue');
 const Combustible = () => import('@/entities/combustible/combustible.vue');
 const CombustibleUpdate = () => import('@/entities/combustible/combustible-update.vue');
 const CombustibleDetails = () => import('@/entities/combustible/combustible-details.vue');
-
-const Auto = () => import('@/entities/auto/auto.vue');
-const AutoUpdate = () => import('@/entities/auto/auto-update.vue');
-const AutoDetails = () => import('@/entities/auto/auto-details.vue');
 
 const Cliente = () => import('@/entities/cliente/cliente.vue');
 const ClienteUpdate = () => import('@/entities/cliente/cliente-update.vue');
@@ -73,9 +65,33 @@ const Cotizacion = () => import('@/entities/cotizacion/cotizacion.vue');
 const CotizacionUpdate = () => import('@/entities/cotizacion/cotizacion-update.vue');
 const CotizacionDetails = () => import('@/entities/cotizacion/cotizacion-details.vue');
 
-const ConfiguracionAuto = () => import('@/entities/configuracion-auto/configuracion-auto.vue');
-const ConfiguracionAutoUpdate = () => import('@/entities/configuracion-auto/configuracion-auto-update.vue');
-const ConfiguracionAutoDetails = () => import('@/entities/configuracion-auto/configuracion-auto-details.vue');
+const Carroceria = () => import('@/entities/carroceria/carroceria.vue');
+const CarroceriaUpdate = () => import('@/entities/carroceria/carroceria-update.vue');
+const CarroceriaDetails = () => import('@/entities/carroceria/carroceria-details.vue');
+
+const TipoCaja = () => import('@/entities/tipo-caja/tipo-caja.vue');
+const TipoCajaUpdate = () => import('@/entities/tipo-caja/tipo-caja-update.vue');
+const TipoCajaDetails = () => import('@/entities/tipo-caja/tipo-caja-details.vue');
+
+const Traccion = () => import('@/entities/traccion/traccion.vue');
+const TraccionUpdate = () => import('@/entities/traccion/traccion-update.vue');
+const TraccionDetails = () => import('@/entities/traccion/traccion-details.vue');
+
+const TipoVehiculo = () => import('@/entities/tipo-vehiculo/tipo-vehiculo.vue');
+const TipoVehiculoUpdate = () => import('@/entities/tipo-vehiculo/tipo-vehiculo-update.vue');
+const TipoVehiculoDetails = () => import('@/entities/tipo-vehiculo/tipo-vehiculo-details.vue');
+
+const Vehiculo = () => import('@/entities/vehiculo/vehiculo.vue');
+const VehiculoUpdate = () => import('@/entities/vehiculo/vehiculo-update.vue');
+const VehiculoDetails = () => import('@/entities/vehiculo/vehiculo-details.vue');
+
+const Inventario = () => import('@/entities/inventario/inventario.vue');
+const InventarioUpdate = () => import('@/entities/inventario/inventario-update.vue');
+const InventarioDetails = () => import('@/entities/inventario/inventario-details.vue');
+
+const TipoDocumento = () => import('@/entities/tipo-documento/tipo-documento.vue');
+const TipoDocumentoUpdate = () => import('@/entities/tipo-documento/tipo-documento-update.vue');
+const TipoDocumentoDetails = () => import('@/entities/tipo-documento/tipo-documento-details.vue');
 
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
@@ -83,30 +99,6 @@ export default {
   path: '/',
   component: Entities,
   children: [
-    {
-      path: 'prueba-1',
-      name: 'Prueba1',
-      component: Prueba1,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'prueba-1/new',
-      name: 'Prueba1Create',
-      component: Prueba1Update,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'prueba-1/:prueba1Id/edit',
-      name: 'Prueba1Edit',
-      component: Prueba1Update,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'prueba-1/:prueba1Id/view',
-      name: 'Prueba1View',
-      component: Prueba1Details,
-      meta: { authorities: [Authority.USER] },
-    },
     {
       path: 'marca',
       name: 'Marca',
@@ -225,30 +217,6 @@ export default {
       path: 'combustible/:combustibleId/view',
       name: 'CombustibleView',
       component: CombustibleDetails,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'auto',
-      name: 'Auto',
-      component: Auto,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'auto/new',
-      name: 'AutoCreate',
-      component: AutoUpdate,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'auto/:autoId/edit',
-      name: 'AutoEdit',
-      component: AutoUpdate,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'auto/:autoId/view',
-      name: 'AutoView',
-      component: AutoDetails,
       meta: { authorities: [Authority.USER] },
     },
     {
@@ -516,27 +484,171 @@ export default {
       meta: { authorities: [Authority.USER] },
     },
     {
-      path: 'configuracion-auto',
-      name: 'ConfiguracionAuto',
-      component: ConfiguracionAuto,
+      path: 'carroceria',
+      name: 'Carroceria',
+      component: Carroceria,
       meta: { authorities: [Authority.USER] },
     },
     {
-      path: 'configuracion-auto/new',
-      name: 'ConfiguracionAutoCreate',
-      component: ConfiguracionAutoUpdate,
+      path: 'carroceria/new',
+      name: 'CarroceriaCreate',
+      component: CarroceriaUpdate,
       meta: { authorities: [Authority.USER] },
     },
     {
-      path: 'configuracion-auto/:configuracionAutoId/edit',
-      name: 'ConfiguracionAutoEdit',
-      component: ConfiguracionAutoUpdate,
+      path: 'carroceria/:carroceriaId/edit',
+      name: 'CarroceriaEdit',
+      component: CarroceriaUpdate,
       meta: { authorities: [Authority.USER] },
     },
     {
-      path: 'configuracion-auto/:configuracionAutoId/view',
-      name: 'ConfiguracionAutoView',
-      component: ConfiguracionAutoDetails,
+      path: 'carroceria/:carroceriaId/view',
+      name: 'CarroceriaView',
+      component: CarroceriaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-caja',
+      name: 'TipoCaja',
+      component: TipoCaja,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-caja/new',
+      name: 'TipoCajaCreate',
+      component: TipoCajaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-caja/:tipoCajaId/edit',
+      name: 'TipoCajaEdit',
+      component: TipoCajaUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-caja/:tipoCajaId/view',
+      name: 'TipoCajaView',
+      component: TipoCajaDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'traccion',
+      name: 'Traccion',
+      component: Traccion,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'traccion/new',
+      name: 'TraccionCreate',
+      component: TraccionUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'traccion/:traccionId/edit',
+      name: 'TraccionEdit',
+      component: TraccionUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'traccion/:traccionId/view',
+      name: 'TraccionView',
+      component: TraccionDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-vehiculo',
+      name: 'TipoVehiculo',
+      component: TipoVehiculo,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-vehiculo/new',
+      name: 'TipoVehiculoCreate',
+      component: TipoVehiculoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-vehiculo/:tipoVehiculoId/edit',
+      name: 'TipoVehiculoEdit',
+      component: TipoVehiculoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-vehiculo/:tipoVehiculoId/view',
+      name: 'TipoVehiculoView',
+      component: TipoVehiculoDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'vehiculo',
+      name: 'Vehiculo',
+      component: Vehiculo,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'vehiculo/new',
+      name: 'VehiculoCreate',
+      component: VehiculoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'vehiculo/:vehiculoId/edit',
+      name: 'VehiculoEdit',
+      component: VehiculoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'vehiculo/:vehiculoId/view',
+      name: 'VehiculoView',
+      component: VehiculoDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'inventario',
+      name: 'Inventario',
+      component: Inventario,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'inventario/new',
+      name: 'InventarioCreate',
+      component: InventarioUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'inventario/:inventarioId/edit',
+      name: 'InventarioEdit',
+      component: InventarioUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'inventario/:inventarioId/view',
+      name: 'InventarioView',
+      component: InventarioDetails,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-documento',
+      name: 'TipoDocumento',
+      component: TipoDocumento,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-documento/new',
+      name: 'TipoDocumentoCreate',
+      component: TipoDocumentoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-documento/:tipoDocumentoId/edit',
+      name: 'TipoDocumentoEdit',
+      component: TipoDocumentoUpdate,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: 'tipo-documento/:tipoDocumentoId/view',
+      name: 'TipoDocumentoView',
+      component: TipoDocumentoDetails,
       meta: { authorities: [Authority.USER] },
     },
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here

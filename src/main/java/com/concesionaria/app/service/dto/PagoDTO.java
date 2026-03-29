@@ -24,6 +24,8 @@ public class PagoDTO implements Serializable {
     @Size(max = 100)
     private String referencia;
 
+    private Instant createdDate;
+
     private VentaDTO venta;
 
     private MetodoPagoDTO metodoPago;
@@ -60,6 +62,14 @@ public class PagoDTO implements Serializable {
 
     public void setReferencia(String referencia) {
         this.referencia = referencia;
+    }
+
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
     }
 
     public VentaDTO getVenta() {
@@ -115,6 +125,7 @@ public class PagoDTO implements Serializable {
             ", monto=" + getMonto() +
             ", fecha='" + getFecha() + "'" +
             ", referencia='" + getReferencia() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
             ", venta=" + getVenta() +
             ", metodoPago=" + getMetodoPago() +
             ", moneda=" + getMoneda() +

@@ -2,6 +2,7 @@ import { type Ref, defineComponent, inject, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useAlertService } from '@/shared/alert/alert.service';
+import { useDateFormat } from '@/shared/composables';
 import { type IModelo } from '@/shared/model/modelo.model';
 
 import ModeloService from './modelo.service';
@@ -9,6 +10,7 @@ import ModeloService from './modelo.service';
 export default defineComponent({
   name: 'ModeloDetails',
   setup() {
+    const dateFormat = useDateFormat();
     const modeloService = inject('modeloService', () => new ModeloService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
@@ -32,6 +34,7 @@ export default defineComponent({
     }
 
     return {
+      ...dateFormat,
       alertService,
       modelo,
 

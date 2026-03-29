@@ -4,10 +4,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVuelidate } from '@vuelidate/core';
 
 import CondicionIvaService from '@/entities/condicion-iva/condicion-iva.service';
+import TipoDocumentoService from '@/entities/tipo-documento/tipo-documento.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat, useValidation } from '@/shared/composables';
 import { Cliente, type ICliente } from '@/shared/model/cliente.model';
 import { type ICondicionIva } from '@/shared/model/condicion-iva.model';
+import { type ITipoDocumento } from '@/shared/model/tipo-documento.model';
 
 import ClienteService from './cliente.service';
 
@@ -22,6 +24,10 @@ export default defineComponent({
     const condicionIvaService = inject('condicionIvaService', () => new CondicionIvaService());
 
     const condicionIvas: Ref<ICondicionIva[]> = ref([]);
+
+    const tipoDocumentoService = inject('tipoDocumentoService', () => new TipoDocumentoService());
+
+    const tipoDocumentos: Ref<ITipoDocumento[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -34,6 +40,8 @@ export default defineComponent({
       try {
         const res = await clienteService().find(clienteId);
         res.fechaAlta = new Date(res.fechaAlta);
+        res.createdDate = new Date(res.createdDate);
+        res.lastModifiedDate = new Date(res.lastModifiedDate);
         cliente.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -49,6 +57,11 @@ export default defineComponent({
         .retrieve()
         .then(res => {
           condicionIvas.value = res.data;
+        });
+      tipoDocumentoService()
+        .retrieve()
+        .then(res => {
+          tipoDocumentos.value = res.data;
         });
     };
 
@@ -68,13 +81,11 @@ export default defineComponent({
       },
       nroDocumento: {
         required: validations.required('Este campo es obligatorio.'),
-        minLength: validations.minLength('Este campo requiere al menos 7 caracteres.', 7),
-        maxLength: validations.maxLength('Este campo no puede superar más de 20 caracteres.', 20),
       },
-      telefono: {
-        maxLength: validations.maxLength('Este campo no puede superar más de 50 caracteres.', 50),
+      telefono: {},
+      email: {
+        required: validations.required('Este campo es obligatorio.'),
       },
-      email: {},
       direccion: {
         maxLength: validations.maxLength('Este campo no puede superar más de 255 caracteres.', 255),
       },
@@ -93,7 +104,10 @@ export default defineComponent({
       fechaAlta: {
         required: validations.required('Este campo es obligatorio.'),
       },
+      createdDate: {},
+      lastModifiedDate: {},
       condicionIva: {},
+      tipoDocumento: {},
     };
     const v$ = useVuelidate(validationRules, cliente as any);
     v$.value.$validate();
@@ -106,6 +120,7 @@ export default defineComponent({
       isSaving,
       currentLanguage,
       condicionIvas,
+      tipoDocumentos,
       v$,
       ...useDateFormat({ entityRef: cliente }),
     };

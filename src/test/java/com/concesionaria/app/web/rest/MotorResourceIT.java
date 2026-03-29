@@ -37,8 +37,8 @@ class MotorResourceIT {
     private static final String DEFAULT_NOMBRE = "AAAAAAAAAA";
     private static final String UPDATED_NOMBRE = "BBBBBBBBBB";
 
-    private static final Integer DEFAULT_CILINDRADA_CC = 1;
-    private static final Integer UPDATED_CILINDRADA_CC = 2;
+    private static final Integer DEFAULT_CILINDRADA_CC = 50;
+    private static final Integer UPDATED_CILINDRADA_CC = 51;
 
     private static final Integer DEFAULT_CILINDRO_CANT = 1;
     private static final Integer UPDATED_CILINDRO_CANT = 2;
@@ -165,6 +165,74 @@ class MotorResourceIT {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
         motor.setNombre(null);
+
+        // Create the Motor, which fails.
+        MotorDTO motorDTO = motorMapper.toDto(motor);
+
+        restMotorMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(motorDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkCilindradaCcIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        motor.setCilindradaCc(null);
+
+        // Create the Motor, which fails.
+        MotorDTO motorDTO = motorMapper.toDto(motor);
+
+        restMotorMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(motorDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkCilindroCantIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        motor.setCilindroCant(null);
+
+        // Create the Motor, which fails.
+        MotorDTO motorDTO = motorMapper.toDto(motor);
+
+        restMotorMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(motorDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkPotenciaHpIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        motor.setPotenciaHp(null);
+
+        // Create the Motor, which fails.
+        MotorDTO motorDTO = motorMapper.toDto(motor);
+
+        restMotorMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(motorDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkTurboIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        motor.setTurbo(null);
 
         // Create the Motor, which fails.
         MotorDTO motorDTO = motorMapper.toDto(motor);

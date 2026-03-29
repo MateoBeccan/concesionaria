@@ -72,15 +72,15 @@
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-control-label" for="detalle-venta">Auto</label>
-            <select class="form-control" id="detalle-venta-auto" data-cy="auto" name="auto" v-model="detalleVenta.auto">
+            <label class="form-control-label" for="detalle-venta">Vehiculo</label>
+            <select class="form-control" id="detalle-venta-vehiculo" data-cy="vehiculo" name="vehiculo" v-model="detalleVenta.vehiculo">
               <option :value="null"></option>
               <option
-                :value="detalleVenta.auto && autoOption.id === detalleVenta.auto.id ? detalleVenta.auto : autoOption"
-                v-for="autoOption in autos"
-                :key="autoOption.id"
+                :value="detalleVenta.vehiculo && vehiculoOption.id === detalleVenta.vehiculo.id ? detalleVenta.vehiculo : vehiculoOption"
+                v-for="vehiculoOption in vehiculos"
+                :key="vehiculoOption.id"
               >
-                {{ autoOption.id }}
+                {{ vehiculoOption.id }}
               </option>
             </select>
           </div>

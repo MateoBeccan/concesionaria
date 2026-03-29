@@ -50,6 +50,10 @@
               <span>Total</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'total'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('venta.id')">
               <span>Venta</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'venta.id'"></jhi-sort-indicator>
@@ -75,6 +79,7 @@
             <td>{{ comprobante.importeNeto }}</td>
             <td>{{ comprobante.impuesto }}</td>
             <td>{{ comprobante.total }}</td>
+            <td>{{ formatDateShort(comprobante.createdDate) || '' }}</td>
             <td>
               <div v-if="comprobante.venta">
                 <router-link :to="{ name: 'VentaView', params: { ventaId: comprobante.venta.id } }">{{ comprobante.venta.id }}</router-link>

@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-center">
     <div class="col-8">
       <div v-if="marca">
-        <h2 class="jh-entity-heading" data-cy="marcaDetailsHeading"><span>Marca</span> {{ marca.id }}</h2>
+        <h2 class="jh-entity-heading" data-cy="marcaDetailsHeading"><span>MarcaMarca</span> {{ marca.id }}</h2>
         <dl class="row-md jh-entity-details">
           <dt>
             <span>Nombre</span>
@@ -15,6 +15,18 @@
           </dt>
           <dd>
             <span>{{ marca.paisOrigen }}</span>
+          </dd>
+          <dt>
+            <span>Created Date</span>
+          </dt>
+          <dd>
+            <span v-if="marca.createdDate">{{ formatDateLong(marca.createdDate) }}</span>
+          </dd>
+          <dt>
+            <span>Last Modified Date</span>
+          </dt>
+          <dd>
+            <span v-if="marca.lastModifiedDate">{{ formatDateLong(marca.lastModifiedDate) }}</span>
           </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">

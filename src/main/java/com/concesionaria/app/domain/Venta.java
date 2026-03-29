@@ -49,6 +49,7 @@ public class Venta implements Serializable {
     private BigDecimal total;
 
     @DecimalMin(value = "0")
+    @DecimalMax(value = "100")
     @Column(name = "porcentaje_impuesto", precision = 21, scale = 2)
     private BigDecimal porcentajeImpuesto;
 
@@ -64,8 +65,14 @@ public class Venta implements Serializable {
     @Column(name = "observaciones", length = 500)
     private String observaciones;
 
+    @Column(name = "created_date")
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "condicionIva" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "condicionIva", "tipoDocumento" }, allowSetters = true)
     private Cliente cliente;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -209,6 +216,32 @@ public class Venta implements Serializable {
         this.observaciones = observaciones;
     }
 
+    public Instant getCreatedDate() {
+        return this.createdDate;
+    }
+
+    public Venta createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return this.lastModifiedDate;
+    }
+
+    public Venta lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
     public Cliente getCliente() {
         return this.cliente;
     }
@@ -294,6 +327,8 @@ public class Venta implements Serializable {
             ", totalPagado=" + getTotalPagado() +
             ", saldo=" + getSaldo() +
             ", observaciones='" + getObservaciones() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

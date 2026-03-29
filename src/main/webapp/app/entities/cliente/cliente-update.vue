@@ -81,6 +81,7 @@
               data-cy="email"
               :class="{ valid: !v$.email.$invalid, invalid: v$.email.$invalid }"
               v-model="v$.email.$model"
+              required
             />
             <div v-if="v$.email.$anyDirty && v$.email.$invalid">
               <small class="form-text text-danger" v-for="error of v$.email.$errors" :key="error.$uid">{{ error.$message }}</small>
@@ -182,6 +183,36 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-control-label" for="cliente">Created Date</label>
+            <div class="d-flex">
+              <input
+                id="cliente-createdDate"
+                data-cy="createdDate"
+                type="datetime-local"
+                class="form-control"
+                name="createdDate"
+                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.createdDate.$model)"
+                @change="updateInstantField('createdDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="cliente">Last Modified Date</label>
+            <div class="d-flex">
+              <input
+                id="cliente-lastModifiedDate"
+                data-cy="lastModifiedDate"
+                type="datetime-local"
+                class="form-control"
+                name="lastModifiedDate"
+                :class="{ valid: !v$.lastModifiedDate.$invalid, invalid: v$.lastModifiedDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.lastModifiedDate.$model)"
+                @change="updateInstantField('lastModifiedDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
             <label class="form-control-label" for="cliente">Condicion Iva</label>
             <select
               class="form-control"
@@ -199,6 +230,27 @@
                 :key="condicionIvaOption.id"
               >
                 {{ condicionIvaOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="cliente">Tipo Documento</label>
+            <select
+              class="form-control"
+              id="cliente-tipoDocumento"
+              data-cy="tipoDocumento"
+              name="tipoDocumento"
+              v-model="cliente.tipoDocumento"
+            >
+              <option :value="null"></option>
+              <option
+                :value="
+                  cliente.tipoDocumento && tipoDocumentoOption.id === cliente.tipoDocumento.id ? cliente.tipoDocumento : tipoDocumentoOption
+                "
+                v-for="tipoDocumentoOption in tipoDocumentos"
+                :key="tipoDocumentoOption.id"
+              >
+                {{ tipoDocumentoOption.id }}
               </option>
             </select>
           </div>

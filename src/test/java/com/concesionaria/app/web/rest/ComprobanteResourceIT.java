@@ -53,6 +53,9 @@ class ComprobanteResourceIT {
     private static final BigDecimal DEFAULT_TOTAL = new BigDecimal(0);
     private static final BigDecimal UPDATED_TOTAL = new BigDecimal(1);
 
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
     private static final String ENTITY_API_URL = "/api/comprobantes";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
 
@@ -90,7 +93,8 @@ class ComprobanteResourceIT {
             .fechaEmision(DEFAULT_FECHA_EMISION)
             .importeNeto(DEFAULT_IMPORTE_NETO)
             .impuesto(DEFAULT_IMPUESTO)
-            .total(DEFAULT_TOTAL);
+            .total(DEFAULT_TOTAL)
+            .createdDate(DEFAULT_CREATED_DATE);
     }
 
     /**
@@ -105,7 +109,8 @@ class ComprobanteResourceIT {
             .fechaEmision(UPDATED_FECHA_EMISION)
             .importeNeto(UPDATED_IMPORTE_NETO)
             .impuesto(UPDATED_IMPUESTO)
-            .total(UPDATED_TOTAL);
+            .total(UPDATED_TOTAL)
+            .createdDate(UPDATED_CREATED_DATE);
     }
 
     @BeforeEach
@@ -199,6 +204,57 @@ class ComprobanteResourceIT {
 
     @Test
     @Transactional
+    void checkImporteNetoIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        comprobante.setImporteNeto(null);
+
+        // Create the Comprobante, which fails.
+        ComprobanteDTO comprobanteDTO = comprobanteMapper.toDto(comprobante);
+
+        restComprobanteMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(comprobanteDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkImpuestoIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        comprobante.setImpuesto(null);
+
+        // Create the Comprobante, which fails.
+        ComprobanteDTO comprobanteDTO = comprobanteMapper.toDto(comprobante);
+
+        restComprobanteMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(comprobanteDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
+    void checkTotalIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        comprobante.setTotal(null);
+
+        // Create the Comprobante, which fails.
+        ComprobanteDTO comprobanteDTO = comprobanteMapper.toDto(comprobante);
+
+        restComprobanteMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(comprobanteDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
     void getAllComprobantes() throws Exception {
         // Initialize the database
         insertedComprobante = comprobanteRepository.saveAndFlush(comprobante);
@@ -213,7 +269,8 @@ class ComprobanteResourceIT {
             .andExpect(jsonPath("$.[*].fechaEmision").value(hasItem(DEFAULT_FECHA_EMISION.toString())))
             .andExpect(jsonPath("$.[*].importeNeto").value(hasItem(sameNumber(DEFAULT_IMPORTE_NETO))))
             .andExpect(jsonPath("$.[*].impuesto").value(hasItem(sameNumber(DEFAULT_IMPUESTO))))
-            .andExpect(jsonPath("$.[*].total").value(hasItem(sameNumber(DEFAULT_TOTAL))));
+            .andExpect(jsonPath("$.[*].total").value(hasItem(sameNumber(DEFAULT_TOTAL))))
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())));
     }
 
     @Test
@@ -232,7 +289,8 @@ class ComprobanteResourceIT {
             .andExpect(jsonPath("$.fechaEmision").value(DEFAULT_FECHA_EMISION.toString()))
             .andExpect(jsonPath("$.importeNeto").value(sameNumber(DEFAULT_IMPORTE_NETO)))
             .andExpect(jsonPath("$.impuesto").value(sameNumber(DEFAULT_IMPUESTO)))
-            .andExpect(jsonPath("$.total").value(sameNumber(DEFAULT_TOTAL)));
+            .andExpect(jsonPath("$.total").value(sameNumber(DEFAULT_TOTAL)))
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()));
     }
 
     @Test
@@ -259,7 +317,8 @@ class ComprobanteResourceIT {
             .fechaEmision(UPDATED_FECHA_EMISION)
             .importeNeto(UPDATED_IMPORTE_NETO)
             .impuesto(UPDATED_IMPUESTO)
-            .total(UPDATED_TOTAL);
+            .total(UPDATED_TOTAL)
+            .createdDate(UPDATED_CREATED_DATE);
         ComprobanteDTO comprobanteDTO = comprobanteMapper.toDto(updatedComprobante);
 
         restComprobanteMockMvc
@@ -385,7 +444,8 @@ class ComprobanteResourceIT {
             .fechaEmision(UPDATED_FECHA_EMISION)
             .importeNeto(UPDATED_IMPORTE_NETO)
             .impuesto(UPDATED_IMPUESTO)
-            .total(UPDATED_TOTAL);
+            .total(UPDATED_TOTAL)
+            .createdDate(UPDATED_CREATED_DATE);
 
         restComprobanteMockMvc
             .perform(

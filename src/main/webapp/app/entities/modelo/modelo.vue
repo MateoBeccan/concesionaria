@@ -38,13 +38,21 @@
               <span>Anio Lanzamiento</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'anioLanzamiento'"></jhi-sort-indicator>
             </th>
-            <th scope="col" @click="changeOrder('carroceria')">
-              <span>Carroceria</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'carroceria'"></jhi-sort-indicator>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('lastModifiedDate')">
+              <span>Last Modified Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'lastModifiedDate'"></jhi-sort-indicator>
             </th>
             <th scope="col" @click="changeOrder('marca.id')">
               <span>Marca</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'marca.id'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('carroceria.id')">
+              <span>Carroceria</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'carroceria.id'"></jhi-sort-indicator>
             </th>
             <th scope="col"></th>
           </tr>
@@ -56,12 +64,18 @@
             </td>
             <td>{{ modelo.nombre }}</td>
             <td>{{ modelo.anioLanzamiento }}</td>
-            <td>{{ modelo.carroceria }}</td>
+            <td>{{ formatDateShort(modelo.createdDate) || '' }}</td>
+            <td>{{ formatDateShort(modelo.lastModifiedDate) || '' }}</td>
             <td>
               <div v-if="modelo.marca">
-                <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id  } }">
-  {{ modelo.marca.nombre }}
-</router-link>
+                <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id } }">{{ modelo.marca.id }}</router-link>
+              </div>
+            </td>
+            <td>
+              <div v-if="modelo.carroceria">
+                <router-link :to="{ name: 'CarroceriaView', params: { carroceriaId: modelo.carroceria.id } }">{{
+                  modelo.carroceria.id
+                }}</router-link>
               </div>
             </td>
             <td class="text-end">

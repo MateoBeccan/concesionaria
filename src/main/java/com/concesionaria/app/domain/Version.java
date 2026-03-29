@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
@@ -22,17 +23,28 @@ public class Version implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(min = 1, max = 50)
+    @Column(name = "nombre", length = 50, nullable = false)
     private String nombre;
 
-    @Column(name = "descripcion")
+    @Size(max = 150)
+    @Column(name = "descripcion", length = 150)
     private String descripcion;
 
-    @Column(name = "anio_inicio")
+    @NotNull
+    @Min(value = 1950)
+    @Max(value = 2100)
+    @Column(name = "anio_inicio", nullable = false)
     private Integer anioInicio;
 
+    @Min(value = 1950)
+    @Max(value = 2100)
     @Column(name = "anio_fin")
     private Integer anioFin;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "marca", "carroceria" }, allowSetters = true)
+    private Modelo modelo;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -99,6 +111,19 @@ public class Version implements Serializable {
 
     public void setAnioFin(Integer anioFin) {
         this.anioFin = anioFin;
+    }
+
+    public Modelo getModelo() {
+        return this.modelo;
+    }
+
+    public void setModelo(Modelo modelo) {
+        this.modelo = modelo;
+    }
+
+    public Version modelo(Modelo modelo) {
+        this.setModelo(modelo);
+        return this;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

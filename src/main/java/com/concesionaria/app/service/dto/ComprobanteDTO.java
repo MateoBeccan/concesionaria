@@ -21,14 +21,19 @@ public class ComprobanteDTO implements Serializable {
     @NotNull
     private Instant fechaEmision;
 
+    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal importeNeto;
 
+    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal impuesto;
 
+    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal total;
+
+    private Instant createdDate;
 
     private VentaDTO venta;
 
@@ -82,6 +87,14 @@ public class ComprobanteDTO implements Serializable {
 
     public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
     }
 
     public VentaDTO getVenta() {
@@ -139,6 +152,7 @@ public class ComprobanteDTO implements Serializable {
             ", importeNeto=" + getImporteNeto() +
             ", impuesto=" + getImpuesto() +
             ", total=" + getTotal() +
+            ", createdDate='" + getCreatedDate() + "'" +
             ", venta=" + getVenta() +
             ", tipoComprobante=" + getTipoComprobante() +
             ", moneda=" + getMoneda() +

@@ -50,7 +50,9 @@ export default defineComponent({
       activo: {
         required: validations.required('Este campo es obligatorio.'),
       },
-      requiereReferencia: {},
+      requiereReferencia: {
+        required: validations.required('Este campo es obligatorio.'),
+      },
     };
     const v$ = useVuelidate(validationRules, metodoPago as any);
     v$.value.$validate();

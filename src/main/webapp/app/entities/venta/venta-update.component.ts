@@ -49,6 +49,8 @@ export default defineComponent({
       try {
         const res = await ventaService().find(ventaId);
         res.fecha = new Date(res.fecha);
+        res.createdDate = new Date(res.createdDate);
+        res.lastModifiedDate = new Date(res.lastModifiedDate);
         venta.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -107,6 +109,7 @@ export default defineComponent({
       },
       porcentajeImpuesto: {
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+        max: validations.maxValue('Este campo no puede ser mayor que 100.', 100),
       },
       totalPagado: {
         min: validations.minValue('Este campo debe ser mayor que 0.', 0),
@@ -117,6 +120,8 @@ export default defineComponent({
       observaciones: {
         maxLength: validations.maxLength('Este campo no puede superar más de 500 caracteres.', 500),
       },
+      createdDate: {},
+      lastModifiedDate: {},
       cliente: {},
       estadoVenta: {},
       moneda: {},

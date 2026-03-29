@@ -44,6 +44,22 @@
               }}</router-link>
             </div>
           </dd>
+          <dt>
+            <span>Tipo Caja</span>
+          </dt>
+          <dd>
+            <div v-if="motor.tipoCaja">
+              <router-link :to="{ name: 'TipoCajaView', params: { tipoCajaId: motor.tipoCaja.id } }">{{ motor.tipoCaja.id }}</router-link>
+            </div>
+          </dd>
+          <dt>
+            <span>Traccion</span>
+          </dt>
+          <dd>
+            <div v-if="motor.traccion">
+              <router-link :to="{ name: 'TraccionView', params: { traccionId: motor.traccion.id } }">{{ motor.traccion.id }}</router-link>
+            </div>
+          </dd>
         </dl>
         <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
           <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>

@@ -23,6 +23,12 @@
             <span>{{ pago.referencia }}</span>
           </dd>
           <dt>
+            <span>Created Date</span>
+          </dt>
+          <dd>
+            <span v-if="pago.createdDate">{{ formatDateLong(pago.createdDate) }}</span>
+          </dd>
+          <dt>
             <span>Venta</span>
           </dt>
           <dd>

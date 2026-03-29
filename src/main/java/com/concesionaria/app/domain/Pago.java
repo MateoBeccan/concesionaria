@@ -37,6 +37,9 @@ public class Pago implements Serializable {
     @Column(name = "referencia", length = 100)
     private String referencia;
 
+    @Column(name = "created_date")
+    private Instant createdDate;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "cliente", "estadoVenta", "moneda", "user" }, allowSetters = true)
     private Venta venta;
@@ -99,6 +102,19 @@ public class Pago implements Serializable {
 
     public void setReferencia(String referencia) {
         this.referencia = referencia;
+    }
+
+    public Instant getCreatedDate() {
+        return this.createdDate;
+    }
+
+    public Pago createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
     }
 
     public Venta getVenta() {
@@ -167,6 +183,7 @@ public class Pago implements Serializable {
             ", monto=" + getMonto() +
             ", fecha='" + getFecha() + "'" +
             ", referencia='" + getReferencia() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
             "}";
     }
 }

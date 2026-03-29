@@ -1,4 +1,4 @@
-import { type IAuto } from '@/shared/model/auto.model';
+import { type IVehiculo } from '@/shared/model/vehiculo.model';
 import { type IVenta } from '@/shared/model/venta.model';
 
 export interface IDetalleVenta {
@@ -7,7 +7,7 @@ export interface IDetalleVenta {
   cantidad?: number;
   subtotal?: number;
   venta?: IVenta | null;
-  auto?: IAuto | null;
+  vehiculo?: IVehiculo | null;
 }
 
 export class DetalleVenta implements IDetalleVenta {
@@ -17,6 +17,6 @@ export class DetalleVenta implements IDetalleVenta {
     public cantidad?: number,
     public subtotal?: number,
     public venta?: IVenta | null,
-    public auto?: IAuto | null,
+    public vehiculo?: IVehiculo | null,
   ) {}
 }

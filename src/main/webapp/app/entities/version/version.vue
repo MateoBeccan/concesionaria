@@ -46,6 +46,10 @@
               <span>Anio Fin</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'anioFin'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('modelo.id')">
+              <span>Modelo</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'modelo.id'"></jhi-sort-indicator>
+            </th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -58,6 +62,11 @@
             <td>{{ version.descripcion }}</td>
             <td>{{ version.anioInicio }}</td>
             <td>{{ version.anioFin }}</td>
+            <td>
+              <div v-if="version.modelo">
+                <router-link :to="{ name: 'ModeloView', params: { modeloId: version.modelo.id } }">{{ version.modelo.id }}</router-link>
+              </div>
+            </td>
             <td class="text-end">
               <div class="btn-group">
                 <router-link :to="{ name: 'VersionView', params: { versionId: version.id } }" custom v-slot="{ navigate }">

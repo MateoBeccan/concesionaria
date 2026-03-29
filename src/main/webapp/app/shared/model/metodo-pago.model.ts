@@ -3,7 +3,7 @@ export interface IMetodoPago {
   codigo?: string;
   descripcion?: string | null;
   activo?: boolean;
-  requiereReferencia?: boolean | null;
+  requiereReferencia?: boolean;
 }
 
 export class MetodoPago implements IMetodoPago {
@@ -12,7 +12,7 @@ export class MetodoPago implements IMetodoPago {
     public codigo?: string,
     public descripcion?: string | null,
     public activo?: boolean,
-    public requiereReferencia?: boolean | null,
+    public requiereReferencia?: boolean,
   ) {
     this.activo = this.activo ?? false;
     this.requiereReferencia = this.requiereReferencia ?? false;

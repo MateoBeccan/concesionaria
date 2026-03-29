@@ -2,6 +2,8 @@ package com.concesionaria.app.domain;
 
 import static com.concesionaria.app.domain.CombustibleTestSamples.*;
 import static com.concesionaria.app.domain.MotorTestSamples.*;
+import static com.concesionaria.app.domain.TipoCajaTestSamples.*;
+import static com.concesionaria.app.domain.TraccionTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.concesionaria.app.web.rest.TestUtil;
@@ -33,5 +35,29 @@ class MotorTest {
 
         motor.combustible(null);
         assertThat(motor.getCombustible()).isNull();
+    }
+
+    @Test
+    void tipoCajaTest() {
+        Motor motor = getMotorRandomSampleGenerator();
+        TipoCaja tipoCajaBack = getTipoCajaRandomSampleGenerator();
+
+        motor.setTipoCaja(tipoCajaBack);
+        assertThat(motor.getTipoCaja()).isEqualTo(tipoCajaBack);
+
+        motor.tipoCaja(null);
+        assertThat(motor.getTipoCaja()).isNull();
+    }
+
+    @Test
+    void traccionTest() {
+        Motor motor = getMotorRandomSampleGenerator();
+        Traccion traccionBack = getTraccionRandomSampleGenerator();
+
+        motor.setTraccion(traccionBack);
+        assertThat(motor.getTraccion()).isEqualTo(traccionBack);
+
+        motor.traccion(null);
+        assertThat(motor.getTraccion()).isNull();
     }
 }

@@ -59,6 +59,21 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-control-label" for="pago">Created Date</label>
+            <div class="d-flex">
+              <input
+                id="pago-createdDate"
+                data-cy="createdDate"
+                type="datetime-local"
+                class="form-control"
+                name="createdDate"
+                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.createdDate.$model)"
+                @change="updateInstantField('createdDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
             <label class="form-control-label" for="pago">Venta</label>
             <select class="form-control" id="pago-venta" data-cy="venta" name="venta" v-model="pago.venta">
               <option :value="null"></option>

@@ -70,6 +70,6 @@ public class DetalleVentaAsserts {
         assertThat(actual)
             .as("Verify DetalleVenta relationships")
             .satisfies(a -> assertThat(a.getVenta()).as("check venta").isEqualTo(expected.getVenta()))
-            .satisfies(a -> assertThat(a.getAuto()).as("check auto").isEqualTo(expected.getAuto()));
+            .satisfies(a -> assertThat(a.getVehiculo()).as("check vehiculo").isEqualTo(expected.getVehiculo()));
     }
 }

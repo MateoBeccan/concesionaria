@@ -3,9 +3,11 @@ import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
 
+import CarroceriaService from '@/entities/carroceria/carroceria.service';
 import MarcaService from '@/entities/marca/marca.service';
 import { useAlertService } from '@/shared/alert/alert.service';
-import { useValidation } from '@/shared/composables';
+import { useDateFormat, useValidation } from '@/shared/composables';
+import { type ICarroceria } from '@/shared/model/carroceria.model';
 import { type IMarca } from '@/shared/model/marca.model';
 import { type IModelo, Modelo } from '@/shared/model/modelo.model';
 
@@ -22,6 +24,10 @@ export default defineComponent({
     const marcaService = inject('marcaService', () => new MarcaService());
 
     const marcas: Ref<IMarca[]> = ref([]);
+
+    const carroceriaService = inject('carroceriaService', () => new CarroceriaService());
+
+    const carrocerias: Ref<ICarroceria[]> = ref([]);
     const isSaving = ref(false);
     const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
@@ -33,6 +39,8 @@ export default defineComponent({
     const retrieveModelo = async modeloId => {
       try {
         const res = await modeloService().find(modeloId);
+        res.createdDate = new Date(res.createdDate);
+        res.lastModifiedDate = new Date(res.lastModifiedDate);
         modelo.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -49,6 +57,11 @@ export default defineComponent({
         .then(res => {
           marcas.value = res.data;
         });
+      carroceriaService()
+        .retrieve()
+        .then(res => {
+          carrocerias.value = res.data;
+        });
     };
 
     initRelationships();
@@ -57,10 +70,19 @@ export default defineComponent({
     const validationRules = {
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
+        minLength: validations.minLength('Este campo requiere al menos 2 caracteres.', 2),
+        maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
       },
-      anioLanzamiento: {},
-      carroceria: {},
+      anioLanzamiento: {
+        required: validations.required('Este campo es obligatorio.'),
+        integer: validations.integer('Este campo debe ser un número.'),
+        min: validations.minValue('Este campo debe ser mayor que 1950.', 1950),
+        max: validations.maxValue('Este campo no puede ser mayor que 2100.', 2100),
+      },
+      createdDate: {},
+      lastModifiedDate: {},
       marca: {},
+      carroceria: {},
     };
     const v$ = useVuelidate(validationRules, modelo as any);
     v$.value.$validate();
@@ -73,7 +95,9 @@ export default defineComponent({
       isSaving,
       currentLanguage,
       marcas,
+      carrocerias,
       v$,
+      ...useDateFormat({ entityRef: modelo }),
     };
   },
   created(): void {},

@@ -66,6 +66,14 @@
               <span>Observaciones</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'observaciones'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('createdDate')">
+              <span>Created Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('lastModifiedDate')">
+              <span>Last Modified Date</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'lastModifiedDate'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('cliente.id')">
               <span>Cliente</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'cliente.id'"></jhi-sort-indicator>
@@ -99,6 +107,8 @@
             <td>{{ venta.totalPagado }}</td>
             <td>{{ venta.saldo }}</td>
             <td>{{ venta.observaciones }}</td>
+            <td>{{ formatDateShort(venta.createdDate) || '' }}</td>
+            <td>{{ formatDateShort(venta.lastModifiedDate) || '' }}</td>
             <td>
               <div v-if="venta.cliente">
                 <router-link :to="{ name: 'ClienteView', params: { clienteId: venta.cliente.id } }">{{ venta.cliente.id }}</router-link>

@@ -22,10 +22,12 @@ public class Combustible implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(min = 3, max = 50)
+    @Column(name = "nombre", length = 50, nullable = false)
     private String nombre;
 
-    @Column(name = "descripcion")
+    @Size(max = 100)
+    @Column(name = "descripcion", length = 100)
     private String descripcion;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

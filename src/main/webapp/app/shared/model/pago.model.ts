@@ -7,6 +7,7 @@ export interface IPago {
   monto?: number;
   fecha?: Date;
   referencia?: string | null;
+  createdDate?: Date | null;
   venta?: IVenta | null;
   metodoPago?: IMetodoPago | null;
   moneda?: IMoneda | null;
@@ -18,6 +19,7 @@ export class Pago implements IPago {
     public monto?: number,
     public fecha?: Date,
     public referencia?: string | null,
+    public createdDate?: Date | null,
     public venta?: IVenta | null,
     public metodoPago?: IMetodoPago | null,
     public moneda?: IMoneda | null,

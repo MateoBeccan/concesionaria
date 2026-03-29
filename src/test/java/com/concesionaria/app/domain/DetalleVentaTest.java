@@ -1,7 +1,7 @@
 package com.concesionaria.app.domain;
 
-import static com.concesionaria.app.domain.AutoTestSamples.*;
 import static com.concesionaria.app.domain.DetalleVentaTestSamples.*;
+import static com.concesionaria.app.domain.VehiculoTestSamples.*;
 import static com.concesionaria.app.domain.VentaTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,14 +37,14 @@ class DetalleVentaTest {
     }
 
     @Test
-    void autoTest() {
+    void vehiculoTest() {
         DetalleVenta detalleVenta = getDetalleVentaRandomSampleGenerator();
-        Auto autoBack = getAutoRandomSampleGenerator();
+        Vehiculo vehiculoBack = getVehiculoRandomSampleGenerator();
 
-        detalleVenta.setAuto(autoBack);
-        assertThat(detalleVenta.getAuto()).isEqualTo(autoBack);
+        detalleVenta.setVehiculo(vehiculoBack);
+        assertThat(detalleVenta.getVehiculo()).isEqualTo(vehiculoBack);
 
-        detalleVenta.auto(null);
-        assertThat(detalleVenta.getAuto()).isNull();
+        detalleVenta.vehiculo(null);
+        assertThat(detalleVenta.getVehiculo()).isNull();
     }
 }

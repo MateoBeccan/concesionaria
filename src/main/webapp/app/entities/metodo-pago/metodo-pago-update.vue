@@ -65,7 +65,13 @@
               data-cy="requiereReferencia"
               :class="{ valid: !v$.requiereReferencia.$invalid, invalid: v$.requiereReferencia.$invalid }"
               v-model="v$.requiereReferencia.$model"
+              required
             />
+            <div v-if="v$.requiereReferencia.$anyDirty && v$.requiereReferencia.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.requiereReferencia.$errors" :key="error.$uid">{{
+                error.$message
+              }}</small>
+            </div>
           </div>
         </div>
         <div>

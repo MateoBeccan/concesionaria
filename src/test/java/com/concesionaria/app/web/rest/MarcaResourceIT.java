@@ -14,6 +14,8 @@ import com.concesionaria.app.service.dto.MarcaDTO;
 import com.concesionaria.app.service.mapper.MarcaMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 import org.junit.jupiter.api.AfterEach;
@@ -39,6 +41,12 @@ class MarcaResourceIT {
 
     private static final String DEFAULT_PAIS_ORIGEN = "AAAAAAAAAA";
     private static final String UPDATED_PAIS_ORIGEN = "BBBBBBBBBB";
+
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final Instant DEFAULT_LAST_MODIFIED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_LAST_MODIFIED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private static final String ENTITY_API_URL = "/api/marcas";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -72,7 +80,11 @@ class MarcaResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Marca createEntity() {
-        return new Marca().nombre(DEFAULT_NOMBRE).paisOrigen(DEFAULT_PAIS_ORIGEN);
+        return new Marca()
+            .nombre(DEFAULT_NOMBRE)
+            .paisOrigen(DEFAULT_PAIS_ORIGEN)
+            .createdDate(DEFAULT_CREATED_DATE)
+            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE);
     }
 
     /**
@@ -82,7 +94,11 @@ class MarcaResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Marca createUpdatedEntity() {
-        return new Marca().nombre(UPDATED_NOMBRE).paisOrigen(UPDATED_PAIS_ORIGEN);
+        return new Marca()
+            .nombre(UPDATED_NOMBRE)
+            .paisOrigen(UPDATED_PAIS_ORIGEN)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
     }
 
     @BeforeEach
@@ -170,7 +186,9 @@ class MarcaResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(marca.getId().intValue())))
             .andExpect(jsonPath("$.[*].nombre").value(hasItem(DEFAULT_NOMBRE)))
-            .andExpect(jsonPath("$.[*].paisOrigen").value(hasItem(DEFAULT_PAIS_ORIGEN)));
+            .andExpect(jsonPath("$.[*].paisOrigen").value(hasItem(DEFAULT_PAIS_ORIGEN)))
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
+            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())));
     }
 
     @Test
@@ -186,7 +204,9 @@ class MarcaResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.id").value(marca.getId().intValue()))
             .andExpect(jsonPath("$.nombre").value(DEFAULT_NOMBRE))
-            .andExpect(jsonPath("$.paisOrigen").value(DEFAULT_PAIS_ORIGEN));
+            .andExpect(jsonPath("$.paisOrigen").value(DEFAULT_PAIS_ORIGEN))
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
+            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()));
     }
 
     @Test
@@ -208,7 +228,11 @@ class MarcaResourceIT {
         Marca updatedMarca = marcaRepository.findById(marca.getId()).orElseThrow();
         // Disconnect from session so that the updates on updatedMarca are not directly saved in db
         em.detach(updatedMarca);
-        updatedMarca.nombre(UPDATED_NOMBRE).paisOrigen(UPDATED_PAIS_ORIGEN);
+        updatedMarca
+            .nombre(UPDATED_NOMBRE)
+            .paisOrigen(UPDATED_PAIS_ORIGEN)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
         MarcaDTO marcaDTO = marcaMapper.toDto(updatedMarca);
 
         restMarcaMockMvc
@@ -294,7 +318,7 @@ class MarcaResourceIT {
         Marca partialUpdatedMarca = new Marca();
         partialUpdatedMarca.setId(marca.getId());
 
-        partialUpdatedMarca.paisOrigen(UPDATED_PAIS_ORIGEN);
+        partialUpdatedMarca.paisOrigen(UPDATED_PAIS_ORIGEN).lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restMarcaMockMvc
             .perform(
@@ -322,7 +346,11 @@ class MarcaResourceIT {
         Marca partialUpdatedMarca = new Marca();
         partialUpdatedMarca.setId(marca.getId());
 
-        partialUpdatedMarca.nombre(UPDATED_NOMBRE).paisOrigen(UPDATED_PAIS_ORIGEN);
+        partialUpdatedMarca
+            .nombre(UPDATED_NOMBRE)
+            .paisOrigen(UPDATED_PAIS_ORIGEN)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restMarcaMockMvc
             .perform(

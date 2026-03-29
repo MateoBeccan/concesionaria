@@ -37,6 +37,9 @@
               :class="{ valid: !v$.descripcion.$invalid, invalid: v$.descripcion.$invalid }"
               v-model="v$.descripcion.$model"
             />
+            <div v-if="v$.descripcion.$anyDirty && v$.descripcion.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.descripcion.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
         </div>
         <div>

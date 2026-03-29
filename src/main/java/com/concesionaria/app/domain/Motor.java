@@ -22,23 +22,40 @@ public class Motor implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(min = 2, max = 100)
+    @Column(name = "nombre", length = 100, nullable = false)
     private String nombre;
 
-    @Column(name = "cilindrada_cc")
+    @NotNull
+    @Min(value = 50)
+    @Max(value = 10000)
+    @Column(name = "cilindrada_cc", nullable = false)
     private Integer cilindradaCc;
 
-    @Column(name = "cilindro_cant")
+    @NotNull
+    @Min(value = 1)
+    @Max(value = 16)
+    @Column(name = "cilindro_cant", nullable = false)
     private Integer cilindroCant;
 
-    @Column(name = "potencia_hp")
+    @NotNull
+    @Min(value = 1)
+    @Max(value = 2000)
+    @Column(name = "potencia_hp", nullable = false)
     private Integer potenciaHp;
 
-    @Column(name = "turbo")
+    @NotNull
+    @Column(name = "turbo", nullable = false)
     private Boolean turbo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Combustible combustible;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private TipoCaja tipoCaja;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Traccion traccion;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -130,6 +147,32 @@ public class Motor implements Serializable {
 
     public Motor combustible(Combustible combustible) {
         this.setCombustible(combustible);
+        return this;
+    }
+
+    public TipoCaja getTipoCaja() {
+        return this.tipoCaja;
+    }
+
+    public void setTipoCaja(TipoCaja tipoCaja) {
+        this.tipoCaja = tipoCaja;
+    }
+
+    public Motor tipoCaja(TipoCaja tipoCaja) {
+        this.setTipoCaja(tipoCaja);
+        return this;
+    }
+
+    public Traccion getTraccion() {
+        return this.traccion;
+    }
+
+    public void setTraccion(Traccion traccion) {
+        this.traccion = traccion;
+    }
+
+    public Motor traccion(Traccion traccion) {
+        this.setTraccion(traccion);
         return this;
     }
 

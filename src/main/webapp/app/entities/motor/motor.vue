@@ -54,6 +54,14 @@
               <span>Combustible</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'combustible.id'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('tipoCaja.id')">
+              <span>Tipo Caja</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'tipoCaja.id'"></jhi-sort-indicator>
+            </th>
+            <th scope="col" @click="changeOrder('traccion.id')">
+              <span>Traccion</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'traccion.id'"></jhi-sort-indicator>
+            </th>
             <th scope="col"></th>
           </tr>
         </thead>
@@ -72,6 +80,16 @@
                 <router-link :to="{ name: 'CombustibleView', params: { combustibleId: motor.combustible.id } }">{{
                   motor.combustible.id
                 }}</router-link>
+              </div>
+            </td>
+            <td>
+              <div v-if="motor.tipoCaja">
+                <router-link :to="{ name: 'TipoCajaView', params: { tipoCajaId: motor.tipoCaja.id } }">{{ motor.tipoCaja.id }}</router-link>
+              </div>
+            </td>
+            <td>
+              <div v-if="motor.traccion">
+                <router-link :to="{ name: 'TraccionView', params: { traccionId: motor.traccion.id } }">{{ motor.traccion.id }}</router-link>
               </div>
             </td>
             <td class="text-end">

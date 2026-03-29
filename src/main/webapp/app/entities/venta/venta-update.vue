@@ -154,6 +154,36 @@
             </div>
           </div>
           <div class="mb-3">
+            <label class="form-control-label" for="venta">Created Date</label>
+            <div class="d-flex">
+              <input
+                id="venta-createdDate"
+                data-cy="createdDate"
+                type="datetime-local"
+                class="form-control"
+                name="createdDate"
+                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.createdDate.$model)"
+                @change="updateInstantField('createdDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="venta">Last Modified Date</label>
+            <div class="d-flex">
+              <input
+                id="venta-lastModifiedDate"
+                data-cy="lastModifiedDate"
+                type="datetime-local"
+                class="form-control"
+                name="lastModifiedDate"
+                :class="{ valid: !v$.lastModifiedDate.$invalid, invalid: v$.lastModifiedDate.$invalid }"
+                :value="convertDateTimeFromServer(v$.lastModifiedDate.$model)"
+                @change="updateInstantField('lastModifiedDate', $event)"
+              />
+            </div>
+          </div>
+          <div class="mb-3">
             <label class="form-control-label" for="venta">Cliente</label>
             <select class="form-control" id="venta-cliente" data-cy="cliente" name="cliente" v-model="venta.cliente">
               <option :value="null"></option>

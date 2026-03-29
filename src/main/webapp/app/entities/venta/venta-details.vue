@@ -59,6 +59,18 @@
             <span>{{ venta.observaciones }}</span>
           </dd>
           <dt>
+            <span>Created Date</span>
+          </dt>
+          <dd>
+            <span v-if="venta.createdDate">{{ formatDateLong(venta.createdDate) }}</span>
+          </dd>
+          <dt>
+            <span>Last Modified Date</span>
+          </dt>
+          <dd>
+            <span v-if="venta.lastModifiedDate">{{ formatDateLong(venta.lastModifiedDate) }}</span>
+          </dd>
+          <dt>
             <span>Cliente</span>
           </dt>
           <dd>

@@ -46,9 +46,9 @@
               <span>Venta</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'venta.id'"></jhi-sort-indicator>
             </th>
-            <th scope="col" @click="changeOrder('auto.id')">
-              <span>Auto</span>
-              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'auto.id'"></jhi-sort-indicator>
+            <th scope="col" @click="changeOrder('vehiculo.id')">
+              <span>Vehiculo</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'vehiculo.id'"></jhi-sort-indicator>
             </th>
             <th scope="col"></th>
           </tr>
@@ -71,8 +71,10 @@
               </div>
             </td>
             <td>
-              <div v-if="detalleVenta.auto">
-                <router-link :to="{ name: 'AutoView', params: { autoId: detalleVenta.auto.id } }">{{ detalleVenta.auto.id }}</router-link>
+              <div v-if="detalleVenta.vehiculo">
+                <router-link :to="{ name: 'VehiculoView', params: { vehiculoId: detalleVenta.vehiculo.id } }">{{
+                  detalleVenta.vehiculo.id
+                }}</router-link>
               </div>
             </td>
             <td class="text-end">

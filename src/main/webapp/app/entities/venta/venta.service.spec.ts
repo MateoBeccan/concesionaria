@@ -35,12 +35,17 @@ describe('Service Tests', () => {
     beforeEach(() => {
       service = new VentaService();
       currentDate = new Date();
-      elemDefault = new Venta(123, currentDate, 0, 0, 0, 0, 0, 0, 0, 'AAAAAAA');
+      elemDefault = new Venta(123, currentDate, 0, 0, 0, 0, 0, 0, 0, 'AAAAAAA', currentDate, currentDate);
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
-        const returnedFromService = { fecha: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
+        const returnedFromService = {
+          fecha: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
         axiosStub.get.resolves({ data: returnedFromService });
 
         return service.find(123).then(res => {
@@ -59,8 +64,14 @@ describe('Service Tests', () => {
       });
 
       it('should create a Venta', async () => {
-        const returnedFromService = { id: 123, fecha: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
-        const expected = { fecha: currentDate, ...returnedFromService };
+        const returnedFromService = {
+          id: 123,
+          fecha: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
+        const expected = { fecha: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
 
         axiosStub.post.resolves({ data: returnedFromService });
         return service.create({}).then(res => {
@@ -90,10 +101,12 @@ describe('Service Tests', () => {
           totalPagado: 1,
           saldo: 1,
           observaciones: 'BBBBBB',
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
 
-        const expected = { fecha: currentDate, ...returnedFromService };
+        const expected = { fecha: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.put.resolves({ data: returnedFromService });
 
         return service.update(expected).then(res => {
@@ -116,7 +129,7 @@ describe('Service Tests', () => {
         const patchObject = { importeNeto: 1, impuesto: 1, total: 1, saldo: 1, observaciones: 'BBBBBB', ...new Venta() };
         const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { fecha: currentDate, ...returnedFromService };
+        const expected = { fecha: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.patch.resolves({ data: returnedFromService });
 
         return service.partialUpdate(patchObject).then(res => {
@@ -146,9 +159,11 @@ describe('Service Tests', () => {
           totalPagado: 1,
           saldo: 1,
           observaciones: 'BBBBBB',
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
-        const expected = { fecha: currentDate, ...returnedFromService };
+        const expected = { fecha: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.get.resolves([returnedFromService]);
         return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
           expect(res).toContainEqual(expected);

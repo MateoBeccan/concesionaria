@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import static com.concesionaria.app.domain.ModeloTestSamples.*;
 import static com.concesionaria.app.domain.VersionTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,5 +21,17 @@ class VersionTest {
 
         version2 = getVersionSample2();
         assertThat(version1).isNotEqualTo(version2);
+    }
+
+    @Test
+    void modeloTest() {
+        Version version = getVersionRandomSampleGenerator();
+        Modelo modeloBack = getModeloRandomSampleGenerator();
+
+        version.setModelo(modeloBack);
+        assertThat(version.getModelo()).isEqualTo(modeloBack);
+
+        version.modelo(null);
+        assertThat(version.getModelo()).isNull();
     }
 }

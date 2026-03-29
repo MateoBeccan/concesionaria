@@ -32,6 +32,29 @@
   <include file="config/liquibase/changelog/20260323013042_added_entity_Moneda.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260323013043_added_entity_Cotizacion.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260323235042_added_entity_ConfiguracionAuto.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200006_added_entity_Marca.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200007_added_entity_Modelo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200008_added_entity_Version.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200009_added_entity_Motor.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200010_added_entity_Combustible.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200011_added_entity_Cliente.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200012_added_entity_CondicionIva.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200013_added_entity_EstadoVenta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200014_added_entity_Venta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200015_added_entity_DetalleVenta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200016_added_entity_Comprobante.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200017_added_entity_TipoComprobante.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200018_added_entity_Pago.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200019_added_entity_MetodoPago.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200020_added_entity_Moneda.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200021_added_entity_Cotizacion.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200022_added_entity_Carroceria.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200023_added_entity_TipoCaja.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200024_added_entity_Traccion.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200025_added_entity_TipoVehiculo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200026_added_entity_Vehiculo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260326171110_added_entity_Inventario.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260326171111_added_entity_TipoDocumento.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <include file="config/liquibase/changelog/20260320182405_added_entity_constraints_Modelo.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260320230055_added_entity_constraints_Version.xml" relativeToChangelogFile="false"/>
@@ -44,6 +67,17 @@
   <include file="config/liquibase/changelog/20260323013040_added_entity_constraints_Pago.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260323013043_added_entity_constraints_Cotizacion.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260323235042_added_entity_constraints_ConfiguracionAuto.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200007_added_entity_constraints_Modelo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200008_added_entity_constraints_Version.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200009_added_entity_constraints_Motor.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200011_added_entity_constraints_Cliente.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200014_added_entity_constraints_Venta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200015_added_entity_constraints_DetalleVenta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200016_added_entity_constraints_Comprobante.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200018_added_entity_constraints_Pago.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200021_added_entity_constraints_Cotizacion.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260325200026_added_entity_constraints_Vehiculo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260326171110_added_entity_constraints_Inventario.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
   <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>

@@ -1,9 +1,5 @@
 <template>
   <div>
-    <b-dropdown-item to="/prueba-1">
-      <font-awesome-icon icon="asterisk" />
-      <span>Prueba 1</span>
-    </b-dropdown-item>
     <b-dropdown-item to="/marca">
       <font-awesome-icon icon="asterisk" />
       <span>Marca</span>
@@ -23,10 +19,6 @@
     <b-dropdown-item to="/combustible">
       <font-awesome-icon icon="asterisk" />
       <span>Combustible</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/auto">
-      <font-awesome-icon icon="asterisk" />
-      <span>Auto</span>
     </b-dropdown-item>
     <b-dropdown-item to="/cliente">
       <font-awesome-icon icon="asterisk" />
@@ -72,9 +64,33 @@
       <font-awesome-icon icon="asterisk" />
       <span>Cotizacion</span>
     </b-dropdown-item>
-    <b-dropdown-item to="/configuracion-auto">
+    <b-dropdown-item to="/carroceria">
       <font-awesome-icon icon="asterisk" />
-      <span>Configuracion Auto</span>
+      <span>Carroceria</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-caja">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipo Caja</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/traccion">
+      <font-awesome-icon icon="asterisk" />
+      <span>Traccion</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-vehiculo">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipo Vehiculo</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/vehiculo">
+      <font-awesome-icon icon="asterisk" />
+      <span>Vehiculo</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/inventario">
+      <font-awesome-icon icon="asterisk" />
+      <span>Inventario</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-documento">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipo Documento</span>
     </b-dropdown-item>
     <!-- jhipster-needle-add-entity-to-menu - JHipster will add entities to the menu here -->
   </div>

@@ -35,6 +35,9 @@
               :class="{ valid: !v$.descripcion.$invalid, invalid: v$.descripcion.$invalid }"
               v-model="v$.descripcion.$model"
             />
+            <div v-if="v$.descripcion.$anyDirty && v$.descripcion.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.descripcion.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="version">Anio Inicio</label>
@@ -46,7 +49,11 @@
               data-cy="anioInicio"
               :class="{ valid: !v$.anioInicio.$invalid, invalid: v$.anioInicio.$invalid }"
               v-model.number="v$.anioInicio.$model"
+              required
             />
+            <div v-if="v$.anioInicio.$anyDirty && v$.anioInicio.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.anioInicio.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="version">Anio Fin</label>
@@ -59,6 +66,22 @@
               :class="{ valid: !v$.anioFin.$invalid, invalid: v$.anioFin.$invalid }"
               v-model.number="v$.anioFin.$model"
             />
+            <div v-if="v$.anioFin.$anyDirty && v$.anioFin.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.anioFin.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="version">Modelo</label>
+            <select class="form-control" id="version-modelo" data-cy="modelo" name="modelo" v-model="version.modelo">
+              <option :value="null"></option>
+              <option
+                :value="version.modelo && modeloOption.id === version.modelo.id ? version.modelo : modeloOption"
+                v-for="modeloOption in modelos"
+                :key="modeloOption.id"
+              >
+                {{ modeloOption.id }}
+              </option>
+            </select>
           </div>
         </div>
         <div>

@@ -75,6 +75,12 @@ class VentaResourceIT {
     private static final String DEFAULT_OBSERVACIONES = "AAAAAAAAAA";
     private static final String UPDATED_OBSERVACIONES = "BBBBBBBBBB";
 
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final Instant DEFAULT_LAST_MODIFIED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_LAST_MODIFIED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
     private static final String ENTITY_API_URL = "/api/ventas";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
 
@@ -125,7 +131,9 @@ class VentaResourceIT {
             .porcentajeImpuesto(DEFAULT_PORCENTAJE_IMPUESTO)
             .totalPagado(DEFAULT_TOTAL_PAGADO)
             .saldo(DEFAULT_SALDO)
-            .observaciones(DEFAULT_OBSERVACIONES);
+            .observaciones(DEFAULT_OBSERVACIONES)
+            .createdDate(DEFAULT_CREATED_DATE)
+            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE);
     }
 
     /**
@@ -144,7 +152,9 @@ class VentaResourceIT {
             .porcentajeImpuesto(UPDATED_PORCENTAJE_IMPUESTO)
             .totalPagado(UPDATED_TOTAL_PAGADO)
             .saldo(UPDATED_SALDO)
-            .observaciones(UPDATED_OBSERVACIONES);
+            .observaciones(UPDATED_OBSERVACIONES)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
     }
 
     @BeforeEach
@@ -307,7 +317,9 @@ class VentaResourceIT {
             .andExpect(jsonPath("$.[*].porcentajeImpuesto").value(hasItem(sameNumber(DEFAULT_PORCENTAJE_IMPUESTO))))
             .andExpect(jsonPath("$.[*].totalPagado").value(hasItem(sameNumber(DEFAULT_TOTAL_PAGADO))))
             .andExpect(jsonPath("$.[*].saldo").value(hasItem(sameNumber(DEFAULT_SALDO))))
-            .andExpect(jsonPath("$.[*].observaciones").value(hasItem(DEFAULT_OBSERVACIONES)));
+            .andExpect(jsonPath("$.[*].observaciones").value(hasItem(DEFAULT_OBSERVACIONES)))
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
+            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())));
     }
 
     @SuppressWarnings({ "unchecked" })
@@ -347,7 +359,9 @@ class VentaResourceIT {
             .andExpect(jsonPath("$.porcentajeImpuesto").value(sameNumber(DEFAULT_PORCENTAJE_IMPUESTO)))
             .andExpect(jsonPath("$.totalPagado").value(sameNumber(DEFAULT_TOTAL_PAGADO)))
             .andExpect(jsonPath("$.saldo").value(sameNumber(DEFAULT_SALDO)))
-            .andExpect(jsonPath("$.observaciones").value(DEFAULT_OBSERVACIONES));
+            .andExpect(jsonPath("$.observaciones").value(DEFAULT_OBSERVACIONES))
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
+            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()));
     }
 
     @Test
@@ -378,7 +392,9 @@ class VentaResourceIT {
             .porcentajeImpuesto(UPDATED_PORCENTAJE_IMPUESTO)
             .totalPagado(UPDATED_TOTAL_PAGADO)
             .saldo(UPDATED_SALDO)
-            .observaciones(UPDATED_OBSERVACIONES);
+            .observaciones(UPDATED_OBSERVACIONES)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
         VentaDTO ventaDTO = ventaMapper.toDto(updatedVenta);
 
         restVentaMockMvc
@@ -470,7 +486,8 @@ class VentaResourceIT {
             .total(UPDATED_TOTAL)
             .porcentajeImpuesto(UPDATED_PORCENTAJE_IMPUESTO)
             .totalPagado(UPDATED_TOTAL_PAGADO)
-            .saldo(UPDATED_SALDO);
+            .saldo(UPDATED_SALDO)
+            .createdDate(UPDATED_CREATED_DATE);
 
         restVentaMockMvc
             .perform(
@@ -507,7 +524,9 @@ class VentaResourceIT {
             .porcentajeImpuesto(UPDATED_PORCENTAJE_IMPUESTO)
             .totalPagado(UPDATED_TOTAL_PAGADO)
             .saldo(UPDATED_SALDO)
-            .observaciones(UPDATED_OBSERVACIONES);
+            .observaciones(UPDATED_OBSERVACIONES)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restVentaMockMvc
             .perform(

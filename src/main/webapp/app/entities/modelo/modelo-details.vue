@@ -17,10 +17,16 @@
             <span>{{ modelo.anioLanzamiento }}</span>
           </dd>
           <dt>
-            <span>Carroceria</span>
+            <span>Created Date</span>
           </dt>
           <dd>
-            <span>{{ modelo.carroceria }}</span>
+            <span v-if="modelo.createdDate">{{ formatDateLong(modelo.createdDate) }}</span>
+          </dd>
+          <dt>
+            <span>Last Modified Date</span>
+          </dt>
+          <dd>
+            <span v-if="modelo.lastModifiedDate">{{ formatDateLong(modelo.lastModifiedDate) }}</span>
           </dd>
           <dt>
             <span>Marca</span>
@@ -28,6 +34,16 @@
           <dd>
             <div v-if="modelo.marca">
               <router-link :to="{ name: 'MarcaView', params: { marcaId: modelo.marca.id } }">{{ modelo.marca.id }}</router-link>
+            </div>
+          </dd>
+          <dt>
+            <span>Carroceria</span>
+          </dt>
+          <dd>
+            <div v-if="modelo.carroceria">
+              <router-link :to="{ name: 'CarroceriaView', params: { carroceriaId: modelo.carroceria.id } }">{{
+                modelo.carroceria.id
+              }}</router-link>
             </div>
           </dd>
         </dl>

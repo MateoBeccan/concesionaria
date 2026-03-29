@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 
 import CondicionIvaService from '@/entities/condicion-iva/condicion-iva.service';
+import TipoDocumentoService from '@/entities/tipo-documento/tipo-documento.service';
 import AlertService from '@/shared/alert/alert.service';
 import { DATE_TIME_LONG_FORMAT } from '@/shared/composables/date-format';
 
@@ -56,6 +57,10 @@ describe('Component Tests', () => {
           clienteService: () => clienteServiceStub,
           condicionIvaService: () =>
             sinon.createStubInstance<CondicionIvaService>(CondicionIvaService, {
+              retrieve: sinon.stub().resolves({}),
+            } as any),
+          tipoDocumentoService: () =>
+            sinon.createStubInstance<TipoDocumentoService>(TipoDocumentoService, {
               retrieve: sinon.stub().resolves({}),
             } as any),
         },

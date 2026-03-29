@@ -78,7 +78,9 @@ public class VentaAsserts {
                     .isEqualTo(expected.getTotalPagado())
             )
             .satisfies(a -> assertThat(a.getSaldo()).as("check saldo").usingComparator(bigDecimalCompareTo).isEqualTo(expected.getSaldo()))
-            .satisfies(a -> assertThat(a.getObservaciones()).as("check observaciones").isEqualTo(expected.getObservaciones()));
+            .satisfies(a -> assertThat(a.getObservaciones()).as("check observaciones").isEqualTo(expected.getObservaciones()))
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))
+            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()));
     }
 
     /**

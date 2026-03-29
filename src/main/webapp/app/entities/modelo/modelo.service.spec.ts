@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import axios from 'axios';
+import dayjs from 'dayjs';
 import sinon from 'sinon';
 
+import { DATE_TIME_FORMAT } from '@/shared/composables/date-format';
 import { Modelo } from '@/shared/model/modelo.model';
 
 import ModeloService from './modelo.service';
@@ -28,15 +30,21 @@ describe('Service Tests', () => {
   describe('Modelo Service', () => {
     let service: ModeloService;
     let elemDefault;
+    let currentDate: Date;
 
     beforeEach(() => {
       service = new ModeloService();
-      elemDefault = new Modelo(123, 'AAAAAAA', 0, 'AAAAAAA');
+      currentDate = new Date();
+      elemDefault = new Modelo(123, 'AAAAAAA', 0, currentDate, currentDate);
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
-        const returnedFromService = { ...elemDefault };
+        const returnedFromService = {
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
         axiosStub.get.resolves({ data: returnedFromService });
 
         return service.find(123).then(res => {
@@ -55,8 +63,13 @@ describe('Service Tests', () => {
       });
 
       it('should create a Modelo', async () => {
-        const returnedFromService = { id: 123, ...elemDefault };
-        const expected = { ...returnedFromService };
+        const returnedFromService = {
+          id: 123,
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
+        const expected = { createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
 
         axiosStub.post.resolves({ data: returnedFromService });
         return service.create({}).then(res => {
@@ -76,9 +89,15 @@ describe('Service Tests', () => {
       });
 
       it('should update a Modelo', async () => {
-        const returnedFromService = { nombre: 'BBBBBB', anioLanzamiento: 1, carroceria: 'BBBBBB', ...elemDefault };
+        const returnedFromService = {
+          nombre: 'BBBBBB',
+          anioLanzamiento: 1,
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
 
-        const expected = { ...returnedFromService };
+        const expected = { createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.put.resolves({ data: returnedFromService });
 
         return service.update(expected).then(res => {
@@ -101,7 +120,7 @@ describe('Service Tests', () => {
         const patchObject = { anioLanzamiento: 1, ...new Modelo() };
         const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { ...returnedFromService };
+        const expected = { createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.patch.resolves({ data: returnedFromService });
 
         return service.partialUpdate(patchObject).then(res => {
@@ -121,8 +140,14 @@ describe('Service Tests', () => {
       });
 
       it('should return a list of Modelo', async () => {
-        const returnedFromService = { nombre: 'BBBBBB', anioLanzamiento: 1, carroceria: 'BBBBBB', ...elemDefault };
-        const expected = { ...returnedFromService };
+        const returnedFromService = {
+          nombre: 'BBBBBB',
+          anioLanzamiento: 1,
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
+        const expected = { createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
         axiosStub.get.resolves([returnedFromService]);
         return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
           expect(res).toContainEqual(expected);

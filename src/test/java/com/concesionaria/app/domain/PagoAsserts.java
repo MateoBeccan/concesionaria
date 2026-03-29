@@ -50,7 +50,8 @@ public class PagoAsserts {
             .as("Verify Pago relevant properties")
             .satisfies(a -> assertThat(a.getMonto()).as("check monto").usingComparator(bigDecimalCompareTo).isEqualTo(expected.getMonto()))
             .satisfies(a -> assertThat(a.getFecha()).as("check fecha").isEqualTo(expected.getFecha()))
-            .satisfies(a -> assertThat(a.getReferencia()).as("check referencia").isEqualTo(expected.getReferencia()));
+            .satisfies(a -> assertThat(a.getReferencia()).as("check referencia").isEqualTo(expected.getReferencia()))
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()));
     }
 
     /**

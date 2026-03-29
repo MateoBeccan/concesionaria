@@ -2,6 +2,7 @@ package com.concesionaria.app.service.dto;
 
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -13,9 +14,15 @@ public class MarcaDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(min = 2, max = 100)
     private String nombre;
 
+    @Size(max = 100)
     private String paisOrigen;
+
+    private Instant createdDate;
+
+    private Instant lastModifiedDate;
 
     public Long getId() {
         return id;
@@ -39,6 +46,22 @@ public class MarcaDTO implements Serializable {
 
     public void setPaisOrigen(String paisOrigen) {
         this.paisOrigen = paisOrigen;
+    }
+
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
     }
 
     @Override
@@ -69,6 +92,8 @@ public class MarcaDTO implements Serializable {
             "id=" + getId() +
             ", nombre='" + getNombre() + "'" +
             ", paisOrigen='" + getPaisOrigen() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }

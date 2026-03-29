@@ -25,7 +25,7 @@
           </span>
         </b-nav-item>
         <b-nav-item-dropdown
-          no-size="true"
+          :no-size="true"
           end
           id="entity-menu"
           v-if="authenticated"

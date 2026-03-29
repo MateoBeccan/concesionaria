@@ -60,6 +60,8 @@ public class VersionAsserts {
      * @param actual the actual entity
      */
     public static void assertVersionUpdatableRelationshipsEquals(Version expected, Version actual) {
-        // empty method
+        assertThat(actual)
+            .as("Verify Version relationships")
+            .satisfies(a -> assertThat(a.getModelo()).as("check modelo").isEqualTo(expected.getModelo()));
     }
 }

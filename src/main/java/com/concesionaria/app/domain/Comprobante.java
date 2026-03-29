@@ -33,17 +33,23 @@ public class Comprobante implements Serializable {
     @Column(name = "fecha_emision", nullable = false)
     private Instant fechaEmision;
 
+    @NotNull
     @DecimalMin(value = "0")
-    @Column(name = "importe_neto", precision = 21, scale = 2)
+    @Column(name = "importe_neto", precision = 21, scale = 2, nullable = false)
     private BigDecimal importeNeto;
 
+    @NotNull
     @DecimalMin(value = "0")
-    @Column(name = "impuesto", precision = 21, scale = 2)
+    @Column(name = "impuesto", precision = 21, scale = 2, nullable = false)
     private BigDecimal impuesto;
 
+    @NotNull
     @DecimalMin(value = "0")
-    @Column(name = "total", precision = 21, scale = 2)
+    @Column(name = "total", precision = 21, scale = 2, nullable = false)
     private BigDecimal total;
+
+    @Column(name = "created_date")
+    private Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "cliente", "estadoVenta", "moneda", "user" }, allowSetters = true)
@@ -135,6 +141,19 @@ public class Comprobante implements Serializable {
         this.total = total;
     }
 
+    public Instant getCreatedDate() {
+        return this.createdDate;
+    }
+
+    public Comprobante createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
+        return this;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
     public Venta getVenta() {
         return this.venta;
     }
@@ -203,6 +222,7 @@ public class Comprobante implements Serializable {
             ", importeNeto=" + getImporteNeto() +
             ", impuesto=" + getImpuesto() +
             ", total=" + getTotal() +
+            ", createdDate='" + getCreatedDate() + "'" +
             "}";
     }
 }

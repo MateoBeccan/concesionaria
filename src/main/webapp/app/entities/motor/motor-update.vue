@@ -34,7 +34,11 @@
               data-cy="cilindradaCc"
               :class="{ valid: !v$.cilindradaCc.$invalid, invalid: v$.cilindradaCc.$invalid }"
               v-model.number="v$.cilindradaCc.$model"
+              required
             />
+            <div v-if="v$.cilindradaCc.$anyDirty && v$.cilindradaCc.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.cilindradaCc.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Cilindro Cant</label>
@@ -46,7 +50,11 @@
               data-cy="cilindroCant"
               :class="{ valid: !v$.cilindroCant.$invalid, invalid: v$.cilindroCant.$invalid }"
               v-model.number="v$.cilindroCant.$model"
+              required
             />
+            <div v-if="v$.cilindroCant.$anyDirty && v$.cilindroCant.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.cilindroCant.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Potencia Hp</label>
@@ -58,7 +66,11 @@
               data-cy="potenciaHp"
               :class="{ valid: !v$.potenciaHp.$invalid, invalid: v$.potenciaHp.$invalid }"
               v-model.number="v$.potenciaHp.$model"
+              required
             />
+            <div v-if="v$.potenciaHp.$anyDirty && v$.potenciaHp.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.potenciaHp.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Turbo</label>
@@ -70,7 +82,11 @@
               data-cy="turbo"
               :class="{ valid: !v$.turbo.$invalid, invalid: v$.turbo.$invalid }"
               v-model="v$.turbo.$model"
+              required
             />
+            <div v-if="v$.turbo.$anyDirty && v$.turbo.$invalid">
+              <small class="form-text text-danger" v-for="error of v$.turbo.$errors" :key="error.$uid">{{ error.$message }}</small>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-control-label" for="motor">Combustible</label>
@@ -82,6 +98,32 @@
                 :key="combustibleOption.id"
               >
                 {{ combustibleOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="motor">Tipo Caja</label>
+            <select class="form-control" id="motor-tipoCaja" data-cy="tipoCaja" name="tipoCaja" v-model="motor.tipoCaja">
+              <option :value="null"></option>
+              <option
+                :value="motor.tipoCaja && tipoCajaOption.id === motor.tipoCaja.id ? motor.tipoCaja : tipoCajaOption"
+                v-for="tipoCajaOption in tipoCajas"
+                :key="tipoCajaOption.id"
+              >
+                {{ tipoCajaOption.id }}
+              </option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-control-label" for="motor">Traccion</label>
+            <select class="form-control" id="motor-traccion" data-cy="traccion" name="traccion" v-model="motor.traccion">
+              <option :value="null"></option>
+              <option
+                :value="motor.traccion && traccionOption.id === motor.traccion.id ? motor.traccion : traccionOption"
+                v-for="traccionOption in traccions"
+                :key="traccionOption.id"
+              >
+                {{ traccionOption.id }}
               </option>
             </select>
           </div>

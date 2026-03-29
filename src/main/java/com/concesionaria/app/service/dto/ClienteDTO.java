@@ -22,13 +22,14 @@ public class ClienteDTO implements Serializable {
     private String apellido;
 
     @NotNull
-    @Size(min = 7, max = 20)
+    @Pattern(regexp = "^[0-9]{7,11}$")
     private String nroDocumento;
 
-    @Size(max = 50)
+    @Pattern(regexp = "^[0-9+\\-\\s]{6,20}$")
     private String telefono;
 
-    @Pattern(regexp = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+    @NotNull
+    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     private String email;
 
     @Size(max = 255)
@@ -49,7 +50,13 @@ public class ClienteDTO implements Serializable {
     @NotNull
     private Instant fechaAlta;
 
+    private Instant createdDate;
+
+    private Instant lastModifiedDate;
+
     private CondicionIvaDTO condicionIva;
+
+    private TipoDocumentoDTO tipoDocumento;
 
     public Long getId() {
         return id;
@@ -147,12 +154,36 @@ public class ClienteDTO implements Serializable {
         this.fechaAlta = fechaAlta;
     }
 
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
     public CondicionIvaDTO getCondicionIva() {
         return condicionIva;
     }
 
     public void setCondicionIva(CondicionIvaDTO condicionIva) {
         this.condicionIva = condicionIva;
+    }
+
+    public TipoDocumentoDTO getTipoDocumento() {
+        return tipoDocumento;
+    }
+
+    public void setTipoDocumento(TipoDocumentoDTO tipoDocumento) {
+        this.tipoDocumento = tipoDocumento;
     }
 
     @Override
@@ -192,7 +223,10 @@ public class ClienteDTO implements Serializable {
             ", pais='" + getPais() + "'" +
             ", activo='" + getActivo() + "'" +
             ", fechaAlta='" + getFechaAlta() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", condicionIva=" + getCondicionIva() +
+            ", tipoDocumento=" + getTipoDocumento() +
             "}";
     }
 }

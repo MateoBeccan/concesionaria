@@ -49,7 +49,8 @@ public class ModeloAsserts {
             .as("Verify Modelo relevant properties")
             .satisfies(a -> assertThat(a.getNombre()).as("check nombre").isEqualTo(expected.getNombre()))
             .satisfies(a -> assertThat(a.getAnioLanzamiento()).as("check anioLanzamiento").isEqualTo(expected.getAnioLanzamiento()))
-            .satisfies(a -> assertThat(a.getCarroceria()).as("check carroceria").isEqualTo(expected.getCarroceria()));
+            .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))
+            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()));
     }
 
     /**
@@ -61,6 +62,7 @@ public class ModeloAsserts {
     public static void assertModeloUpdatableRelationshipsEquals(Modelo expected, Modelo actual) {
         assertThat(actual)
             .as("Verify Modelo relationships")
-            .satisfies(a -> assertThat(a.getMarca()).as("check marca").isEqualTo(expected.getMarca()));
+            .satisfies(a -> assertThat(a.getMarca()).as("check marca").isEqualTo(expected.getMarca()))
+            .satisfies(a -> assertThat(a.getCarroceria()).as("check carroceria").isEqualTo(expected.getCarroceria()));
     }
 }

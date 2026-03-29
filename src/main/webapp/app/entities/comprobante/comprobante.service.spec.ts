@@ -35,12 +35,16 @@ describe('Service Tests', () => {
     beforeEach(() => {
       service = new ComprobanteService();
       currentDate = new Date();
-      elemDefault = new Comprobante(123, 'AAAAAAA', currentDate, 0, 0, 0);
+      elemDefault = new Comprobante(123, 'AAAAAAA', currentDate, 0, 0, 0, currentDate);
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
-        const returnedFromService = { fechaEmision: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
+        const returnedFromService = {
+          fechaEmision: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
         axiosStub.get.resolves({ data: returnedFromService });
 
         return service.find(123).then(res => {
@@ -59,8 +63,13 @@ describe('Service Tests', () => {
       });
 
       it('should create a Comprobante', async () => {
-        const returnedFromService = { id: 123, fechaEmision: dayjs(currentDate).format(DATE_TIME_FORMAT), ...elemDefault };
-        const expected = { fechaEmision: currentDate, ...returnedFromService };
+        const returnedFromService = {
+          id: 123,
+          fechaEmision: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          ...elemDefault,
+        };
+        const expected = { fechaEmision: currentDate, createdDate: currentDate, ...returnedFromService };
 
         axiosStub.post.resolves({ data: returnedFromService });
         return service.create({}).then(res => {
@@ -86,10 +95,11 @@ describe('Service Tests', () => {
           importeNeto: 1,
           impuesto: 1,
           total: 1,
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
 
-        const expected = { fechaEmision: currentDate, ...returnedFromService };
+        const expected = { fechaEmision: currentDate, createdDate: currentDate, ...returnedFromService };
         axiosStub.put.resolves({ data: returnedFromService });
 
         return service.update(expected).then(res => {
@@ -112,7 +122,7 @@ describe('Service Tests', () => {
         const patchObject = { numeroComprobante: 'BBBBBB', impuesto: 1, ...new Comprobante() };
         const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { fechaEmision: currentDate, ...returnedFromService };
+        const expected = { fechaEmision: currentDate, createdDate: currentDate, ...returnedFromService };
         axiosStub.patch.resolves({ data: returnedFromService });
 
         return service.partialUpdate(patchObject).then(res => {
@@ -138,9 +148,10 @@ describe('Service Tests', () => {
           importeNeto: 1,
           impuesto: 1,
           total: 1,
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
-        const expected = { fechaEmision: currentDate, ...returnedFromService };
+        const expected = { fechaEmision: currentDate, createdDate: currentDate, ...returnedFromService };
         axiosStub.get.resolves([returnedFromService]);
         return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
           expect(res).toContainEqual(expected);

@@ -42,14 +42,14 @@ class ClienteResourceIT {
     private static final String DEFAULT_APELLIDO = "AAAAAAAAAA";
     private static final String UPDATED_APELLIDO = "BBBBBBBBBB";
 
-    private static final String DEFAULT_NRO_DOCUMENTO = "AAAAAAAAAA";
-    private static final String UPDATED_NRO_DOCUMENTO = "BBBBBBBBBB";
+    private static final String DEFAULT_NRO_DOCUMENTO = "214431613";
+    private static final String UPDATED_NRO_DOCUMENTO = "03798741";
 
-    private static final String DEFAULT_TELEFONO = "AAAAAAAAAA";
-    private static final String UPDATED_TELEFONO = "BBBBBBBBBB";
+    private static final String DEFAULT_TELEFONO = "7 7+5679428998-1++5";
+    private static final String UPDATED_TELEFONO = "6761-10";
 
-    private static final String DEFAULT_EMAIL = "4,H@B0`.F;";
-    private static final String UPDATED_EMAIL = "=@yqgK/.U~TpIR";
+    private static final String DEFAULT_EMAIL = "Y@uscpOH.JNLIY";
+    private static final String UPDATED_EMAIL = "zWd.0@ckb.yONC";
 
     private static final String DEFAULT_DIRECCION = "AAAAAAAAAA";
     private static final String UPDATED_DIRECCION = "BBBBBBBBBB";
@@ -68,6 +68,12 @@ class ClienteResourceIT {
 
     private static final Instant DEFAULT_FECHA_ALTA = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_FECHA_ALTA = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final Instant DEFAULT_LAST_MODIFIED_DATE = Instant.ofEpochMilli(0L);
+    private static final Instant UPDATED_LAST_MODIFIED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private static final String ENTITY_API_URL = "/api/clientes";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -112,7 +118,9 @@ class ClienteResourceIT {
             .provincia(DEFAULT_PROVINCIA)
             .pais(DEFAULT_PAIS)
             .activo(DEFAULT_ACTIVO)
-            .fechaAlta(DEFAULT_FECHA_ALTA);
+            .fechaAlta(DEFAULT_FECHA_ALTA)
+            .createdDate(DEFAULT_CREATED_DATE)
+            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE);
     }
 
     /**
@@ -133,7 +141,9 @@ class ClienteResourceIT {
             .provincia(UPDATED_PROVINCIA)
             .pais(UPDATED_PAIS)
             .activo(UPDATED_ACTIVO)
-            .fechaAlta(UPDATED_FECHA_ALTA);
+            .fechaAlta(UPDATED_FECHA_ALTA)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
     }
 
     @BeforeEach
@@ -244,6 +254,23 @@ class ClienteResourceIT {
 
     @Test
     @Transactional
+    void checkEmailIsRequired() throws Exception {
+        long databaseSizeBeforeTest = getRepositoryCount();
+        // set the field null
+        cliente.setEmail(null);
+
+        // Create the Cliente, which fails.
+        ClienteDTO clienteDTO = clienteMapper.toDto(cliente);
+
+        restClienteMockMvc
+            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(clienteDTO)))
+            .andExpect(status().isBadRequest());
+
+        assertSameRepositoryCount(databaseSizeBeforeTest);
+    }
+
+    @Test
+    @Transactional
     void checkActivoIsRequired() throws Exception {
         long databaseSizeBeforeTest = getRepositoryCount();
         // set the field null
@@ -298,7 +325,9 @@ class ClienteResourceIT {
             .andExpect(jsonPath("$.[*].provincia").value(hasItem(DEFAULT_PROVINCIA)))
             .andExpect(jsonPath("$.[*].pais").value(hasItem(DEFAULT_PAIS)))
             .andExpect(jsonPath("$.[*].activo").value(hasItem(DEFAULT_ACTIVO)))
-            .andExpect(jsonPath("$.[*].fechaAlta").value(hasItem(DEFAULT_FECHA_ALTA.toString())));
+            .andExpect(jsonPath("$.[*].fechaAlta").value(hasItem(DEFAULT_FECHA_ALTA.toString())))
+            .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
+            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())));
     }
 
     @Test
@@ -323,7 +352,9 @@ class ClienteResourceIT {
             .andExpect(jsonPath("$.provincia").value(DEFAULT_PROVINCIA))
             .andExpect(jsonPath("$.pais").value(DEFAULT_PAIS))
             .andExpect(jsonPath("$.activo").value(DEFAULT_ACTIVO))
-            .andExpect(jsonPath("$.fechaAlta").value(DEFAULT_FECHA_ALTA.toString()));
+            .andExpect(jsonPath("$.fechaAlta").value(DEFAULT_FECHA_ALTA.toString()))
+            .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
+            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()));
     }
 
     @Test
@@ -356,7 +387,9 @@ class ClienteResourceIT {
             .provincia(UPDATED_PROVINCIA)
             .pais(UPDATED_PAIS)
             .activo(UPDATED_ACTIVO)
-            .fechaAlta(UPDATED_FECHA_ALTA);
+            .fechaAlta(UPDATED_FECHA_ALTA)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
         ClienteDTO clienteDTO = clienteMapper.toDto(updatedCliente);
 
         restClienteMockMvc
@@ -442,7 +475,13 @@ class ClienteResourceIT {
         Cliente partialUpdatedCliente = new Cliente();
         partialUpdatedCliente.setId(cliente.getId());
 
-        partialUpdatedCliente.nroDocumento(UPDATED_NRO_DOCUMENTO).telefono(UPDATED_TELEFONO).activo(UPDATED_ACTIVO);
+        partialUpdatedCliente
+            .nombre(UPDATED_NOMBRE)
+            .apellido(UPDATED_APELLIDO)
+            .nroDocumento(UPDATED_NRO_DOCUMENTO)
+            .direccion(UPDATED_DIRECCION)
+            .activo(UPDATED_ACTIVO)
+            .fechaAlta(UPDATED_FECHA_ALTA);
 
         restClienteMockMvc
             .perform(
@@ -481,7 +520,9 @@ class ClienteResourceIT {
             .provincia(UPDATED_PROVINCIA)
             .pais(UPDATED_PAIS)
             .activo(UPDATED_ACTIVO)
-            .fechaAlta(UPDATED_FECHA_ALTA);
+            .fechaAlta(UPDATED_FECHA_ALTA)
+            .createdDate(UPDATED_CREATED_DATE)
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restClienteMockMvc
             .perform(

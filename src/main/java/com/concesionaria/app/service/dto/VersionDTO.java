@@ -13,13 +13,22 @@ public class VersionDTO implements Serializable {
     private Long id;
 
     @NotNull
+    @Size(min = 1, max = 50)
     private String nombre;
 
+    @Size(max = 150)
     private String descripcion;
 
+    @NotNull
+    @Min(value = 1950)
+    @Max(value = 2100)
     private Integer anioInicio;
 
+    @Min(value = 1950)
+    @Max(value = 2100)
     private Integer anioFin;
+
+    private ModeloDTO modelo;
 
     public Long getId() {
         return id;
@@ -61,6 +70,14 @@ public class VersionDTO implements Serializable {
         this.anioFin = anioFin;
     }
 
+    public ModeloDTO getModelo() {
+        return modelo;
+    }
+
+    public void setModelo(ModeloDTO modelo) {
+        this.modelo = modelo;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -91,6 +108,7 @@ public class VersionDTO implements Serializable {
             ", descripcion='" + getDescripcion() + "'" +
             ", anioInicio=" + getAnioInicio() +
             ", anioFin=" + getAnioFin() +
+            ", modelo=" + getModelo() +
             "}";
     }
 }

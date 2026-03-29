@@ -71,12 +71,34 @@
             <span v-if="cliente.fechaAlta">{{ formatDateLong(cliente.fechaAlta) }}</span>
           </dd>
           <dt>
+            <span>Created Date</span>
+          </dt>
+          <dd>
+            <span v-if="cliente.createdDate">{{ formatDateLong(cliente.createdDate) }}</span>
+          </dd>
+          <dt>
+            <span>Last Modified Date</span>
+          </dt>
+          <dd>
+            <span v-if="cliente.lastModifiedDate">{{ formatDateLong(cliente.lastModifiedDate) }}</span>
+          </dd>
+          <dt>
             <span>Condicion Iva</span>
           </dt>
           <dd>
             <div v-if="cliente.condicionIva">
               <router-link :to="{ name: 'CondicionIvaView', params: { condicionIvaId: cliente.condicionIva.id } }">{{
                 cliente.condicionIva.id
+              }}</router-link>
+            </div>
+          </dd>
+          <dt>
+            <span>Tipo Documento</span>
+          </dt>
+          <dd>
+            <div v-if="cliente.tipoDocumento">
+              <router-link :to="{ name: 'TipoDocumentoView', params: { tipoDocumentoId: cliente.tipoDocumento.id } }">{{
+                cliente.tipoDocumento.id
               }}</router-link>
             </div>
           </dd>

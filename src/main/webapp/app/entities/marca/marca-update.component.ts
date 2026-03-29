@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useVuelidate } from '@vuelidate/core';
 
 import { useAlertService } from '@/shared/alert/alert.service';
-import { useValidation } from '@/shared/composables';
+import { useDateFormat, useValidation } from '@/shared/composables';
 import { type IMarca, Marca } from '@/shared/model/marca.model';
 
 import MarcaService from './marca.service';
@@ -27,6 +27,8 @@ export default defineComponent({
     const retrieveMarca = async marcaId => {
       try {
         const res = await marcaService().find(marcaId);
+        res.createdDate = new Date(res.createdDate);
+        res.lastModifiedDate = new Date(res.lastModifiedDate);
         marca.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -41,8 +43,14 @@ export default defineComponent({
     const validationRules = {
       nombre: {
         required: validations.required('Este campo es obligatorio.'),
+        minLength: validations.minLength('Este campo requiere al menos 2 caracteres.', 2),
+        maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
       },
-      paisOrigen: {},
+      paisOrigen: {
+        maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
+      },
+      createdDate: {},
+      lastModifiedDate: {},
     };
     const v$ = useVuelidate(validationRules, marca as any);
     v$.value.$validate();
@@ -55,6 +63,7 @@ export default defineComponent({
       isSaving,
       currentLanguage,
       v$,
+      ...useDateFormat({ entityRef: marca }),
     };
   },
   created(): void {},

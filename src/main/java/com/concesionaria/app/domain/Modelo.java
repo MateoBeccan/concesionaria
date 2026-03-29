@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
 import java.io.Serializable;
+import java.time.Instant;
 
 /**
  * A Modelo.
@@ -22,17 +23,27 @@ public class Modelo implements Serializable {
     private Long id;
 
     @NotNull
-    @Column(name = "nombre", nullable = false)
+    @Size(min = 2, max = 100)
+    @Column(name = "nombre", length = 100, nullable = false)
     private String nombre;
 
-    @Column(name = "anio_lanzamiento")
+    @NotNull
+    @Min(value = 1950)
+    @Max(value = 2100)
+    @Column(name = "anio_lanzamiento", nullable = false)
     private Integer anioLanzamiento;
 
-    @Column(name = "carroceria")
-    private String carroceria;
+    @Column(name = "created_date")
+    private Instant createdDate;
+
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Marca marca;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Carroceria carroceria;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -75,17 +86,30 @@ public class Modelo implements Serializable {
         this.anioLanzamiento = anioLanzamiento;
     }
 
-    public String getCarroceria() {
-        return this.carroceria;
+    public Instant getCreatedDate() {
+        return this.createdDate;
     }
 
-    public Modelo carroceria(String carroceria) {
-        this.setCarroceria(carroceria);
+    public Modelo createdDate(Instant createdDate) {
+        this.setCreatedDate(createdDate);
         return this;
     }
 
-    public void setCarroceria(String carroceria) {
-        this.carroceria = carroceria;
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public Instant getLastModifiedDate() {
+        return this.lastModifiedDate;
+    }
+
+    public Modelo lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
     }
 
     public Marca getMarca() {
@@ -98,6 +122,19 @@ public class Modelo implements Serializable {
 
     public Modelo marca(Marca marca) {
         this.setMarca(marca);
+        return this;
+    }
+
+    public Carroceria getCarroceria() {
+        return this.carroceria;
+    }
+
+    public void setCarroceria(Carroceria carroceria) {
+        this.carroceria = carroceria;
+    }
+
+    public Modelo carroceria(Carroceria carroceria) {
+        this.setCarroceria(carroceria);
         return this;
     }
 
@@ -127,7 +164,8 @@ public class Modelo implements Serializable {
             "id=" + getId() +
             ", nombre='" + getNombre() + "'" +
             ", anioLanzamiento=" + getAnioLanzamiento() +
-            ", carroceria='" + getCarroceria() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             "}";
     }
 }
