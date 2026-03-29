@@ -1,0 +1,71 @@
+{
+  "annotations": {
+    "changelogDate": "20260325200026"
+  },
+  "applications": ["*"],
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "estado",
+      "fieldType": "EstadoVehiculo",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "NUEVO,USADO"
+    },
+    {
+      "fieldName": "fechaFabricacion",
+      "fieldType": "LocalDate",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "km",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min", "max"],
+      "fieldValidateRulesMax": "1000000",
+      "fieldValidateRulesMin": "0"
+    },
+    {
+      "fieldName": "patente",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "pattern"],
+      "fieldValidateRulesPattern": "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)"
+    },
+    {
+      "fieldName": "precio",
+      "fieldType": "BigDecimal",
+      "fieldValidateRules": ["required", "min"],
+      "fieldValidateRulesMin": "0"
+    },
+    {
+      "fieldName": "createdDate",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "lastModifiedDate",
+      "fieldType": "Instant"
+    }
+  ],
+  "name": "Vehiculo",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "version",
+      "relationshipName": "version",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "motor",
+      "relationshipName": "motor",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "tipoVehiculo",
+      "relationshipName": "tipoVehiculo",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

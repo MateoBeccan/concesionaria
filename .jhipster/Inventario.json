@@ -1,0 +1,71 @@
+{
+  "annotations": {
+    "changelogDate": "20260326171110"
+  },
+  "applications": ["*"],
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "fechaIngreso",
+      "fieldType": "Instant",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "ubicacion",
+      "fieldType": "String",
+      "fieldValidateRules": ["maxlength"],
+      "fieldValidateRulesMaxlength": "100"
+    },
+    {
+      "fieldName": "estadoInventario",
+      "fieldType": "EstadoInventario",
+      "fieldValidateRules": ["required"],
+      "fieldValues": "DISPONIBLE,RESERVADO,VENDIDO"
+    },
+    {
+      "fieldName": "observaciones",
+      "fieldType": "String",
+      "fieldValidateRules": ["maxlength"],
+      "fieldValidateRulesMaxlength": "255"
+    },
+    {
+      "fieldName": "disponible",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    },
+    {
+      "fieldName": "createdDate",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "lastModifiedDate",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "fechaReserva",
+      "fieldType": "Instant"
+    },
+    {
+      "fieldName": "fechaVencimientoReserva",
+      "fieldType": "Instant"
+    }
+  ],
+  "name": "Inventario",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "vehiculo",
+      "relationshipName": "vehiculo",
+      "relationshipSide": "left",
+      "relationshipType": "one-to-one"
+    },
+    {
+      "otherEntityName": "cliente",
+      "relationshipName": "clienteReserva",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

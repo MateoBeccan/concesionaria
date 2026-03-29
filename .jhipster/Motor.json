@@ -1,0 +1,66 @@
+{
+  "annotations": {
+    "changelogDate": "20260325200009"
+  },
+  "applications": ["*"],
+  "dto": "mapstruct",
+  "fields": [
+    {
+      "fieldName": "nombre",
+      "fieldType": "String",
+      "fieldValidateRules": ["required", "minlength", "maxlength"],
+      "fieldValidateRulesMaxlength": "100",
+      "fieldValidateRulesMinlength": "2"
+    },
+    {
+      "fieldName": "cilindradaCc",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min", "max"],
+      "fieldValidateRulesMax": "10000",
+      "fieldValidateRulesMin": "50"
+    },
+    {
+      "fieldName": "cilindroCant",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min", "max"],
+      "fieldValidateRulesMax": "16",
+      "fieldValidateRulesMin": "1"
+    },
+    {
+      "fieldName": "potenciaHp",
+      "fieldType": "Integer",
+      "fieldValidateRules": ["required", "min", "max"],
+      "fieldValidateRulesMax": "2000",
+      "fieldValidateRulesMin": "1"
+    },
+    {
+      "fieldName": "turbo",
+      "fieldType": "Boolean",
+      "fieldValidateRules": ["required"]
+    }
+  ],
+  "name": "Motor",
+  "pagination": "pagination",
+  "relationships": [
+    {
+      "otherEntityName": "combustible",
+      "relationshipName": "combustible",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "tipoCaja",
+      "relationshipName": "tipoCaja",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    },
+    {
+      "otherEntityName": "traccion",
+      "relationshipName": "traccion",
+      "relationshipSide": "left",
+      "relationshipType": "many-to-one"
+    }
+  ],
+  "searchEngine": "no",
+  "service": "serviceImpl"
+}

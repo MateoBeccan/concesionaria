@@ -185,4 +185,19 @@ public class VentaResource {
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();
     }
+
+    @PostMapping("/crear")
+    public ResponseEntity<VentaDTO> crearVenta(
+        @RequestParam Long vehiculoId,
+        @RequestParam Long clienteId
+    ) throws URISyntaxException {
+
+        LOG.debug("REST request para crear venta: vehiculo {} cliente {}", vehiculoId, clienteId);
+
+        VentaDTO result = ventaService.crearVenta(vehiculoId, clienteId);
+
+        return ResponseEntity.created(new URI("/api/ventas/" + result.getId()))
+            .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
+            .body(result);
+    }
 }

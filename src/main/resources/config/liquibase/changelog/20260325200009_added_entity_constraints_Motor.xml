@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd
+                        http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd">
+    <!--
+        Added the constraints for entity Motor.
+    -->
+    <changeSet id="20260325200009-2" author="jhipster">
+
+        <addForeignKeyConstraint baseColumnNames="combustible_id"
+                                 baseTableName="motor"
+                                 constraintName="fk_motor__combustible_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="combustible"
+                                 />
+
+        <addForeignKeyConstraint baseColumnNames="tipo_caja_id"
+                                 baseTableName="motor"
+                                 constraintName="fk_motor__tipo_caja_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="tipo_caja"
+                                 />
+
+        <addForeignKeyConstraint baseColumnNames="traccion_id"
+                                 baseTableName="motor"
+                                 constraintName="fk_motor__traccion_id"
+                                 referencedColumnNames="id"
+                                 referencedTableName="traccion"
+                                 />
+    </changeSet>
+</databaseChangeLog>
