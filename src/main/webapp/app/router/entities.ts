@@ -1,4 +1,5 @@
 import { Authority } from '@/shared/jhipster/constants';
+import {EstadoVenta} from "@/shared/model/estado-venta.model";
 const Entities = () => import('@/entities/entities.vue');
 
 const Marca = () => import('@/entities/marca/marca.vue');
@@ -29,9 +30,7 @@ const CondicionIva = () => import('@/entities/condicion-iva/condicion-iva.vue');
 const CondicionIvaUpdate = () => import('@/entities/condicion-iva/condicion-iva-update.vue');
 const CondicionIvaDetails = () => import('@/entities/condicion-iva/condicion-iva-details.vue');
 
-const EstadoVenta = () => import('@/entities/estado-venta/estado-venta.vue');
-const EstadoVentaUpdate = () => import('@/entities/estado-venta/estado-venta-update.vue');
-const EstadoVentaDetails = () => import('@/entities/estado-venta/estado-venta-details.vue');
+
 
 const Venta = () => import('@/entities/venta/venta.vue');
 const VentaUpdate = () => import('@/entities/venta/venta-update.vue');
@@ -273,24 +272,7 @@ export default {
       component: EstadoVenta,
       meta: { authorities: [Authority.USER] },
     },
-    {
-      path: 'estado-venta/new',
-      name: 'EstadoVentaCreate',
-      component: EstadoVentaUpdate,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'estado-venta/:estadoVentaId/edit',
-      name: 'EstadoVentaEdit',
-      component: EstadoVentaUpdate,
-      meta: { authorities: [Authority.USER] },
-    },
-    {
-      path: 'estado-venta/:estadoVentaId/view',
-      name: 'EstadoVentaView',
-      component: EstadoVentaDetails,
-      meta: { authorities: [Authority.USER] },
-    },
+
     {
       path: 'venta',
       name: 'Venta',

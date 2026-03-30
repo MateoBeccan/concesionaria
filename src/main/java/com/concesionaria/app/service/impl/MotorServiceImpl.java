@@ -23,7 +23,6 @@ public class MotorServiceImpl implements MotorService {
     private static final Logger LOG = LoggerFactory.getLogger(MotorServiceImpl.class);
 
     private final MotorRepository motorRepository;
-
     private final MotorMapper motorMapper;
 
     public MotorServiceImpl(MotorRepository motorRepository, MotorMapper motorMapper) {
@@ -34,16 +33,24 @@ public class MotorServiceImpl implements MotorService {
     @Override
     public MotorDTO save(MotorDTO motorDTO) {
         LOG.debug("Request to save Motor : {}", motorDTO);
+
+        validarMotor(motorDTO, null);
+
         Motor motor = motorMapper.toEntity(motorDTO);
         motor = motorRepository.save(motor);
+
         return motorMapper.toDto(motor);
     }
 
     @Override
     public MotorDTO update(MotorDTO motorDTO) {
         LOG.debug("Request to update Motor : {}", motorDTO);
+
+        validarMotor(motorDTO, motorDTO.getId());
+
         Motor motor = motorMapper.toEntity(motorDTO);
         motor = motorRepository.save(motor);
+
         return motorMapper.toDto(motor);
     }
 
@@ -55,6 +62,8 @@ public class MotorServiceImpl implements MotorService {
             .findById(motorDTO.getId())
             .map(existingMotor -> {
                 motorMapper.partialUpdate(existingMotor, motorDTO);
+
+                validarMotor(motorMapper.toDto(existingMotor), existingMotor.getId());
 
                 return existingMotor;
             })
@@ -80,5 +89,60 @@ public class MotorServiceImpl implements MotorService {
     public void delete(Long id) {
         LOG.debug("Request to delete Motor : {}", id);
         motorRepository.deleteById(id);
+    }
+
+    // =========================
+    // VALIDACIONES
+    // =========================
+
+    private void validarMotor(MotorDTO motorDTO, Long idActual) {
+
+        // nombre obligatorio
+        if (motorDTO.getNombre() == null || motorDTO.getNombre().trim().isEmpty()) {
+            throw new RuntimeException("El nombre del motor es obligatorio");
+        }
+
+        // cilindrada válida
+        if (motorDTO.getCilindradaCc() == null ||
+            motorDTO.getCilindradaCc() < 50 ||
+            motorDTO.getCilindradaCc() > 10000) {
+            throw new RuntimeException("Cilindrada inválida");
+        }
+
+        // potencia válida
+        if (motorDTO.getPotenciaHp() == null ||
+            motorDTO.getPotenciaHp() <= 0 ||
+            motorDTO.getPotenciaHp() > 2000) {
+            throw new RuntimeException("Potencia inválida");
+        }
+
+        // cilindros válidos
+        if (motorDTO.getCilindroCant() == null ||
+            motorDTO.getCilindroCant() <= 0 ||
+            motorDTO.getCilindroCant() > 16) {
+            throw new RuntimeException("Cantidad de cilindros inválida");
+        }
+
+        // relaciones obligatorias
+        if (motorDTO.getCombustible() == null || motorDTO.getCombustible().getId() == null) {
+            throw new RuntimeException("Debe especificar combustible");
+        }
+
+        if (motorDTO.getTipoCaja() == null || motorDTO.getTipoCaja().getId() == null) {
+            throw new RuntimeException("Debe especificar tipo de caja");
+        }
+
+        if (motorDTO.getTraccion() == null || motorDTO.getTraccion().getId() == null) {
+            throw new RuntimeException("Debe especificar tracción");
+        }
+
+        // evitar duplicados técnicos
+        boolean existe = motorRepository.existsByNombreIgnoreCase(motorDTO.getNombre());
+
+        if (existe) {
+            if (idActual == null) {
+                throw new RuntimeException("Ya existe un motor con ese nombre");
+            }
+        }
     }
 }

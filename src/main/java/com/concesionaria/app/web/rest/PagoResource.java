@@ -176,4 +176,20 @@ public class PagoResource {
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();
     }
+
+
+    @PostMapping("/registrar")
+    public ResponseEntity<PagoDTO> registrarPago(
+        @RequestParam Long ventaId,
+        @Valid @RequestBody PagoDTO pagoDTO
+    ) throws URISyntaxException {
+
+        LOG.debug("REST request para registrar pago venta {}", ventaId);
+
+        PagoDTO result = pagoService.registrarPago(ventaId, pagoDTO);
+
+        return ResponseEntity.created(new URI("/api/pagos/" + result.getId()))
+            .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
+            .body(result);
+    }
 }

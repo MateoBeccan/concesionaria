@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.dto;
 
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -52,7 +53,7 @@ public class VentaDTO implements Serializable {
 
     private ClienteDTO cliente;
 
-    private EstadoVentaDTO estadoVenta;
+    private EstadoVenta estado;
 
     private MonedaDTO moneda;
 
@@ -162,12 +163,12 @@ public class VentaDTO implements Serializable {
         this.cliente = cliente;
     }
 
-    public EstadoVentaDTO getEstadoVenta() {
-        return estadoVenta;
+    public EstadoVenta getEstado() {
+        return estado;
     }
 
-    public void setEstadoVenta(EstadoVentaDTO estadoVenta) {
-        this.estadoVenta = estadoVenta;
+    public void setEstado(EstadoVenta estado) {
+        this.estado = estado;
     }
 
     public MonedaDTO getMoneda() {
@@ -224,7 +225,7 @@ public class VentaDTO implements Serializable {
             ", createdDate='" + getCreatedDate() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", cliente=" + getCliente() +
-            ", estadoVenta=" + getEstadoVenta() +
+            ", estado=" + getEstado() +
             ", moneda=" + getMoneda() +
             ", user=" + getUser() +
             "}";

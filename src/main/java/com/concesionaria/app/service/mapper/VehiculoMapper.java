@@ -1,13 +1,7 @@
 package com.concesionaria.app.service.mapper;
 
-import com.concesionaria.app.domain.Motor;
-import com.concesionaria.app.domain.TipoVehiculo;
-import com.concesionaria.app.domain.Vehiculo;
-import com.concesionaria.app.domain.Version;
-import com.concesionaria.app.service.dto.MotorDTO;
-import com.concesionaria.app.service.dto.TipoVehiculoDTO;
-import com.concesionaria.app.service.dto.VehiculoDTO;
-import com.concesionaria.app.service.dto.VersionDTO;
+import com.concesionaria.app.domain.*;
+import com.concesionaria.app.service.dto.*;
 import org.mapstruct.*;
 
 /**
@@ -15,23 +9,48 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring")
 public interface VehiculoMapper extends EntityMapper<VehiculoDTO, Vehiculo> {
-    @Mapping(target = "version", source = "version", qualifiedByName = "versionId")
-    @Mapping(target = "motor", source = "motor", qualifiedByName = "motorId")
-    @Mapping(target = "tipoVehiculo", source = "tipoVehiculo", qualifiedByName = "tipoVehiculoId")
+
+    @Mapping(target = "version", source = "version", qualifiedByName = "versionBasic")
+    @Mapping(target = "motor", source = "motor", qualifiedByName = "motorBasic")
+    @Mapping(target = "tipoVehiculo", source = "tipoVehiculo", qualifiedByName = "tipoVehiculoBasic")
     VehiculoDTO toDto(Vehiculo s);
 
-    @Named("versionId")
+    // VERSION
+    @Named("versionBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    VersionDTO toDtoVersionId(Version version);
+    @Mapping(target = "nombre", source = "nombre")
+    @Mapping(target = "modelo", source = "modelo", qualifiedByName = "modeloBasic")
+    VersionDTO toDtoVersionBasic(Version version);
 
-    @Named("motorId")
+    // MOTOR
+    @Named("motorBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MotorDTO toDtoMotorId(Motor motor);
+    @Mapping(target = "nombre", source = "nombre")
+    @Mapping(target = "potenciaHp", source = "potenciaHp")
+    @Mapping(target = "cilindradaCc", source = "cilindradaCc")
+    MotorDTO toDtoMotorBasic(Motor motor);
 
-    @Named("tipoVehiculoId")
+    // TIPO VEHICULO
+    @Named("tipoVehiculoBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    TipoVehiculoDTO toDtoTipoVehiculoId(TipoVehiculo tipoVehiculo);
+    @Mapping(target = "nombre", source = "nombre")
+    TipoVehiculoDTO toDtoTipoVehiculoBasic(TipoVehiculo tipoVehiculo);
+
+    @Named("modeloBasic")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "nombre", source = "nombre")
+    @Mapping(target = "marca", source = "marca", qualifiedByName = "marcaBasic")
+    ModeloDTO toDtoModeloBasic(Modelo modelo);
+
+    @Named("marcaBasic")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "nombre", source = "nombre")
+    MarcaDTO toDtoMarcaBasic(Marca marca);
+
+
 }

@@ -93,7 +93,7 @@ public class VentaAsserts {
         assertThat(actual)
             .as("Verify Venta relationships")
             .satisfies(a -> assertThat(a.getCliente()).as("check cliente").isEqualTo(expected.getCliente()))
-            .satisfies(a -> assertThat(a.getEstadoVenta()).as("check estadoVenta").isEqualTo(expected.getEstadoVenta()))
+            .satisfies(a -> assertThat(a.getEstado()).as("check estadoVenta").isEqualTo(expected.getEstado()))
             .satisfies(a -> assertThat(a.getMoneda()).as("check moneda").isEqualTo(expected.getMoneda()));
     }
 }

@@ -1,7 +1,6 @@
 package com.concesionaria.app.domain;
 
 import static com.concesionaria.app.domain.ClienteTestSamples.*;
-import static com.concesionaria.app.domain.EstadoVentaTestSamples.*;
 import static com.concesionaria.app.domain.MonedaTestSamples.*;
 import static com.concesionaria.app.domain.VentaTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,17 +36,7 @@ class VentaTest {
         assertThat(venta.getCliente()).isNull();
     }
 
-    @Test
-    void estadoVentaTest() {
-        Venta venta = getVentaRandomSampleGenerator();
-        EstadoVenta estadoVentaBack = getEstadoVentaRandomSampleGenerator();
 
-        venta.setEstadoVenta(estadoVentaBack);
-        assertThat(venta.getEstadoVenta()).isEqualTo(estadoVentaBack);
-
-        venta.estadoVenta(null);
-        assertThat(venta.getEstadoVenta()).isNull();
-    }
 
     @Test
     void monedaTest() {

@@ -93,9 +93,9 @@ enum EstadoVehiculo {
 }
 
 enum CondicionVehiculo {
-  EN_VENTA,
-  RESERVADO,
-  VENDIDO
+      EN_VENTA,
+      RESERVADO,
+      VENDIDO
 }
 
 enum EstadoInventario {
@@ -170,10 +170,15 @@ entity CondicionIva {
 // VENTAS
 // ======================
 
-entity EstadoVenta {
-  codigo String required minlength(3) maxlength(50),
-  descripcion String maxlength(100)
+
+
+enum EstadoVenta {
+      PENDIENTE,
+      PAGADA,
+      CANCELADA,
+      RESERVADA
 }
+
 
 entity Venta {
   fecha Instant required,
@@ -183,6 +188,8 @@ entity Venta {
   importeNeto BigDecimal required min(0),
   impuesto BigDecimal required min(0),
   total BigDecimal required min(0),
+
+  estado EstadoVenta required,
 
   porcentajeImpuesto BigDecimal min(0) max(100),
 
@@ -269,7 +276,6 @@ relationship ManyToOne {
   Cliente{tipoDocumento} to TipoDocumento
 
   Venta{cliente} to Cliente
-  Venta{estadoVenta} to EstadoVenta
   Venta{moneda} to Moneda
   Venta{user(login)} to User with builtInEntity
 

@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -7,6 +8,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * A Venta.
@@ -75,8 +77,9 @@ public class Venta implements Serializable {
     @JsonIgnoreProperties(value = { "condicionIva", "tipoDocumento" }, allowSetters = true)
     private Cliente cliente;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    private EstadoVenta estadoVenta;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado")
+    private EstadoVenta estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Moneda moneda;
@@ -255,16 +258,16 @@ public class Venta implements Serializable {
         return this;
     }
 
-    public EstadoVenta getEstadoVenta() {
-        return this.estadoVenta;
+    public EstadoVenta getEstado() {
+        return this.estado;
     }
 
-    public void setEstadoVenta(EstadoVenta estadoVenta) {
-        this.estadoVenta = estadoVenta;
+    public void setEstado(EstadoVenta estado) {
+        this.estado = estado;
     }
 
-    public Venta estadoVenta(EstadoVenta estadoVenta) {
-        this.setEstadoVenta(estadoVenta);
+    public Venta estado(EstadoVenta estado) {
+        this.setEstado(estado);
         return this;
     }
 

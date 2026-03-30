@@ -12,7 +12,6 @@ import TipoComprobanteService from './tipo-comprobante/tipo-comprobante.service'
 import MetodoPagoService from './metodo-pago/metodo-pago.service';
 import MonedaService from './moneda/moneda.service';
 import CotizacionService from './cotizacion/cotizacion.service';
-import EstadoVentaService from './estado-venta/estado-venta.service';
 import TipoCajaService from './tipo-caja/tipo-caja.service';
 import TipoVehiculoService from './tipo-vehiculo/tipo-vehiculo.service';
 import VehiculoService from './vehiculo/vehiculo.service';
@@ -38,7 +37,6 @@ export default defineComponent({
     provide('combustibleService', () => new CombustibleService());
     provide('clienteService', () => new ClienteService());
     provide('condicionIvaService', () => new CondicionIvaService());
-    provide('estadoVentaService', () => new EstadoVentaService());
     provide('ventaService', () => new VentaService());
     provide('detalleVentaService', () => new DetalleVentaService());
     provide('comprobanteService', () => new ComprobanteService());

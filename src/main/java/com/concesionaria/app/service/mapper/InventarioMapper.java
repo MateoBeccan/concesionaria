@@ -13,6 +13,7 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring")
 public interface InventarioMapper extends EntityMapper<InventarioDTO, Inventario> {
+
     @Mapping(target = "vehiculo", source = "vehiculo", qualifiedByName = "vehiculoId")
     @Mapping(target = "clienteReserva", source = "clienteReserva", qualifiedByName = "clienteId")
     InventarioDTO toDto(Inventario s);
@@ -26,4 +27,9 @@ public interface InventarioMapper extends EntityMapper<InventarioDTO, Inventario
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
     ClienteDTO toDtoClienteId(Cliente cliente);
+
+    // 🔥 clave
+    @Override
+    @Mapping(target = "vehiculo.inventario", ignore = true)
+    Inventario toEntity(InventarioDTO dto);
 }

@@ -55,4 +55,6 @@ public interface PagoService {
      * @param id the id of the entity.
      */
     void delete(Long id);
+
+    PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO);
 }

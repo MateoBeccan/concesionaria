@@ -9,4 +9,7 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface MotorRepository extends JpaRepository<Motor, Long>, JpaSpecificationExecutor<Motor> {}
+public interface MotorRepository extends JpaRepository<Motor, Long>, JpaSpecificationExecutor<Motor> {
+
+    boolean existsByNombreIgnoreCase(String nombre);
+}

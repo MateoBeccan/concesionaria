@@ -23,7 +23,6 @@ public class ModeloServiceImpl implements ModeloService {
     private static final Logger LOG = LoggerFactory.getLogger(ModeloServiceImpl.class);
 
     private final ModeloRepository modeloRepository;
-
     private final ModeloMapper modeloMapper;
 
     public ModeloServiceImpl(ModeloRepository modeloRepository, ModeloMapper modeloMapper) {
@@ -34,16 +33,24 @@ public class ModeloServiceImpl implements ModeloService {
     @Override
     public ModeloDTO save(ModeloDTO modeloDTO) {
         LOG.debug("Request to save Modelo : {}", modeloDTO);
+
+        validarModelo(modeloDTO, null);
+
         Modelo modelo = modeloMapper.toEntity(modeloDTO);
         modelo = modeloRepository.save(modelo);
+
         return modeloMapper.toDto(modelo);
     }
 
     @Override
     public ModeloDTO update(ModeloDTO modeloDTO) {
         LOG.debug("Request to update Modelo : {}", modeloDTO);
+
+        validarModelo(modeloDTO, modeloDTO.getId());
+
         Modelo modelo = modeloMapper.toEntity(modeloDTO);
         modelo = modeloRepository.save(modelo);
+
         return modeloMapper.toDto(modelo);
     }
 
@@ -55,6 +62,8 @@ public class ModeloServiceImpl implements ModeloService {
             .findById(modeloDTO.getId())
             .map(existingModelo -> {
                 modeloMapper.partialUpdate(existingModelo, modeloDTO);
+
+                validarModelo(modeloMapper.toDto(existingModelo), existingModelo.getId());
 
                 return existingModelo;
             })
@@ -80,5 +89,56 @@ public class ModeloServiceImpl implements ModeloService {
     public void delete(Long id) {
         LOG.debug("Request to delete Modelo : {}", id);
         modeloRepository.deleteById(id);
+    }
+
+    // =========================
+    // VALIDACIONES
+    // =========================
+
+    private void validarModelo(ModeloDTO modeloDTO, Long idActual) {
+
+        // nombre obligatorio
+        if (modeloDTO.getNombre() == null || modeloDTO.getNombre().trim().isEmpty()) {
+            throw new RuntimeException("El nombre del modelo es obligatorio");
+        }
+
+        // marca obligatoria
+        if (modeloDTO.getMarca() == null || modeloDTO.getMarca().getId() == null) {
+            throw new RuntimeException("El modelo debe tener una marca asociada");
+        }
+
+        // año válido
+        if (modeloDTO.getAnioLanzamiento() == null ||
+            modeloDTO.getAnioLanzamiento() < 1950 ||
+            modeloDTO.getAnioLanzamiento() > 2100) {
+            throw new RuntimeException("Año de lanzamiento inválido");
+        }
+
+        // evitar duplicados (modelo + marca)
+        boolean existe = modeloRepository.existsByNombreIgnoreCaseAndMarcaId(
+            modeloDTO.getNombre(),
+            modeloDTO.getMarca().getId()
+        );
+
+        if (existe) {
+            // si es update, permitir mismo registro
+            if (idActual == null) {
+                throw new RuntimeException("Ya existe un modelo con ese nombre para la marca");
+            }
+
+            Modelo existente = modeloRepository
+                .findAll()
+                .stream()
+                .filter(m ->
+                    m.getNombre().equalsIgnoreCase(modeloDTO.getNombre()) &&
+                        m.getMarca().getId().equals(modeloDTO.getMarca().getId())
+                )
+                .findFirst()
+                .orElse(null);
+
+            if (existente != null && !existente.getId().equals(idActual)) {
+                throw new RuntimeException("Ya existe un modelo con ese nombre para la marca");
+            }
+        }
     }
 }

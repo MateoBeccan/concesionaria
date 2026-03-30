@@ -23,4 +23,5 @@ public interface VentaService {
 
     // NEGOCIO
     VentaDTO crearVenta(Long vehiculoId, Long clienteId);
+
 }

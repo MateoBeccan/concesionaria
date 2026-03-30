@@ -1,5 +1,5 @@
 import { type ICliente } from '@/shared/model/cliente.model';
-import { type IEstadoVenta } from '@/shared/model/estado-venta.model';
+import { type EstadoVenta } from '@/shared/model/estado-venta.model';
 import { type IMoneda } from '@/shared/model/moneda.model';
 import { type IUser } from '@/shared/model/user.model';
 
@@ -17,7 +17,7 @@ export interface IVenta {
   createdDate?: Date | null;
   lastModifiedDate?: Date | null;
   cliente?: ICliente | null;
-  estadoVenta?: IEstadoVenta | null;
+  estadoVenta?: EstadoVenta | null;
   moneda?: IMoneda | null;
   user?: IUser | null;
 }
@@ -37,7 +37,7 @@ export class Venta implements IVenta {
     public createdDate?: Date | null,
     public lastModifiedDate?: Date | null,
     public cliente?: ICliente | null,
-    public estadoVenta?: IEstadoVenta | null,
+    public estado?: EstadoVenta | null,
     public moneda?: IMoneda | null,
     public user?: IUser | null,
   ) {}
