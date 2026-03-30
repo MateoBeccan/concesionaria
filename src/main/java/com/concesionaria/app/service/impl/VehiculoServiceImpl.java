@@ -6,8 +6,9 @@ import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import com.concesionaria.app.repository.*;
 import com.concesionaria.app.service.VehiculoService;
 import com.concesionaria.app.service.dto.VehiculoDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VehiculoMapper;
-import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
+
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -16,6 +17,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
@@ -32,16 +34,24 @@ public class VehiculoServiceImpl implements VehiculoService {
     private final VehiculoMapper vehiculoMapper;
     private final InventarioRepository inventarioRepository;
     private final ClienteRepository clienteRepository;
+    private final VersionRepository versionRepository;
+    private final MotorRepository motorRepository;
+    private final TipoVehiculoRepository tipoVehiculoRepository;
 
     public VehiculoServiceImpl(
         VehiculoRepository vehiculoRepository,
         VehiculoMapper vehiculoMapper,
-        InventarioRepository inventarioRepository, ClienteRepository clienteRepository
-    ) {
+        InventarioRepository inventarioRepository, ClienteRepository clienteRepository,
+        VersionRepository versionRepository, MotorRepository motorRepository,
+        TipoVehiculoRepository tipoVehiculoRepository)
+     {
         this.vehiculoRepository = vehiculoRepository;
         this.vehiculoMapper = vehiculoMapper;
         this.inventarioRepository = inventarioRepository;
         this.clienteRepository = clienteRepository;
+        this.versionRepository = versionRepository;
+        this.motorRepository = motorRepository;
+        this.tipoVehiculoRepository = tipoVehiculoRepository;
     }
 
     // =========================
@@ -159,40 +169,78 @@ public class VehiculoServiceImpl implements VehiculoService {
     // =========================
     private void validarVehiculo(Vehiculo vehiculo, boolean isCreate) {
 
+        // ======================
+        // DATOS BÁSICOS
+        // ======================
+
         if (vehiculo.getPatente() == null || vehiculo.getPatente().isBlank()) {
-            throw new BadRequestAlertException("La patente es obligatoria", "vehiculo", "patenterequired");
+            throw new BadRequestException("La patente es obligatoria");
         }
 
+        vehiculo.setPatente(vehiculo.getPatente().trim().toUpperCase());
+
         if (vehiculo.getPrecio() == null || vehiculo.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestAlertException("Precio inválido", "vehiculo", "precioinvalid");
+            throw new BadRequestException("Precio inválido");
         }
 
         if (vehiculo.getFechaFabricacion() == null ||
             vehiculo.getFechaFabricacion().isAfter(LocalDate.now())) {
-            throw new BadRequestAlertException("Fecha inválida", "vehiculo", "fechainvalid");
+            throw new BadRequestException("Fecha de fabricación inválida");
         }
 
-        if (vehiculo.getEstado() == EstadoVehiculo.NUEVO && vehiculo.getKm() > 0) {
-            throw new BadRequestAlertException("Vehiculo nuevo no puede tener km", "vehiculo", "kmerror");
+        // ======================
+        // RELACIONES
+        // ======================
+
+        if (vehiculo.getVersion() == null || vehiculo.getVersion().getId() == null) {
+            throw new BadRequestException("Debe especificar una versión");
         }
 
-        if (vehiculo.getEstado() == EstadoVehiculo.USADO && vehiculo.getKm() == 0) {
-            throw new BadRequestAlertException("Vehiculo usado debe tener km", "vehiculo", "kmerror");
+        Version version = versionRepository.findById(vehiculo.getVersion().getId())
+            .orElseThrow(() -> new BadRequestException("La versión no existe"));
+
+        if (version.getModelo() == null) {
+            throw new BadRequestException("La versión no tiene modelo asociado");
         }
 
-        // PATENTE ÚNICA
-        if (isCreate) {
-            if (vehiculoRepository.existsByPatente(vehiculo.getPatente())) {
-                throw new BadRequestAlertException("Patente duplicada", "vehiculo", "patenteexists");
-            }
-        } else {
-            Optional<Vehiculo> existente = vehiculoRepository.findById(vehiculo.getId());
-            if (existente.isPresent() &&
-                !existente.get().getPatente().equals(vehiculo.getPatente()) &&
-                vehiculoRepository.existsByPatente(vehiculo.getPatente())) {
+        if (vehiculo.getMotor() == null || vehiculo.getMotor().getId() == null) {
+            throw new BadRequestException("Debe especificar un motor");
+        }
 
-                throw new BadRequestAlertException("Patente duplicada", "vehiculo", "patenteexists");
-            }
+        if (!motorRepository.existsById(vehiculo.getMotor().getId())) {
+            throw new BadRequestException("El motor no existe");
+        }
+
+        if (vehiculo.getTipoVehiculo() == null || vehiculo.getTipoVehiculo().getId() == null) {
+            throw new BadRequestException("Debe especificar el tipo de vehículo");
+        }
+
+        if (!tipoVehiculoRepository.existsById(vehiculo.getTipoVehiculo().getId())) {
+            throw new BadRequestException("El tipo de vehículo no existe");
+        }
+
+        // ======================
+        // REGLAS DE NEGOCIO
+        // ======================
+
+        if (vehiculo.getEstado() == EstadoVehiculo.NUEVO && vehiculo.getKm() != 0) {
+            throw new BadRequestException("Un vehículo nuevo debe tener 0 km");
+        }
+
+        if (vehiculo.getEstado() == EstadoVehiculo.USADO && vehiculo.getKm() <= 0) {
+            throw new BadRequestException("Un vehículo usado debe tener km mayor a 0");
+        }
+
+        // ======================
+        // UNICIDAD
+        // ======================
+
+        Optional<Vehiculo> existente = vehiculoRepository.findByPatente(vehiculo.getPatente());
+
+        if (existente.isPresent() &&
+            (isCreate || !existente.get().getId().equals(vehiculo.getId()))) {
+
+            throw new BadRequestException("Ya existe un vehículo con esa patente");
         }
     }
 
@@ -250,7 +298,7 @@ public class VehiculoServiceImpl implements VehiculoService {
             }
         }
 
-        // 🔥 CASO DISPONIBLE → venta directa OK
+        // CASO DISPONIBLE → venta directa OK
 
         inv.setEstadoInventario(EstadoInventario.VENDIDO);
         inv.setDisponible(false);

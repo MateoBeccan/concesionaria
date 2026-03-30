@@ -1,9 +1,12 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Version;
+import com.concesionaria.app.repository.MarcaRepository;
+import com.concesionaria.app.repository.ModeloRepository;
 import com.concesionaria.app.repository.VersionRepository;
 import com.concesionaria.app.service.VersionService;
 import com.concesionaria.app.service.dto.VersionDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VersionMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -24,10 +27,12 @@ public class VersionServiceImpl implements VersionService {
 
     private final VersionRepository versionRepository;
     private final VersionMapper versionMapper;
+    private final ModeloRepository modeloRepository;
 
-    public VersionServiceImpl(VersionRepository versionRepository, VersionMapper versionMapper) {
+    public VersionServiceImpl(VersionRepository versionRepository, VersionMapper versionMapper, ModeloRepository modeloRepository) {
         this.versionRepository = versionRepository;
         this.versionMapper = versionMapper;
+        this.modeloRepository = modeloRepository;
     }
 
     @Override
@@ -99,50 +104,40 @@ public class VersionServiceImpl implements VersionService {
 
         // nombre obligatorio
         if (versionDTO.getNombre() == null || versionDTO.getNombre().trim().isEmpty()) {
-            throw new RuntimeException("El nombre de la versión es obligatorio");
+            throw new BadRequestException("El nombre de la versión es obligatorio");
         }
 
         // modelo obligatorio
         if (versionDTO.getModelo() == null || versionDTO.getModelo().getId() == null) {
-            throw new RuntimeException("La versión debe tener un modelo asociado");
+            throw new BadRequestException("La versión debe tener un modelo asociado");
+        }
+
+        // validar existencia de modelo
+        if (!modeloRepository.existsById(versionDTO.getModelo().getId())) {
+            throw new BadRequestException("El modelo no existe");
         }
 
         // año inicio obligatorio
         if (versionDTO.getAnioInicio() == null || versionDTO.getAnioInicio() < 1950) {
-            throw new RuntimeException("Año de inicio inválido");
+            throw new BadRequestException("Año de inicio inválido");
         }
 
         // año fin coherente
-        if (versionDTO.getAnioFin() != null) {
-            if (versionDTO.getAnioFin() < versionDTO.getAnioInicio()) {
-                throw new RuntimeException("El año fin no puede ser menor al año inicio");
-            }
+        if (versionDTO.getAnioFin() != null &&
+            versionDTO.getAnioFin() < versionDTO.getAnioInicio()) {
+            throw new BadRequestException("El año fin no puede ser menor al año inicio");
         }
 
-        // evitar duplicados (version + modelo)
-        boolean existe = versionRepository.existsByNombreIgnoreCaseAndModeloId(
-            versionDTO.getNombre(),
-            versionDTO.getModelo().getId()
-        );
+        // validar duplicado (version + modelo)
+        Optional<Version> existente = versionRepository
+            .findByNombreIgnoreCaseAndModeloId(
+                versionDTO.getNombre(),
+                versionDTO.getModelo().getId()
+            );
 
-        if (existe) {
-            if (idActual == null) {
-                throw new RuntimeException("Ya existe una versión con ese nombre para el modelo");
-            }
-
-            Version existente = versionRepository
-                .findAll()
-                .stream()
-                .filter(v ->
-                    v.getNombre().equalsIgnoreCase(versionDTO.getNombre()) &&
-                        v.getModelo().getId().equals(versionDTO.getModelo().getId())
-                )
-                .findFirst()
-                .orElse(null);
-
-            if (existente != null && !existente.getId().equals(idActual)) {
-                throw new RuntimeException("Ya existe una versión con ese nombre para el modelo");
-            }
+        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+            throw new BadRequestException("Ya existe una versión con ese nombre para el modelo");
         }
     }
 }
+

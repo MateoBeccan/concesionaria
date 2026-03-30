@@ -4,6 +4,7 @@ import com.concesionaria.app.domain.TipoCaja;
 import com.concesionaria.app.repository.TipoCajaRepository;
 import com.concesionaria.app.service.TipoCajaService;
 import com.concesionaria.app.service.dto.TipoCajaDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.TipoCajaMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -34,16 +35,24 @@ public class TipoCajaServiceImpl implements TipoCajaService {
     @Override
     public TipoCajaDTO save(TipoCajaDTO tipoCajaDTO) {
         LOG.debug("Request to save TipoCaja : {}", tipoCajaDTO);
+
+        validarTipoCaja(tipoCajaDTO, null);
+
         TipoCaja tipoCaja = tipoCajaMapper.toEntity(tipoCajaDTO);
         tipoCaja = tipoCajaRepository.save(tipoCaja);
+
         return tipoCajaMapper.toDto(tipoCaja);
     }
 
     @Override
     public TipoCajaDTO update(TipoCajaDTO tipoCajaDTO) {
         LOG.debug("Request to update TipoCaja : {}", tipoCajaDTO);
+
+        validarTipoCaja(tipoCajaDTO, tipoCajaDTO.getId());
+
         TipoCaja tipoCaja = tipoCajaMapper.toEntity(tipoCajaDTO);
         tipoCaja = tipoCajaRepository.save(tipoCaja);
+
         return tipoCajaMapper.toDto(tipoCaja);
     }
 
@@ -55,6 +64,8 @@ public class TipoCajaServiceImpl implements TipoCajaService {
             .findById(tipoCajaDTO.getId())
             .map(existingTipoCaja -> {
                 tipoCajaMapper.partialUpdate(existingTipoCaja, tipoCajaDTO);
+
+                validarTipoCaja(tipoCajaMapper.toDto(existingTipoCaja), existingTipoCaja.getId());
 
                 return existingTipoCaja;
             })
@@ -80,5 +91,26 @@ public class TipoCajaServiceImpl implements TipoCajaService {
     public void delete(Long id) {
         LOG.debug("Request to delete TipoCaja : {}", id);
         tipoCajaRepository.deleteById(id);
+    }
+
+    private void validarTipoCaja(TipoCajaDTO dto, Long idActual) {
+
+        // nombre obligatorio
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new BadRequestException("El nombre del tipo de caja es obligatorio");
+        }
+
+        String nombre = dto.getNombre().trim().toUpperCase();
+
+        // evitar duplicados
+        Optional<TipoCaja> existente = tipoCajaRepository
+            .findByNombreIgnoreCase(nombre);
+
+        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+            throw new BadRequestException("Ya existe un tipo de caja con ese nombre");
+        }
+
+        // normalizar
+        dto.setNombre(nombre);
     }
 }

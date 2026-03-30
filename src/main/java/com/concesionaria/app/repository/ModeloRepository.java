@@ -4,6 +4,8 @@ import com.concesionaria.app.domain.Modelo;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 /**
  * Spring Data JPA repository for the Modelo entity.
  */
@@ -12,4 +14,5 @@ import org.springframework.stereotype.Repository;
 public interface ModeloRepository extends JpaRepository<Modelo, Long>, JpaSpecificationExecutor<Modelo> {
 
     boolean existsByNombreIgnoreCaseAndMarcaId(String nombre, Long marcaId);
+    Optional<Modelo> findByNombreIgnoreCaseAndMarcaId(String nombre, Long marcaId);
 }

@@ -1,9 +1,11 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Modelo;
+import com.concesionaria.app.repository.MarcaRepository;
 import com.concesionaria.app.repository.ModeloRepository;
 import com.concesionaria.app.service.ModeloService;
 import com.concesionaria.app.service.dto.ModeloDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.ModeloMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -24,10 +26,12 @@ public class ModeloServiceImpl implements ModeloService {
 
     private final ModeloRepository modeloRepository;
     private final ModeloMapper modeloMapper;
+    private final MarcaRepository marcaRepository;
 
-    public ModeloServiceImpl(ModeloRepository modeloRepository, ModeloMapper modeloMapper) {
+    public ModeloServiceImpl(ModeloRepository modeloRepository, ModeloMapper modeloMapper, MarcaRepository marcaRepository) {
         this.modeloRepository = modeloRepository;
         this.modeloMapper = modeloMapper;
+        this.marcaRepository = marcaRepository;
     }
 
     @Override
@@ -94,51 +98,39 @@ public class ModeloServiceImpl implements ModeloService {
     // =========================
     // VALIDACIONES
     // =========================
-
     private void validarModelo(ModeloDTO modeloDTO, Long idActual) {
 
         // nombre obligatorio
         if (modeloDTO.getNombre() == null || modeloDTO.getNombre().trim().isEmpty()) {
-            throw new RuntimeException("El nombre del modelo es obligatorio");
+            throw new BadRequestException("El nombre del modelo es obligatorio");
         }
 
         // marca obligatoria
         if (modeloDTO.getMarca() == null || modeloDTO.getMarca().getId() == null) {
-            throw new RuntimeException("El modelo debe tener una marca asociada");
+            throw new BadRequestException("El modelo debe tener una marca asociada");
+        }
+
+        // validar existencia de marca
+        if (!marcaRepository.existsById(modeloDTO.getMarca().getId())) {
+            throw new BadRequestException("La marca no existe");
         }
 
         // año válido
         if (modeloDTO.getAnioLanzamiento() == null ||
             modeloDTO.getAnioLanzamiento() < 1950 ||
-            modeloDTO.getAnioLanzamiento() > 2100) {
-            throw new RuntimeException("Año de lanzamiento inválido");
+            modeloDTO.getAnioLanzamiento() > 2026) {
+            throw new BadRequestException("Año de lanzamiento inválido");
         }
 
-        // evitar duplicados (modelo + marca)
-        boolean existe = modeloRepository.existsByNombreIgnoreCaseAndMarcaId(
-            modeloDTO.getNombre(),
-            modeloDTO.getMarca().getId()
-        );
+        // validar duplicado (modelo + marca)
+        Optional<Modelo> existente = modeloRepository
+            .findByNombreIgnoreCaseAndMarcaId(
+                modeloDTO.getNombre(),
+                modeloDTO.getMarca().getId()
+            );
 
-        if (existe) {
-            // si es update, permitir mismo registro
-            if (idActual == null) {
-                throw new RuntimeException("Ya existe un modelo con ese nombre para la marca");
-            }
-
-            Modelo existente = modeloRepository
-                .findAll()
-                .stream()
-                .filter(m ->
-                    m.getNombre().equalsIgnoreCase(modeloDTO.getNombre()) &&
-                        m.getMarca().getId().equals(modeloDTO.getMarca().getId())
-                )
-                .findFirst()
-                .orElse(null);
-
-            if (existente != null && !existente.getId().equals(idActual)) {
-                throw new RuntimeException("Ya existe un modelo con ese nombre para la marca");
-            }
+        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+            throw new BadRequestException("Ya existe un modelo con ese nombre para la marca");
         }
     }
 }

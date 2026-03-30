@@ -1,9 +1,13 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Motor;
+import com.concesionaria.app.repository.CombustibleRepository;
 import com.concesionaria.app.repository.MotorRepository;
+import com.concesionaria.app.repository.TipoCajaRepository;
+import com.concesionaria.app.repository.TraccionRepository;
 import com.concesionaria.app.service.MotorService;
 import com.concesionaria.app.service.dto.MotorDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.MotorMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -24,10 +28,16 @@ public class MotorServiceImpl implements MotorService {
 
     private final MotorRepository motorRepository;
     private final MotorMapper motorMapper;
+    private final CombustibleRepository combustibleRepository;
+    private final TipoCajaRepository tipoCajaRepository;
+    private final TraccionRepository traccionRepository;
 
-    public MotorServiceImpl(MotorRepository motorRepository, MotorMapper motorMapper) {
+    public MotorServiceImpl(MotorRepository motorRepository, MotorMapper motorMapper, CombustibleRepository combustibleRepository, TipoCajaRepository tipoCajaRepository, TraccionRepository traccionRepository) {
         this.motorRepository = motorRepository;
         this.motorMapper = motorMapper;
+        this.combustibleRepository = combustibleRepository;
+        this.tipoCajaRepository = tipoCajaRepository;
+        this.traccionRepository = traccionRepository;
     }
 
     @Override
@@ -96,6 +106,19 @@ public class MotorServiceImpl implements MotorService {
     // =========================
 
     private void validarMotor(MotorDTO motorDTO, Long idActual) {
+
+
+        if (!combustibleRepository.existsById(motorDTO.getCombustible().getId())) {
+            throw new BadRequestException("El combustible no existe");
+        }
+
+        if (!tipoCajaRepository.existsById(motorDTO.getTipoCaja().getId())) {
+            throw new BadRequestException("El tipo de caja no existe");
+        }
+
+        if (!traccionRepository.existsById(motorDTO.getTraccion().getId())) {
+            throw new BadRequestException("La tracción no existe");
+        }
 
         // nombre obligatorio
         if (motorDTO.getNombre() == null || motorDTO.getNombre().trim().isEmpty()) {

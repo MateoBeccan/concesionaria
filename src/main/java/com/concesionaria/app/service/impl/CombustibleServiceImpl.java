@@ -4,6 +4,7 @@ import com.concesionaria.app.domain.Combustible;
 import com.concesionaria.app.repository.CombustibleRepository;
 import com.concesionaria.app.service.CombustibleService;
 import com.concesionaria.app.service.dto.CombustibleDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.CombustibleMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -34,16 +35,24 @@ public class CombustibleServiceImpl implements CombustibleService {
     @Override
     public CombustibleDTO save(CombustibleDTO combustibleDTO) {
         LOG.debug("Request to save Combustible : {}", combustibleDTO);
+
+        validarCombustible(combustibleDTO, null);
+
         Combustible combustible = combustibleMapper.toEntity(combustibleDTO);
         combustible = combustibleRepository.save(combustible);
+
         return combustibleMapper.toDto(combustible);
     }
 
     @Override
     public CombustibleDTO update(CombustibleDTO combustibleDTO) {
         LOG.debug("Request to update Combustible : {}", combustibleDTO);
+
+        validarCombustible(combustibleDTO, combustibleDTO.getId());
+
         Combustible combustible = combustibleMapper.toEntity(combustibleDTO);
         combustible = combustibleRepository.save(combustible);
+
         return combustibleMapper.toDto(combustible);
     }
 
@@ -53,10 +62,12 @@ public class CombustibleServiceImpl implements CombustibleService {
 
         return combustibleRepository
             .findById(combustibleDTO.getId())
-            .map(existingCombustible -> {
-                combustibleMapper.partialUpdate(existingCombustible, combustibleDTO);
+            .map(existing -> {
+                combustibleMapper.partialUpdate(existing, combustibleDTO);
 
-                return existingCombustible;
+                validarCombustible(combustibleMapper.toDto(existing), existing.getId());
+
+                return existing;
             })
             .map(combustibleRepository::save)
             .map(combustibleMapper::toDto);
@@ -80,5 +91,26 @@ public class CombustibleServiceImpl implements CombustibleService {
     public void delete(Long id) {
         LOG.debug("Request to delete Combustible : {}", id);
         combustibleRepository.deleteById(id);
+    }
+
+    private void validarCombustible(CombustibleDTO dto, Long idActual) {
+
+        // nombre obligatorio
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new BadRequestException("El nombre del combustible es obligatorio");
+        }
+
+        String nombre = dto.getNombre().trim().toUpperCase();
+
+        // evitar duplicados
+        Optional<Combustible> existente = combustibleRepository
+            .findByNombreIgnoreCase(nombre);
+
+        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+            throw new BadRequestException("Ya existe un combustible con ese nombre");
+        }
+
+        // normalizar
+        dto.setNombre(nombre);
     }
 }

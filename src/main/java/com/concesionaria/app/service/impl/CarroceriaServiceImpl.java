@@ -4,6 +4,7 @@ import com.concesionaria.app.domain.Carroceria;
 import com.concesionaria.app.repository.CarroceriaRepository;
 import com.concesionaria.app.service.CarroceriaService;
 import com.concesionaria.app.service.dto.CarroceriaDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.CarroceriaMapper;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -34,16 +35,24 @@ public class CarroceriaServiceImpl implements CarroceriaService {
     @Override
     public CarroceriaDTO save(CarroceriaDTO carroceriaDTO) {
         LOG.debug("Request to save Carroceria : {}", carroceriaDTO);
+
+        validarCarroceria(carroceriaDTO, null);
+
         Carroceria carroceria = carroceriaMapper.toEntity(carroceriaDTO);
         carroceria = carroceriaRepository.save(carroceria);
+
         return carroceriaMapper.toDto(carroceria);
     }
 
     @Override
     public CarroceriaDTO update(CarroceriaDTO carroceriaDTO) {
         LOG.debug("Request to update Carroceria : {}", carroceriaDTO);
+
+        validarCarroceria(carroceriaDTO, carroceriaDTO.getId());
+
         Carroceria carroceria = carroceriaMapper.toEntity(carroceriaDTO);
         carroceria = carroceriaRepository.save(carroceria);
+
         return carroceriaMapper.toDto(carroceria);
     }
 
@@ -55,6 +64,8 @@ public class CarroceriaServiceImpl implements CarroceriaService {
             .findById(carroceriaDTO.getId())
             .map(existingCarroceria -> {
                 carroceriaMapper.partialUpdate(existingCarroceria, carroceriaDTO);
+
+                validarCarroceria(carroceriaMapper.toDto(existingCarroceria), existingCarroceria.getId());
 
                 return existingCarroceria;
             })
@@ -81,4 +92,26 @@ public class CarroceriaServiceImpl implements CarroceriaService {
         LOG.debug("Request to delete Carroceria : {}", id);
         carroceriaRepository.deleteById(id);
     }
+
+    private void validarCarroceria(CarroceriaDTO dto, Long idActual) {
+
+        // nombre obligatorio
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new BadRequestException("El nombre de la carrocería es obligatorio");
+        }
+
+        String nombre = dto.getNombre().trim().toUpperCase();
+
+        // evitar duplicados
+        Optional<Carroceria> existente = carroceriaRepository
+            .findByNombreIgnoreCase(nombre);
+
+        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+            throw new BadRequestException("Ya existe una carrocería con ese nombre");
+        }
+
+        // normalizar nombre
+        dto.setNombre(nombre);
+    }
 }
+
