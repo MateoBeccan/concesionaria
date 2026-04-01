@@ -15,5 +15,5 @@ public interface VehiculoRepository extends JpaRepository<Vehiculo, Long> {
 
     boolean existsByPatente(String patente);
     Optional<Vehiculo> findByPatente(String patente);
-
+    Optional<Vehiculo> findByPatenteIgnoreCase(String patente);
 }

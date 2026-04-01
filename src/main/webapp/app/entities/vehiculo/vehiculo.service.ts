@@ -83,4 +83,16 @@ export default class VehiculoService {
         });
     });
   }
+  findByPatente(patente: string): Promise<IVehiculo> {
+    return new Promise((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/patente/${patente}`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+
+  }
+  vender(vehiculoId: number, clienteId: number) {
+    return axios.post(`/api/vehiculos/${vehiculoId}/vender/${clienteId}`);
+  }
 }

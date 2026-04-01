@@ -70,6 +70,11 @@ export default class ClienteService {
         });
     });
   }
+  findByDocumento(nroDocumento: string): Promise<ICliente> {
+    return axios
+      .get(`/api/clientes/documento/${nroDocumento}`)
+      .then(res => res.data);
+  }
 
   partialUpdate(entity: ICliente): Promise<ICliente> {
     return new Promise<ICliente>((resolve, reject) => {

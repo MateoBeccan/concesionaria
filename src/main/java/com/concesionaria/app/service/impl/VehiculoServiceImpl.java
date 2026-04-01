@@ -1,6 +1,7 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.*;
+import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import com.concesionaria.app.repository.*;
@@ -249,25 +250,33 @@ public class VehiculoServiceImpl implements VehiculoService {
 
         LOG.info("Reservando vehiculo {} para cliente {}", vehiculoId, clienteId);
 
+        // 1. BUSCAR INVENTARIO
         Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId)
             .orElseThrow(() -> new BadRequestAlertException("No existe inventario", "vehiculo", "inventarionotfound"));
 
+        // 2. VALIDAR
         if (inv.getEstadoInventario() != EstadoInventario.DISPONIBLE) {
             throw new BadRequestAlertException("Vehiculo no disponible para reservar", "vehiculo", "nodisponible");
         }
 
+        // 3. BUSCAR CLIENTE
         Cliente cliente = clienteRepository.findById(clienteId)
             .orElseThrow(() -> new BadRequestAlertException("Cliente no existe", "cliente", "notfound"));
 
+        // 4. ACTUALIZAR INVENTARIO
         inv.setEstadoInventario(EstadoInventario.RESERVADO);
         inv.setDisponible(false);
         inv.setClienteReserva(cliente);
         inv.setFechaReserva(Instant.now());
-
-        // opcional: vencimiento 3 días
         inv.setFechaVencimientoReserva(Instant.now().plus(3, java.time.temporal.ChronoUnit.DAYS));
 
         inventarioRepository.save(inv);
+
+        // 5. 🔥 ACTUALIZAR VEHICULO (DESPUÉS)
+        Vehiculo vehiculo = inv.getVehiculo();
+        vehiculo.setCondicion(CondicionVehiculo.RESERVADO);
+
+        vehiculoRepository.save(vehiculo);
     }
 
     @Override
@@ -275,31 +284,28 @@ public class VehiculoServiceImpl implements VehiculoService {
 
         LOG.info("Vendiendo vehiculo {} al cliente {}", vehiculoId, clienteId);
 
+        // 1. BUSCAR INVENTARIO
         Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId)
             .orElseThrow(() -> new BadRequestAlertException("No existe inventario", "vehiculo", "inventarionotfound"));
 
+        // 2. VALIDACIONES
         if (inv.getEstadoInventario() == EstadoInventario.VENDIDO) {
             throw new BadRequestAlertException("Vehiculo ya vendido", "vehiculo", "vendido");
         }
 
-        // 🔥 CASO RESERVADO
         if (inv.getEstadoInventario() == EstadoInventario.RESERVADO) {
+            if (inv.getClienteReserva() == null ||
+                !inv.getClienteReserva().getId().equals(clienteId)) {
 
-            if (inv.getClienteReserva() == null) {
-                throw new BadRequestAlertException("Reserva inconsistente", "vehiculo", "error");
-            }
-
-            if (!inv.getClienteReserva().getId().equals(clienteId)) {
                 throw new BadRequestAlertException(
-                    "Solo el cliente que reservó puede comprar este vehiculo",
+                    "Solo el cliente que reservó puede comprar",
                     "vehiculo",
                     "clienteinvalido"
                 );
             }
         }
 
-        // CASO DISPONIBLE → venta directa OK
-
+        // 3. ACTUALIZAR INVENTARIO
         inv.setEstadoInventario(EstadoInventario.VENDIDO);
         inv.setDisponible(false);
         inv.setClienteReserva(null);
@@ -307,6 +313,12 @@ public class VehiculoServiceImpl implements VehiculoService {
         inv.setFechaVencimientoReserva(null);
 
         inventarioRepository.save(inv);
+
+        // 4. 🔥 ACTUALIZAR VEHICULO
+        Vehiculo vehiculo = inv.getVehiculo();
+        vehiculo.setCondicion(CondicionVehiculo.VENDIDO);
+
+        vehiculoRepository.save(vehiculo);
     }
 
     @Override
@@ -329,4 +341,16 @@ public class VehiculoServiceImpl implements VehiculoService {
 
         inventarioRepository.save(inv);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<VehiculoDTO> findByPatente(String patente) {
+
+        LOG.debug("Buscando vehiculo por patente {}", patente);
+
+        return vehiculoRepository
+            .findByPatenteIgnoreCase(patente.trim().toUpperCase())
+            .map(vehiculoMapper::toDto);
+    }
+
 }

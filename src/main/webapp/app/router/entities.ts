@@ -633,6 +633,11 @@ export default {
       component: TipoDocumentoDetails,
       meta: { authorities: [Authority.USER] },
     },
+    {
+      path: '/vehiculo/buscar',
+      name: 'VehiculoSearch',
+      component: () => import('@/entities/vehiculo/vehiculo-search.vue'),
+    },
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here
   ],
 };

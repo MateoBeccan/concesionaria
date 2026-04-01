@@ -69,4 +69,8 @@
         void venderVehiculo(Long vehiculoId, Long clienteId);
 
         void cancelarReserva(Long vehiculoId);
+
+        Optional<VehiculoDTO> findByPatente(String patente);
+
+
     }

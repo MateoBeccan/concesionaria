@@ -97,6 +97,9 @@
               <span class="no-bold">Cuenta</span>
             </span>
           </template>
+          <b-dropdown-item to="vehiculo/buscar">
+            Buscar Vehículo
+          </b-dropdown-item>
           <b-dropdown-item data-cy="settings" to="/account/settings" v-if="authenticated" active-class="active">
             <font-awesome-icon icon="wrench" />
             <span>Ajustes</span>

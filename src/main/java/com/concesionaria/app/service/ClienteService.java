@@ -55,4 +55,6 @@ public interface ClienteService {
      * @param id the id of the entity.
      */
     void delete(Long id);
+
+    Optional<ClienteDTO> findByNroDocumento(String nroDocumento);
 }

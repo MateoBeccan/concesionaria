@@ -14,7 +14,7 @@ export default defineComponent({
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const itemsPerPage = ref(20);
-    const queryCount: Ref<number> = ref(null);
+    const queryCount: Ref<number | null> = ref(null);
     const page: Ref<number> = ref(1);
     const propOrder = ref('id');
     const reverse = ref(false);
@@ -48,7 +48,7 @@ export default defineComponent({
         totalItems.value = Number(res.headers['x-total-count']);
         queryCount.value = totalItems.value;
         vehiculos.value = res.data;
-      } catch (err) {
+      } catch (err: any) {
         alertService.showHttpError(err.response);
       } finally {
         isFetching.value = false;
@@ -63,10 +63,10 @@ export default defineComponent({
       await retrieveVehiculos();
     });
 
-    const removeId: Ref<number> = ref(null);
+    const removeId: Ref<number | null> = ref(null);
     const removeEntity = ref<any>(null);
     const prepareRemove = (instance: IVehiculo) => {
-      removeId.value = instance.id;
+      removeId.value = instance.id ?? null;
       removeEntity.value.show();
     };
     const closeDialog = () => {
@@ -74,13 +74,17 @@ export default defineComponent({
     };
     const removeVehiculo = async () => {
       try {
-        await vehiculoService().delete(removeId.value);
+        if (removeId.value != null) {
+          await vehiculoService().delete(removeId.value);
+        }
+
         const message = `A Vehiculo is deleted with identifier ${removeId.value}`;
         alertService.showInfo(message, { variant: 'danger' });
+
         removeId.value = null;
         retrieveVehiculos();
         closeDialog();
-      } catch (error) {
+      } catch (error: any) {
         alertService.showHttpError(error.response);
       }
     };

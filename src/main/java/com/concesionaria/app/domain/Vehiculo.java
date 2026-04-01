@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
@@ -68,6 +69,11 @@ public class Vehiculo implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private TipoVehiculo tipoVehiculo;
 
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condicion", nullable = false)
+    private CondicionVehiculo condicion;
+
     @JsonIgnoreProperties(value = { "vehiculo", "clienteReserva" }, allowSetters = true)
     @OneToOne(fetch = FetchType.LAZY, mappedBy = "vehiculo")
     private Inventario inventario;
@@ -94,6 +100,14 @@ public class Vehiculo implements Serializable {
     public Vehiculo estado(EstadoVehiculo estado) {
         this.setEstado(estado);
         return this;
+    }
+
+    public CondicionVehiculo getCondicion() {
+        return condicion;
+    }
+
+    public void setCondicion(CondicionVehiculo condicion) {
+        this.condicion = condicion;
     }
 
     public void setEstado(EstadoVehiculo estado) {
