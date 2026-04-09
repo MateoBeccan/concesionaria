@@ -24,6 +24,25 @@
             <span>Inicio</span>
           </span>
         </b-nav-item>
+        <!-- ACCESOS RÁPIDOS DE NEGOCIO -->
+        <b-nav-item v-if="authenticated" :to="{ name: 'VentaWizard' }">
+          <span>
+            <font-awesome-icon icon="plus-circle" />
+            <span>Nueva Venta</span>
+          </span>
+        </b-nav-item>
+        <b-nav-item v-if="authenticated" :to="{ name: 'VehiculoSearch' }">
+          <span>
+            <font-awesome-icon icon="search" />
+            <span>Buscar Vehículo</span>
+          </span>
+        </b-nav-item>
+        <b-nav-item v-if="authenticated" :to="{ name: 'VentaList' }">
+          <span>
+            <font-awesome-icon icon="list" />
+            <span>Ventas</span>
+          </span>
+        </b-nav-item>
         <b-nav-item-dropdown
           :no-size="true"
           end
@@ -97,9 +116,6 @@
               <span class="no-bold">Cuenta</span>
             </span>
           </template>
-          <b-dropdown-item to="vehiculo/buscar">
-            Buscar Vehículo
-          </b-dropdown-item>
           <b-dropdown-item data-cy="settings" to="/account/settings" v-if="authenticated" active-class="active">
             <font-awesome-icon icon="wrench" />
             <span>Ajustes</span>

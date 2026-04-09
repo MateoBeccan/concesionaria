@@ -4,6 +4,7 @@ import com.concesionaria.app.domain.*;
 import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.*;
 import com.concesionaria.app.service.VehiculoService;
 import com.concesionaria.app.service.dto.VehiculoDTO;
@@ -38,13 +39,16 @@ public class VehiculoServiceImpl implements VehiculoService {
     private final VersionRepository versionRepository;
     private final MotorRepository motorRepository;
     private final TipoVehiculoRepository tipoVehiculoRepository;
+    private final VentaRepository ventaRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
 
     public VehiculoServiceImpl(
         VehiculoRepository vehiculoRepository,
         VehiculoMapper vehiculoMapper,
         InventarioRepository inventarioRepository, ClienteRepository clienteRepository,
         VersionRepository versionRepository, MotorRepository motorRepository,
-        TipoVehiculoRepository tipoVehiculoRepository)
+        TipoVehiculoRepository tipoVehiculoRepository, VentaRepository ventaRepository,
+        DetalleVentaRepository detalleVentaRepository)
      {
         this.vehiculoRepository = vehiculoRepository;
         this.vehiculoMapper = vehiculoMapper;
@@ -53,6 +57,8 @@ public class VehiculoServiceImpl implements VehiculoService {
         this.versionRepository = versionRepository;
         this.motorRepository = motorRepository;
         this.tipoVehiculoRepository = tipoVehiculoRepository;
+        this.ventaRepository = ventaRepository;
+        this.detalleVentaRepository = detalleVentaRepository;
     }
 
     // =========================
@@ -272,7 +278,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 
         inventarioRepository.save(inv);
 
-        // 5. 🔥 ACTUALIZAR VEHICULO (DESPUÉS)
+        // 5.  ACTUALIZAR VEHICULO (DESPUÉS)
         Vehiculo vehiculo = inv.getVehiculo();
         vehiculo.setCondicion(CondicionVehiculo.RESERVADO);
 
@@ -313,12 +319,56 @@ public class VehiculoServiceImpl implements VehiculoService {
         inv.setFechaVencimientoReserva(null);
 
         inventarioRepository.save(inv);
-
-        // 4. 🔥 ACTUALIZAR VEHICULO
+        //  ACTUALIZAR VEHICULO
         Vehiculo vehiculo = inv.getVehiculo();
         vehiculo.setCondicion(CondicionVehiculo.VENDIDO);
 
         vehiculoRepository.save(vehiculo);
+
+        //  CREAR VENTA
+        Venta venta = new Venta();
+
+        venta.setFecha(Instant.now());
+
+        // valores (podés mejorar después)
+        BigDecimal precio = inv.getVehiculo().getPrecio();
+
+        venta.setCotizacion(BigDecimal.ONE);
+        venta.setImporteNeto(precio);
+
+        BigDecimal impuesto = precio.multiply(new BigDecimal("0.21"));
+        venta.setImpuesto(impuesto);
+
+        venta.setTotal(precio.add(impuesto));
+
+        venta.setPorcentajeImpuesto(new BigDecimal("21"));
+        venta.setTotalPagado(venta.getTotal());
+        venta.setSaldo(BigDecimal.ZERO);
+
+        venta.setCliente(
+            clienteRepository.findById(clienteId).orElseThrow()
+        );
+
+        venta.setEstado(EstadoVenta.FINALIZADA);
+
+        // opcional
+        venta.setCreatedDate(Instant.now());
+
+        // GUARDAR
+        ventaRepository.save(venta);
+
+        // CREAR DETALLE DE VENTA
+        DetalleVenta detalle = new DetalleVenta();
+
+        detalle.setVenta(venta);
+        detalle.setVehiculo(inv.getVehiculo());
+
+        detalle.setPrecioUnitario(precio);
+        detalle.setCantidad(1);
+
+        // subtotal se calcula solo si usás @PrePersist
+
+        detalleVentaRepository.save(detalle);
     }
 
     @Override

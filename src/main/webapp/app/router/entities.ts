@@ -1,5 +1,4 @@
 import { Authority } from '@/shared/jhipster/constants';
-import {EstadoVenta} from "@/shared/model/estado-venta.model";
 const Entities = () => import('@/entities/entities.vue');
 
 const Marca = () => import('@/entities/marca/marca.vue');
@@ -83,6 +82,8 @@ const TipoVehiculoDetails = () => import('@/entities/tipo-vehiculo/tipo-vehiculo
 const Vehiculo = () => import('@/entities/vehiculo/vehiculo.vue');
 const VehiculoUpdate = () => import('@/entities/vehiculo/vehiculo-update.vue');
 const VehiculoDetails = () => import('@/entities/vehiculo/vehiculo-details.vue');
+const VentaWizard = () => import('@/entities/venta/VentaWizard.vue');
+const VentaEditor = () => import('@/entities/venta/VentaEditor.vue');
 
 const Inventario = () => import('@/entities/inventario/inventario.vue');
 const InventarioUpdate = () => import('@/entities/inventario/inventario-update.vue');
@@ -266,13 +267,6 @@ export default {
       component: CondicionIvaDetails,
       meta: { authorities: [Authority.USER] },
     },
-    {
-      path: 'estado-venta',
-      name: 'EstadoVenta',
-      component: EstadoVenta,
-      meta: { authorities: [Authority.USER] },
-    },
-
     {
       path: 'venta',
       name: 'Venta',
@@ -637,7 +631,32 @@ export default {
       path: '/vehiculo/buscar',
       name: 'VehiculoSearch',
       component: () => import('@/entities/vehiculo/vehiculo-search.vue'),
+      meta: { authorities: [Authority.USER] },
     },
+    {
+      path: '/ventas',
+      name: 'VentaList',
+      component: () => import('@/entities/venta/venta-list.vue'),
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: '/venta/nueva',
+      name: 'VentaWizard',
+      component: VentaWizard,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: '/venta/editor',
+      name: 'VentaEditor',
+      component: VentaEditor,
+      meta: { authorities: [Authority.USER] },
+    },
+    {
+      path: '/venta/editor/:ventaId',
+      name: 'VentaEditorEdit',
+      component: VentaEditor,
+      meta: { authorities: [Authority.USER] },
+    }
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here
   ],
 };

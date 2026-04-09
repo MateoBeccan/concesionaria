@@ -17,11 +17,11 @@ export interface IVenta {
   createdDate?: Date | null;
   lastModifiedDate?: Date | null;
   cliente?: ICliente | null;
-  estadoVenta?: EstadoVenta | null;
+  estado?: EstadoVenta | null;
+
   moneda?: IMoneda | null;
   user?: IUser | null;
 }
-
 export class Venta implements IVenta {
   constructor(
     public id?: number,

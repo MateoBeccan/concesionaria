@@ -1,207 +1,154 @@
 <template>
-  <div class="container">
+  <div class="container py-4" style="max-width:680px">
 
-    <h2>Buscar Vehículo</h2>
+    <h4 class="fw-semibold mb-1">Buscar vehículo</h4>
+    <p class="text-muted small mb-4">Ingresá la patente para buscar o registrar un vehículo.</p>
 
-    <input
-      v-model="patente"
-      placeholder="Ingrese patente"
-      class="form-control"
-    />
-
-    <button @click="buscar" class="btn btn-primary mt-2">
-      Buscar
-    </button>
-
-    <div v-if="loading">Buscando...</div>
-
-    <hr />
-
-    <!-- EXISTENTE -->
-    <div v-if="modo === 'EXISTENTE' && vehiculo">
-      <h4 class="mb-3">Vehículo encontrado</h4>
-
-      <div class="card shadow p-4">
-
-        <!-- HEADER -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h2>{{ vehiculo.patente }}</h2>
-
-          <span
-            class="badge"
-            :class="{
-              'bg-success': vehiculo.estado === 'NUEVO',
-              'bg-secondary': vehiculo.estado === 'USADO',
-              'bg-danger': vehiculo.condicion === 'VENDIDO'
-            }"
-          >
-            {{ vehiculo.estado }}
-          </span>
-        </div>
-
-        <!-- PRECIO -->
-        <h3 class="text-primary mb-4">
-          $ {{ Number(vehiculo.precio ?? 0).toLocaleString('es-AR') }}
-        </h3>
-
-        <!-- INFO -->
-        <div class="row">
-
-          <!-- IZQUIERDA -->
-          <div class="col-md-6">
-            <p><b>Kilómetros:</b> {{ vehiculo.km ?? 0 }} km</p>
-            <p><b>Fecha fabricación:</b> {{ formatearFecha(vehiculo.fechaFabricacion) }}</p>
-            <p><b>Tipo:</b> {{ vehiculo.tipoVehiculo?.nombre ?? '-' }}</p>
-          </div>
-
-          <!-- DERECHA -->
-          <div class="col-md-6">
-            <p><b>Motor:</b> {{ vehiculo.motor?.nombre ?? '-' }}</p>
-            <p><b>Potencia:</b> {{ vehiculo.motor?.potenciaHp ?? '-' }} HP</p>
-            <p><b>Versión:</b> {{ vehiculo.version?.nombre ?? '-' }}</p>
-            <p><b>Modelo:</b> {{ vehiculo.version?.modelo?.nombre ?? '-' }}</p>
-            <p><b>Marca:</b> {{ vehiculo.version?.modelo?.marca?.nombre ?? '-' }}</p>
-          </div>
-
-        </div>
-
+    <div class="d-flex gap-2 mb-3">
+      <div class="flex-grow-1">
+        <EntitySearchInput
+          v-model="patente"
+          placeholder="Ej: ABC123 o AB123CD"
+          :loading="loading"
+          :error="error"
+          :debounce="0"
+          @clear="limpiar"
+        />
       </div>
+      <button class="btn btn-primary" @click="buscar" :disabled="loading || !patente">
+        Buscar
+      </button>
+    </div>
 
-      <!-- ACCIONES -->
-      <div class="mt-4 d-flex gap-2">
+    <!-- VEHÍCULO ENCONTRADO -->
+    <div v-if="vehiculo && modo === 'EXISTENTE'" class="card border-0 shadow-sm">
+      <div class="card-body p-4">
 
-        <!-- VENDER -->
-        <button
-          class="btn btn-success"
-          @click="irAVenta"
-          v-if="vehiculo.condicion !== 'VENDIDO'"
-        >
-          💰 Vender
-        </button>
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h3 class="fw-bold mb-0">{{ vehiculo.patente }}</h3>
+          <div class="d-flex gap-2">
+            <span class="badge fs-6" :class="vehiculo.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
+              {{ vehiculo.estado }}
+            </span>
+            <span class="badge fs-6" :class="badgeCondicion(vehiculo.condicion)">
+              {{ vehiculo.condicion }}
+            </span>
+          </div>
+        </div>
 
-        <!-- RESERVAR -->
-        <button
-          class="btn btn-warning"
-          @click="reservar"
-          v-if="vehiculo.condicion !== 'VENDIDO'"
-        >
-          🟡 Reservar
-        </button>
+        <h3 class="text-primary mb-4">$ {{ formatPrecio(vehiculo.precio) }}</h3>
 
-        <!-- EDITAR -->
-        <button
-          class="btn btn-primary"
-          @click="editar"
-        >
-          ✏️ Editar
-        </button>
+        <div class="row small">
+          <div class="col-md-6">
+            <p class="mb-1"><strong>Kilómetros:</strong> {{ vehiculo.km?.toLocaleString('es-AR') ?? '-' }} km</p>
+            <p class="mb-1"><strong>Fabricación:</strong> {{ formatFecha(vehiculo.fechaFabricacion) }}</p>
+            <p class="mb-1"><strong>Tipo:</strong> {{ vehiculo.tipoVehiculo?.nombre ?? '-' }}</p>
+          </div>
+          <div class="col-md-6">
+            <p class="mb-1"><strong>Motor:</strong> {{ vehiculo.motor?.nombre ?? '-' }}</p>
+            <p class="mb-1"><strong>Potencia:</strong> {{ vehiculo.motor?.potenciaHp ?? '-' }} HP</p>
+            <p class="mb-1"><strong>Versión:</strong> {{ vehiculo.version?.nombre ?? '-' }}</p>
+            <p class="mb-1"><strong>Marca:</strong> {{ vehiculo.version?.modelo?.marca?.nombre ?? '-' }}</p>
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4 flex-wrap">
+          <button v-if="vehiculo.condicion !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">
+            💰 Vender
+          </button>
+          <button v-if="vehiculo.condicion === 'EN_VENTA'" class="btn btn-warning" @click="reservar">
+            🟡 Reservar
+          </button>
+          <button class="btn btn-outline-primary" @click="editar">
+            ✏️ Editar
+          </button>
+        </div>
 
       </div>
     </div>
 
+    <!-- NO ENCONTRADO -->
+    <div v-if="modo === 'NO_ENCONTRADO'" class="alert alert-warning d-flex justify-content-between align-items-center">
+      <div>
+        <strong>Vehículo no encontrado</strong>
+        <p class="mb-0 small">No existe ningún vehículo con patente "{{ patente }}"</p>
+      </div>
+      <button class="btn btn-success btn-sm" @click="modo = 'CREAR'">
+        + Registrar vehículo
+      </button>
+    </div>
+
     <!-- CREAR -->
     <div v-if="modo === 'CREAR'">
-      <h4>No existe → Crear vehículo</h4>
-
-      <vehiculo-form
-        :vehiculo="vehiculo"
+      <VehiculoQuickCreate
+        :patente-inicial="patente"
         @guardado="onVehiculoCreado"
+        @cerrar="modo = 'BUSCAR'"
       />
     </div>
 
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue';
-import VehiculoService from '@/entities/vehiculo/vehiculo.service';
-import { type IVehiculo } from '@/shared/model/vehiculo.model';
+<script lang="ts" setup>
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { useVehiculo } from '@/shared/composables/useVehiculo';
+import { useAlertService } from '@/shared/alert/alert.service';
+import EntitySearchInput from '@/shared/composables/EntitySearchInput.vue';
+import VehiculoQuickCreate from '@/entities/vehiculo/VehiculoQuickCreate.vue';
+import type { IVehiculo } from '@/shared/model/vehiculo.model';
 
-export default defineComponent({
-  name: 'VehiculoSearch',
+const router = useRouter();
+const alertService = useAlertService();
+const { vehiculo, loading, error, notFound, buscarPorPatente, setVehiculo, limpiar: limpiarComposable } = useVehiculo();
 
-  setup() {
-    const vehiculoService = new VehiculoService();
-    const router = useRouter();
+const patente = ref('');
+const modo = ref<'BUSCAR' | 'EXISTENTE' | 'NO_ENCONTRADO' | 'CREAR'>('BUSCAR');
 
-    const patente = ref('');
-    const vehiculo = ref<IVehiculo | null>(null);
-    const modo = ref<'BUSCAR' | 'EXISTENTE' | 'CREAR'>('BUSCAR');
-    const loading = ref(false);
+watch(vehiculo, v => { if (v) modo.value = 'EXISTENTE'; });
+watch(notFound, v => { if (v) modo.value = 'NO_ENCONTRADO'; });
 
-    // 🔍 BUSCAR VEHICULO
-    const buscar = async () => {
-      if (!patente.value) return;
+async function buscar() {
+  await buscarPorPatente(patente.value);
+}
 
-      const patenteNormalizada = patente.value.trim().toUpperCase();
+function limpiar() {
+  limpiarComposable();
+  modo.value = 'BUSCAR';
+}
 
-      if (!/^[A-Z0-9]{6,7}$/.test(patenteNormalizada)) {
-        console.warn('Patente inválida');
-        return;
-      }
+function onVehiculoCreado(v: IVehiculo) {
+  setVehiculo(v);
+  patente.value = v.patente ?? '';
+  modo.value = 'EXISTENTE';
+  alertService.showSuccess('Vehículo registrado correctamente');
+}
 
-      loading.value = true;
+function irAVenta() {
+  router.push({ name: 'VentaWizard' });
+}
 
-      try {
-        const res = await vehiculoService.findByPatente(patenteNormalizada);
-        vehiculo.value = res;
-        modo.value = 'EXISTENTE';
-      } catch (err) {
-        modo.value = 'CREAR';
-        vehiculo.value = { patente: patenteNormalizada } as IVehiculo;
-      } finally {
-        loading.value = false;
-      }
-    };
+function reservar() {
+  alertService.showInfo('Funcionalidad de reserva próximamente');
+}
 
-    const onVehiculoCreado = (v: IVehiculo) => {
-      vehiculo.value = v;
-      modo.value = 'EXISTENTE';
-    };
+function editar() {
+  if (!vehiculo.value?.id) return;
+  router.push({ name: 'VehiculoEdit', params: { vehiculoId: vehiculo.value.id } });
+}
 
-    const irAVenta = () => {
-      if (!vehiculo.value?.id) return;
+function badgeCondicion(condicion?: string) {
+  const map: Record<string, string> = { EN_VENTA: 'bg-primary', RESERVADO: 'bg-warning text-dark', VENDIDO: 'bg-danger' };
+  return map[condicion ?? ''] ?? 'bg-light text-dark border';
+}
 
-      router.push({
-        name: 'VentaProceso',
-        params: { vehiculoId: vehiculo.value.id },
-      });
-    };
+function formatPrecio(precio?: number | null) {
+  return Number(precio ?? 0).toLocaleString('es-AR');
+}
 
-    const reservar = () => {
-      console.log('Reservar vehículo', vehiculo.value?.id);
-    };
-
-    const editar = () => {
-      if (!vehiculo.value?.id) return;
-
-      router.push({
-        name: 'VehiculoEdit',
-        params: { vehiculoId: vehiculo.value.id },
-      });
-    };
-
-    // ✅ CORREGIDO
-    const formatearFecha = (fecha?: Date | string) => {
-      if (!fecha) return '-';
-
-      const f = typeof fecha === 'string' ? new Date(fecha) : fecha;
-      return f.toLocaleDateString('es-AR');
-    };
-
-    return {
-      patente,
-      vehiculo,
-      modo,
-      buscar,
-      loading,
-      onVehiculoCreado,
-      irAVenta,
-      reservar,
-      editar,
-      formatearFecha,
-    };
-  },
-});
+function formatFecha(fecha?: Date | string) {
+  if (!fecha) return '-';
+  return new Date(fecha).toLocaleDateString('es-AR');
+}
 </script>

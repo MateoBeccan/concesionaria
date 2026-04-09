@@ -100,7 +100,7 @@ public class PagoServiceImpl implements PagoService {
         Venta venta = ventaRepository.findById(ventaId)
             .orElseThrow(() -> new BadRequestException("La venta no existe"));
 
-        if (venta.getEstado() == EstadoVenta.PAGADA) {
+        if (venta.getEstado() == EstadoVenta.FINALIZADA) {
             throw new BadRequestException("La venta ya está completamente pagada");
         }
 
@@ -141,7 +141,7 @@ public class PagoServiceImpl implements PagoService {
         // CIERRE AUTOMÁTICO
         // =========================
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
-            venta.setEstado(EstadoVenta.PAGADA);
+            venta.setEstado(EstadoVenta.FINALIZADA);
             LOG.info("Venta {} completamente pagada", ventaId);
         }
 

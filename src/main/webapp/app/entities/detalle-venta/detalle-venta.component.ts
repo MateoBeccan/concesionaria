@@ -126,6 +126,7 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      formatPrecio: (p?: number | null) => Number(p ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 }),
     };
   },
 });

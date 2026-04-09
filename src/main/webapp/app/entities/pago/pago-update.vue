@@ -1,134 +1,133 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <form name="editForm" novalidate @submit.prevent="save()">
-        <h2 id="concesionariaApp.pago.home.createOrEditLabel" data-cy="PagoCreateUpdateHeading">Crear o editar Pago</h2>
-        <div>
-          <div class="mb-3" v-if="pago.id">
-            <label for="id">ID</label>
-            <input type="text" class="form-control" id="id" name="id" v-model="pago.id" readonly />
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Monto</label>
-            <input
-              type="number"
-              class="form-control"
-              name="monto"
-              id="pago-monto"
-              data-cy="monto"
-              :class="{ valid: !v$.monto.$invalid, invalid: v$.monto.$invalid }"
-              v-model.number="v$.monto.$model"
-              required
-            />
-            <div v-if="v$.monto.$anyDirty && v$.monto.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.monto.$errors" :key="error.$uid">{{ error.$message }}</small>
+  <div class="container py-4" style="max-width:640px">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ pago.id ? 'Editar pago' : 'Registrar pago' }}</h1>
+        <p class="page-subtitle" v-if="pago.venta">
+          Venta #{{ pago.venta.id }} — {{ pago.venta.cliente?.nombre }} {{ pago.venta.cliente?.apellido }}
+        </p>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" @click="previousState()">← Volver</button>
+    </div>
+
+    <form @submit.prevent="save()" novalidate>
+      <div class="card mb-3">
+        <div class="card-header">Datos del pago</div>
+        <div class="card-body">
+          <div class="row g-3">
+
+            <div class="col-12">
+              <label class="form-label">Venta <span class="text-danger">*</span></label>
+              <select class="form-select" v-model="pago.venta">
+                <option :value="null">— Seleccionar venta —</option>
+                <option
+                  v-for="v in ventas"
+                  :key="v.id"
+                  :value="pago.venta?.id === v.id ? pago.venta : v"
+                >
+                  Venta #{{ v.id }} — {{ v.cliente?.nombre }} {{ v.cliente?.apellido }}
+                  — Total: $ {{ formatPrecio(v.total) }}
+                  — Saldo: $ {{ formatPrecio(v.saldo) }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Fecha</label>
-            <div class="d-flex">
+
+            <div class="col-md-6">
+              <label class="form-label">Monto <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="v$.monto.$model"
+                  :class="{ 'is-invalid': v$.monto.$dirty && v$.monto.$invalid }"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <div class="invalid-feedback d-block" v-if="v$.monto.$dirty && v$.monto.$invalid">
+                <span v-for="e of v$.monto.$errors" :key="e.$uid">{{ e.$message }}</span>
+              </div>
+              <!-- Sugerencia de saldo -->
+              <small v-if="pago.venta?.saldo" class="text-muted">
+                Saldo pendiente: $ {{ formatPrecio(pago.venta.saldo) }}
+                <button type="button" class="btn btn-link btn-sm p-0 ms-1" @click="usarSaldo">
+                  Usar saldo completo
+                </button>
+              </small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Fecha <span class="text-danger">*</span></label>
               <input
-                id="pago-fecha"
-                data-cy="fecha"
                 type="datetime-local"
                 class="form-control"
-                name="fecha"
-                :class="{ valid: !v$.fecha.$invalid, invalid: v$.fecha.$invalid }"
-                required
+                :class="{ 'is-invalid': v$.fecha.$dirty && v$.fecha.$invalid }"
                 :value="convertDateTimeFromServer(v$.fecha.$model)"
                 @change="updateInstantField('fecha', $event)"
               />
+              <div class="invalid-feedback">
+                <span v-for="e of v$.fecha.$errors" :key="e.$uid">{{ e.$message }}</span>
+              </div>
             </div>
-            <div v-if="v$.fecha.$anyDirty && v$.fecha.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.fecha.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-md-6">
+              <label class="form-label">Método de pago <span class="text-danger">*</span></label>
+              <select class="form-select" v-model="pago.metodoPago">
+                <option :value="null">— Seleccionar método —</option>
+                <option
+                  v-for="m in metodoPagos"
+                  :key="m.id"
+                  :value="pago.metodoPago?.id === m.id ? pago.metodoPago : m"
+                >
+                  {{ m.descripcion ?? m.codigo }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Referencia</label>
-            <input
-              type="text"
-              class="form-control"
-              name="referencia"
-              id="pago-referencia"
-              data-cy="referencia"
-              :class="{ valid: !v$.referencia.$invalid, invalid: v$.referencia.$invalid }"
-              v-model="v$.referencia.$model"
-            />
-            <div v-if="v$.referencia.$anyDirty && v$.referencia.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.referencia.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-md-6">
+              <label class="form-label">Moneda</label>
+              <select class="form-select" v-model="pago.moneda">
+                <option :value="null">— Seleccionar moneda —</option>
+                <option
+                  v-for="m in monedas"
+                  :key="m.id"
+                  :value="pago.moneda?.id === m.id ? pago.moneda : m"
+                >
+                  {{ m.simbolo ?? '' }} {{ m.codigo }} — {{ m.descripcion }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Created Date</label>
-            <div class="d-flex">
+
+            <div class="col-12" v-if="pago.metodoPago?.requiereReferencia">
+              <label class="form-label">Referencia / Nro. comprobante</label>
               <input
-                id="pago-createdDate"
-                data-cy="createdDate"
-                type="datetime-local"
+                type="text"
                 class="form-control"
-                name="createdDate"
-                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
-                :value="convertDateTimeFromServer(v$.createdDate.$model)"
-                @change="updateInstantField('createdDate', $event)"
+                v-model="v$.referencia.$model"
+                :class="{ 'is-invalid': v$.referencia.$dirty && v$.referencia.$invalid }"
+                placeholder="Ej: 0001-00012345"
               />
+              <div class="invalid-feedback">
+                <span v-for="e of v$.referencia.$errors" :key="e.$uid">{{ e.$message }}</span>
+              </div>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Venta</label>
-            <select class="form-control" id="pago-venta" data-cy="venta" name="venta" v-model="pago.venta">
-              <option :value="null"></option>
-              <option
-                :value="pago.venta && ventaOption.id === pago.venta.id ? pago.venta : ventaOption"
-                v-for="ventaOption in ventas"
-                :key="ventaOption.id"
-              >
-                {{ ventaOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Metodo Pago</label>
-            <select class="form-control" id="pago-metodoPago" data-cy="metodoPago" name="metodoPago" v-model="pago.metodoPago">
-              <option :value="null"></option>
-              <option
-                :value="pago.metodoPago && metodoPagoOption.id === pago.metodoPago.id ? pago.metodoPago : metodoPagoOption"
-                v-for="metodoPagoOption in metodoPagos"
-                :key="metodoPagoOption.id"
-              >
-                {{ metodoPagoOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="pago">Moneda</label>
-            <select class="form-control" id="pago-moneda" data-cy="moneda" name="moneda" v-model="pago.moneda">
-              <option :value="null"></option>
-              <option
-                :value="pago.moneda && monedaOption.id === pago.moneda.id ? pago.moneda : monedaOption"
-                v-for="monedaOption in monedas"
-                :key="monedaOption.id"
-              >
-                {{ monedaOption.id }}
-              </option>
-            </select>
+
           </div>
         </div>
-        <div>
-          <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" @click="previousState()">
-            <font-awesome-icon icon="ban"></font-awesome-icon>&nbsp;<span>Cancelar</span>
-          </button>
-          <button
-            type="submit"
-            id="save-entity"
-            data-cy="entityCreateSaveButton"
-            :disabled="v$.$invalid || isSaving"
-            class="btn btn-primary"
-          >
-            <font-awesome-icon icon="save"></font-awesome-icon>&nbsp;<span>Guardar</span>
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary" @click="previousState()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" :disabled="v$.$invalid || isSaving">
+          <span v-if="isSaving" class="spinner-border spinner-border-sm me-1" />
+          {{ pago.id ? 'Guardar cambios' : 'Registrar pago' }}
+        </button>
+      </div>
+
+    </form>
   </div>
 </template>
+
 <script lang="ts" src="./pago-update.component.ts"></script>

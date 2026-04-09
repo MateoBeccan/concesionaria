@@ -156,4 +156,12 @@ public class DetalleVenta implements Serializable {
             ", subtotal=" + getSubtotal() +
             "}";
     }
+
+    @PrePersist
+    @PreUpdate
+    public void calcularSubtotal() {
+        if (precioUnitario != null && cantidad != null) {
+            this.subtotal = precioUnitario.multiply(BigDecimal.valueOf(cantidad));
+        }
+    }
 }

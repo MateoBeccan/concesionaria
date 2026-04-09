@@ -1,181 +1,142 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <form name="editForm" novalidate @submit.prevent="save()">
-        <h2 id="concesionariaApp.comprobante.home.createOrEditLabel" data-cy="ComprobanteCreateUpdateHeading">
-          Crear o editar Comprobante
-        </h2>
-        <div>
-          <div class="mb-3" v-if="comprobante.id">
-            <label for="id">ID</label>
-            <input type="text" class="form-control" id="id" name="id" v-model="comprobante.id" readonly />
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Numero Comprobante</label>
-            <input
-              type="text"
-              class="form-control"
-              name="numeroComprobante"
-              id="comprobante-numeroComprobante"
-              data-cy="numeroComprobante"
-              :class="{ valid: !v$.numeroComprobante.$invalid, invalid: v$.numeroComprobante.$invalid }"
-              v-model="v$.numeroComprobante.$model"
-              required
-            />
-            <div v-if="v$.numeroComprobante.$anyDirty && v$.numeroComprobante.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.numeroComprobante.$errors" :key="error.$uid">{{
-                error.$message
-              }}</small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Fecha Emision</label>
-            <div class="d-flex">
+  <div class="container py-4" style="max-width:640px">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">{{ comprobante.id ? 'Editar comprobante' : 'Nuevo comprobante' }}</h1>
+        <p class="page-subtitle">Facturación asociada a una venta</p>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" @click="previousState()">← Volver</button>
+    </div>
+
+    <form @submit.prevent="save()" novalidate>
+
+      <div class="card mb-3">
+        <div class="card-header">Datos del comprobante</div>
+        <div class="card-body">
+          <div class="row g-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Número de comprobante <span class="text-danger">*</span></label>
               <input
-                id="comprobante-fechaEmision"
-                data-cy="fechaEmision"
+                type="text"
+                class="form-control"
+                v-model="v$.numeroComprobante.$model"
+                :class="{ 'is-invalid': v$.numeroComprobante.$dirty && v$.numeroComprobante.$invalid }"
+                placeholder="Ej: 0001-00000001"
+              />
+              <div class="invalid-feedback">
+                <span v-for="e of v$.numeroComprobante.$errors" :key="e.$uid">{{ e.$message }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Fecha de emisión <span class="text-danger">*</span></label>
+              <input
                 type="datetime-local"
                 class="form-control"
-                name="fechaEmision"
-                :class="{ valid: !v$.fechaEmision.$invalid, invalid: v$.fechaEmision.$invalid }"
-                required
+                :class="{ 'is-invalid': v$.fechaEmision.$dirty && v$.fechaEmision.$invalid }"
                 :value="convertDateTimeFromServer(v$.fechaEmision.$model)"
                 @change="updateInstantField('fechaEmision', $event)"
               />
+              <div class="invalid-feedback">
+                <span v-for="e of v$.fechaEmision.$errors" :key="e.$uid">{{ e.$message }}</span>
+              </div>
             </div>
-            <div v-if="v$.fechaEmision.$anyDirty && v$.fechaEmision.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.fechaEmision.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-12">
+              <label class="form-label">Venta asociada</label>
+              <select class="form-select" v-model="comprobante.venta">
+                <option :value="null">— Seleccionar venta —</option>
+                <option
+                  v-for="v in ventas"
+                  :key="v.id"
+                  :value="comprobante.venta?.id === v.id ? comprobante.venta : v"
+                >
+                  Venta #{{ v.id }} — {{ v.cliente?.nombre }} {{ v.cliente?.apellido }}
+                  ({{ formatFecha(v.fecha) }}) — $ {{ formatPrecio(v.total) }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Importe Neto</label>
-            <input
-              type="number"
-              class="form-control"
-              name="importeNeto"
-              id="comprobante-importeNeto"
-              data-cy="importeNeto"
-              :class="{ valid: !v$.importeNeto.$invalid, invalid: v$.importeNeto.$invalid }"
-              v-model.number="v$.importeNeto.$model"
-              required
-            />
-            <div v-if="v$.importeNeto.$anyDirty && v$.importeNeto.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.importeNeto.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-md-6">
+              <label class="form-label">Tipo de comprobante</label>
+              <select class="form-select" v-model="comprobante.tipoComprobante">
+                <option :value="null">— Seleccionar tipo —</option>
+                <option
+                  v-for="t in tipoComprobantes"
+                  :key="t.id"
+                  :value="comprobante.tipoComprobante?.id === t.id ? comprobante.tipoComprobante : t"
+                >
+                  {{ t.codigo }} — {{ t.descripcion }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Impuesto</label>
-            <input
-              type="number"
-              class="form-control"
-              name="impuesto"
-              id="comprobante-impuesto"
-              data-cy="impuesto"
-              :class="{ valid: !v$.impuesto.$invalid, invalid: v$.impuesto.$invalid }"
-              v-model.number="v$.impuesto.$model"
-              required
-            />
-            <div v-if="v$.impuesto.$anyDirty && v$.impuesto.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.impuesto.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-md-6">
+              <label class="form-label">Moneda</label>
+              <select class="form-select" v-model="comprobante.moneda">
+                <option :value="null">— Seleccionar moneda —</option>
+                <option
+                  v-for="m in monedas"
+                  :key="m.id"
+                  :value="comprobante.moneda?.id === m.id ? comprobante.moneda : m"
+                >
+                  {{ m.simbolo ?? '' }} {{ m.codigo }} — {{ m.descripcion }}
+                </option>
+              </select>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Total</label>
-            <input
-              type="number"
-              class="form-control"
-              name="total"
-              id="comprobante-total"
-              data-cy="total"
-              :class="{ valid: !v$.total.$invalid, invalid: v$.total.$invalid }"
-              v-model.number="v$.total.$model"
-              required
-            />
-            <div v-if="v$.total.$anyDirty && v$.total.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.total.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Created Date</label>
-            <div class="d-flex">
-              <input
-                id="comprobante-createdDate"
-                data-cy="createdDate"
-                type="datetime-local"
-                class="form-control"
-                name="createdDate"
-                :class="{ valid: !v$.createdDate.$invalid, invalid: v$.createdDate.$invalid }"
-                :value="convertDateTimeFromServer(v$.createdDate.$model)"
-                @change="updateInstantField('createdDate', $event)"
-              />
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Venta</label>
-            <select class="form-control" id="comprobante-venta" data-cy="venta" name="venta" v-model="comprobante.venta">
-              <option :value="null"></option>
-              <option
-                :value="comprobante.venta && ventaOption.id === comprobante.venta.id ? comprobante.venta : ventaOption"
-                v-for="ventaOption in ventas"
-                :key="ventaOption.id"
-              >
-                {{ ventaOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Tipo Comprobante</label>
-            <select
-              class="form-control"
-              id="comprobante-tipoComprobante"
-              data-cy="tipoComprobante"
-              name="tipoComprobante"
-              v-model="comprobante.tipoComprobante"
-            >
-              <option :value="null"></option>
-              <option
-                :value="
-                  comprobante.tipoComprobante && tipoComprobanteOption.id === comprobante.tipoComprobante.id
-                    ? comprobante.tipoComprobante
-                    : tipoComprobanteOption
-                "
-                v-for="tipoComprobanteOption in tipoComprobantes"
-                :key="tipoComprobanteOption.id"
-              >
-                {{ tipoComprobanteOption.id }}
-              </option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="comprobante">Moneda</label>
-            <select class="form-control" id="comprobante-moneda" data-cy="moneda" name="moneda" v-model="comprobante.moneda">
-              <option :value="null"></option>
-              <option
-                :value="comprobante.moneda && monedaOption.id === comprobante.moneda.id ? comprobante.moneda : monedaOption"
-                v-for="monedaOption in monedas"
-                :key="monedaOption.id"
-              >
-                {{ monedaOption.id }}
-              </option>
-            </select>
+
           </div>
         </div>
-        <div>
-          <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" @click="previousState()">
-            <font-awesome-icon icon="ban"></font-awesome-icon>&nbsp;<span>Cancelar</span>
-          </button>
-          <button
-            type="submit"
-            id="save-entity"
-            data-cy="entityCreateSaveButton"
-            :disabled="v$.$invalid || isSaving"
-            class="btn btn-primary"
-          >
-            <font-awesome-icon icon="save"></font-awesome-icon>&nbsp;<span>Guardar</span>
-          </button>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">Importes</div>
+        <div class="card-body">
+          <div class="row g-3">
+
+            <div class="col-md-4">
+              <label class="form-label">Importe neto <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" v-model.number="v$.importeNeto.$model"
+                  :class="{ 'is-invalid': v$.importeNeto.$dirty && v$.importeNeto.$invalid }" min="0" />
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Impuesto <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" v-model.number="v$.impuesto.$model"
+                  :class="{ 'is-invalid': v$.impuesto.$dirty && v$.impuesto.$invalid }" min="0" />
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label">Total <span class="text-danger">*</span></label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" v-model.number="v$.total.$model"
+                  :class="{ 'is-invalid': v$.total.$dirty && v$.total.$invalid }" min="0" />
+              </div>
+            </div>
+
+          </div>
         </div>
-      </form>
-    </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2">
+        <button type="button" class="btn btn-outline-secondary" @click="previousState()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" :disabled="v$.$invalid || isSaving">
+          <span v-if="isSaving" class="spinner-border spinner-border-sm me-1" />
+          {{ comprobante.id ? 'Guardar cambios' : 'Crear comprobante' }}
+        </button>
+      </div>
+
+    </form>
   </div>
 </template>
+
 <script lang="ts" src="./comprobante-update.component.ts"></script>

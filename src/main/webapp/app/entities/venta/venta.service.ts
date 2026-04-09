@@ -1,86 +1,35 @@
 import axios from 'axios';
-
-import { type IVenta } from '@/shared/model/venta.model';
+import type { IVenta } from '@/shared/model/venta.model';
 import buildPaginationQueryOpts from '@/shared/sort/sorts';
 
 const baseApiUrl = 'api/ventas';
 
 export default class VentaService {
-  find(id: number): Promise<IVenta> {
-    return new Promise<IVenta>((resolve, reject) => {
-      axios
-        .get(`${baseApiUrl}/${id}`)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async find(id: number): Promise<IVenta> {
+    const res = await axios.get<IVenta>(`${baseApiUrl}/${id}`);
+    return res.data;
   }
 
-  retrieve(paginationQuery?: any): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      axios
-        .get(`${baseApiUrl}?${buildPaginationQueryOpts(paginationQuery)}`)
-        .then(res => {
-          resolve(res);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async retrieve(paginationQuery?: any): Promise<{ data: IVenta[]; headers: any }> {
+    return axios.get(`${baseApiUrl}?${buildPaginationQueryOpts(paginationQuery)}`);
   }
 
-  delete(id: number): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      axios
-        .delete(`${baseApiUrl}/${id}`)
-        .then(res => {
-          resolve(res);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async create(entity: IVenta): Promise<IVenta> {
+    const res = await axios.post<IVenta>(baseApiUrl, entity);
+    return res.data;
   }
 
-  create(entity: IVenta): Promise<IVenta> {
-    return new Promise<IVenta>((resolve, reject) => {
-      axios
-        .post(baseApiUrl, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async update(entity: IVenta): Promise<IVenta> {
+    const res = await axios.put<IVenta>(`${baseApiUrl}/${entity.id}`, entity);
+    return res.data;
   }
 
-  update(entity: IVenta): Promise<IVenta> {
-    return new Promise<IVenta>((resolve, reject) => {
-      axios
-        .put(`${baseApiUrl}/${entity.id}`, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async partialUpdate(entity: IVenta): Promise<IVenta> {
+    const res = await axios.patch<IVenta>(`${baseApiUrl}/${entity.id}`, entity);
+    return res.data;
   }
 
-  partialUpdate(entity: IVenta): Promise<IVenta> {
-    return new Promise<IVenta>((resolve, reject) => {
-      axios
-        .patch(`${baseApiUrl}/${entity.id}`, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async delete(id: number): Promise<void> {
+    await axios.delete(`${baseApiUrl}/${id}`);
   }
 }

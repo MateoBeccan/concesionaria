@@ -18,37 +18,28 @@ import PagoService from './pago.service';
 export default defineComponent({
   name: 'PagoUpdate',
   setup() {
-    const pagoService = inject('pagoService', () => new PagoService());
-    const alertService = inject('alertService', () => useAlertService(), true);
-
-    const pago: Ref<IPago> = ref(new Pago());
-
-    const ventaService = inject('ventaService', () => new VentaService());
-
-    const ventas: Ref<IVenta[]> = ref([]);
-
+    const pagoService    = inject('pagoService',    () => new PagoService());
+    const alertService   = inject('alertService',   () => useAlertService(), true);
+    const ventaService   = inject('ventaService',   () => new VentaService());
     const metodoPagoService = inject('metodoPagoService', () => new MetodoPagoService());
+    const monedaService  = inject('monedaService',  () => new MonedaService());
 
+    const pago: Ref<IPago>           = ref(new Pago());
+    const ventas: Ref<IVenta[]>      = ref([]);
     const metodoPagos: Ref<IMetodoPago[]> = ref([]);
-
-    const monedaService = inject('monedaService', () => new MonedaService());
-
-    const monedas: Ref<IMoneda[]> = ref([]);
+    const monedas: Ref<IMoneda[]>    = ref([]);
     const isSaving = ref(false);
-    const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
-    const route = useRoute();
+    const route  = useRoute();
     const router = useRouter();
-
     const previousState = () => router.go(-1);
 
-    const retrievePago = async pagoId => {
+    const retrievePago = async (pagoId: any) => {
       try {
         const res = await pagoService().find(pagoId);
         res.fecha = new Date(res.fecha);
-        res.createdDate = new Date(res.createdDate);
         pago.value = res;
-      } catch (error) {
+      } catch (error: any) {
         alertService.showHttpError(error.response);
       }
     };
@@ -57,89 +48,68 @@ export default defineComponent({
       retrievePago(route.params.pagoId);
     }
 
+    // Pre-seleccionar venta desde query param ?ventaId=
+    const ventaIdParam = route.query?.ventaId;
+
     const initRelationships = () => {
-      ventaService()
-        .retrieve()
-        .then(res => {
-          ventas.value = res.data;
-        });
-      metodoPagoService()
-        .retrieve()
-        .then(res => {
-          metodoPagos.value = res.data;
-        });
-      monedaService()
-        .retrieve()
-        .then(res => {
-          monedas.value = res.data;
-        });
+      ventaService().retrieve({ page: 0, size: 200 }).then(res => {
+        ventas.value = res.data;
+        if (ventaIdParam && !pago.value.id) {
+          pago.value.venta = res.data.find(v => String(v.id) === String(ventaIdParam)) ?? null;
+        }
+      });
+      metodoPagoService().retrieve().then(res => { metodoPagos.value = res.data; });
+      monedaService().retrieve().then(res => { monedas.value = res.data; });
     };
 
     initRelationships();
 
     const validations = useValidation();
     const validationRules = {
-      monto: {
-        required: validations.required('Este campo es obligatorio.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      fecha: {
-        required: validations.required('Este campo es obligatorio.'),
-      },
-      referencia: {
-        maxLength: validations.maxLength('Este campo no puede superar más de 100 caracteres.', 100),
-      },
-      createdDate: {},
-      venta: {},
-      metodoPago: {},
-      moneda: {},
+      monto:     { required: validations.required('El monto es obligatorio.'), min: validations.minValue('Debe ser mayor que 0.', 0) },
+      fecha:     { required: validations.required('La fecha es obligatoria.') },
+      referencia:{ maxLength: validations.maxLength('Máximo 100 caracteres.', 100) },
+      venta:     {},
+      metodoPago:{},
+      moneda:    {},
     };
+
     const v$ = useVuelidate(validationRules, pago as any);
     v$.value.$validate();
 
+    function usarSaldo() {
+      if (pago.value.venta?.saldo) {
+        pago.value.monto = Number(pago.value.venta.saldo);
+      }
+    }
+
+    function formatPrecio(p?: number | null) {
+      return Number(p ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 });
+    }
+
     return {
-      pagoService,
-      alertService,
-      pago,
-      previousState,
-      isSaving,
-      currentLanguage,
-      ventas,
-      metodoPagos,
-      monedas,
-      v$,
+      pagoService, alertService, pago, previousState, isSaving,
+      ventas, metodoPagos, monedas, v$, usarSaldo, formatPrecio,
       ...useDateFormat({ entityRef: pago }),
     };
   },
-  created(): void {},
   methods: {
     save(): void {
       this.isSaving = true;
-      if (this.pago.id) {
-        this.pagoService()
-          .update(this.pago)
-          .then(param => {
-            this.isSaving = false;
-            this.previousState();
-            this.alertService.showInfo(`A Pago is updated with identifier ${param.id}`);
-          })
-          .catch(error => {
-            this.isSaving = false;
-            this.alertService.showHttpError(error.response);
-          });
-      } else {
-        this.pagoService()
-          .create(this.pago)
-          .then(param => {
-            this.isSaving = false;
-            this.previousState();
-            this.alertService.showSuccess(`A Pago is created with identifier ${param.id}`);
-          })
-          .catch(error => {
-            this.isSaving = false;
-            this.alertService.showHttpError(error.response);
-          });
-      }
+      const op = this.pago.id
+        ? this.pagoService().update(this.pago)
+        : this.pagoService().create(this.pago);
+
+      op.then(param => {
+        this.isSaving = false;
+        this.previousState();
+        this.alertService.showSuccess(
+          this.pago.id ? `Pago actualizado correctamente` : `Pago de $ ${param.monto} registrado correctamente`,
+        );
+      }).catch(error => {
+        this.isSaving = false;
+        this.alertService.showHttpError(error.response);
+      });
     },
   },
 });

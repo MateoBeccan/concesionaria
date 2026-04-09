@@ -4,14 +4,13 @@ import { type IMotor } from '@/shared/model/motor.model';
 import { type ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
 import { type IVersion } from '@/shared/model/version.model';
 
-// ✅ INTERFACE
 export interface IVehiculo {
   id?: number;
 
-  // Estado físico
+  // Estado físico: NUEVO / USADO
   estado?: keyof typeof EstadoVehiculo;
 
-  // Estado comercial
+  // Condición comercial: EN_VENTA / RESERVADO / VENDIDO
   condicion?: keyof typeof CondicionVehiculo;
 
   fechaFabricacion?: Date;
@@ -27,7 +26,6 @@ export interface IVehiculo {
   tipoVehiculo?: ITipoVehiculo | null;
 }
 
-// ✅ CLASE
 export class Vehiculo implements IVehiculo {
   constructor(
     public id?: number,

@@ -1,91 +1,47 @@
 import axios from 'axios';
-
-import { type ICliente } from '@/shared/model/cliente.model';
+import type { ICliente } from '@/shared/model/cliente.model';
 import buildPaginationQueryOpts from '@/shared/sort/sorts';
 
 const baseApiUrl = 'api/clientes';
 
 export default class ClienteService {
-  find(id: number): Promise<ICliente> {
-    return new Promise<ICliente>((resolve, reject) => {
-      axios
-        .get(`${baseApiUrl}/${id}`)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async find(id: number): Promise<ICliente> {
+    const res = await axios.get<ICliente>(`${baseApiUrl}/${id}`);
+    return res.data;
   }
 
-  retrieve(paginationQuery?: any): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      axios
-        .get(`${baseApiUrl}?${buildPaginationQueryOpts(paginationQuery)}`)
-        .then(res => {
-          resolve(res);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async retrieve(paginationQuery?: any): Promise<{ data: ICliente[]; headers: any }> {
+    return axios.get(`${baseApiUrl}?${buildPaginationQueryOpts(paginationQuery)}`);
   }
 
-  delete(id: number): Promise<any> {
-    return new Promise<any>((resolve, reject) => {
-      axios
-        .delete(`${baseApiUrl}/${id}`)
-        .then(res => {
-          resolve(res);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async create(entity: ICliente): Promise<ICliente> {
+    const res = await axios.post<ICliente>(baseApiUrl, entity);
+    return res.data;
   }
 
-  create(entity: ICliente): Promise<ICliente> {
-    return new Promise<ICliente>((resolve, reject) => {
-      axios
-        .post(baseApiUrl, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async update(entity: ICliente): Promise<ICliente> {
+    const res = await axios.put<ICliente>(`${baseApiUrl}/${entity.id}`, entity);
+    return res.data;
   }
 
-  update(entity: ICliente): Promise<ICliente> {
-    return new Promise<ICliente>((resolve, reject) => {
-      axios
-        .put(`${baseApiUrl}/${entity.id}`, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
-  }
-  findByDocumento(nroDocumento: string): Promise<ICliente> {
-    return axios
-      .get(`/api/clientes/documento/${nroDocumento}`)
-      .then(res => res.data);
+  async partialUpdate(entity: ICliente): Promise<ICliente> {
+    const res = await axios.patch<ICliente>(`${baseApiUrl}/${entity.id}`, entity);
+    return res.data;
   }
 
-  partialUpdate(entity: ICliente): Promise<ICliente> {
-    return new Promise<ICliente>((resolve, reject) => {
-      axios
-        .patch(`${baseApiUrl}/${entity.id}`, entity)
-        .then(res => {
-          resolve(res.data);
-        })
-        .catch(err => {
-          reject(err);
-        });
-    });
+  async delete(id: number): Promise<void> {
+    await axios.delete(`${baseApiUrl}/${id}`);
+  }
+
+  async findByDocumento(nroDocumento: string): Promise<ICliente> {
+    const res = await axios.get<ICliente>(`${baseApiUrl}/documento/${nroDocumento}`);
+    return res.data;
+  }
+
+  // Requiere endpoint backend: GET /api/clientes/buscar?q=
+  // Busca por nombre, apellido, nroDocumento o email
+  async buscarPorQuery(q: string): Promise<ICliente[]> {
+    const res = await axios.get<ICliente[]>(`${baseApiUrl}/buscar`, { params: { q } });
+    return res.data;
   }
 }

@@ -7,7 +7,8 @@ import MotorService from '@/entities/motor/motor.service';
 import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
 import VersionService from '@/entities/version/version.service';
 import { useAlertService } from '@/shared/alert/alert.service';
-import { useDateFormat, useValidation } from '@/shared/composables';
+import { useValidation } from '@/shared/composables';
+import { useDateFormat } from '@/shared/composables';
 import { EstadoVehiculo } from '@/shared/model/enumerations/estado-vehiculo.model';
 import { type IMotor } from '@/shared/model/motor.model';
 import { type ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
@@ -22,18 +23,15 @@ export default defineComponent({
     const vehiculoService = inject('vehiculoService', () => new VehiculoService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
-    const vehiculo: Ref<IVehiculo> = ref(new Vehiculo());
-
+    const vehiculo: Ref<IVehiculo> = ref({
+      ...new Vehiculo(),
+      condicion: 'EN_VENTA',
+    });
     const versionService = inject('versionService', () => new VersionService());
-
     const versions: Ref<IVersion[]> = ref([]);
-
     const motorService = inject('motorService', () => new MotorService());
-
     const motors: Ref<IMotor[]> = ref([]);
-
     const tipoVehiculoService = inject('tipoVehiculoService', () => new TipoVehiculoService());
-
     const tipoVehiculos: Ref<ITipoVehiculo[]> = ref([]);
     const estadoVehiculoValues: Ref<string[]> = ref(Object.keys(EstadoVehiculo));
     const isSaving = ref(false);
@@ -41,16 +39,12 @@ export default defineComponent({
 
     const route = useRoute();
     const router = useRouter();
-
     const previousState = () => router.go(-1);
 
-    const retrieveVehiculo = async vehiculoId => {
+    const retrieveVehiculo = async (vehiculoId: any) => {
       try {
-        const res = await vehiculoService().find(vehiculoId);
-        res.createdDate = new Date(res.createdDate);
-        res.lastModifiedDate = new Date(res.lastModifiedDate);
-        vehiculo.value = res;
-      } catch (error) {
+        vehiculo.value = await vehiculoService().find(vehiculoId);
+      } catch (error: any) {
         alertService.showHttpError(error.response);
       }
     };
@@ -60,53 +54,30 @@ export default defineComponent({
     }
 
     const initRelationships = () => {
-      versionService()
-        .retrieve()
-        .then(res => {
-          versions.value = res.data;
-        });
-      motorService()
-        .retrieve()
-        .then(res => {
-          motors.value = res.data;
-        });
-      tipoVehiculoService()
-        .retrieve()
-        .then(res => {
-          tipoVehiculos.value = res.data;
-        });
+      versionService().retrieve().then(res => { versions.value = res.data; });
+      motorService().retrieve().then(res => { motors.value = res.data; });
+      tipoVehiculoService().retrieve().then(res => { tipoVehiculos.value = res.data; });
     };
 
     initRelationships();
 
     const validations = useValidation();
     const validationRules = {
-      estado: {
-        required: validations.required('Este campo es obligatorio.'),
-      },
-      fechaFabricacion: {
-        required: validations.required('Este campo es obligatorio.'),
-      },
+      estado:           { required: validations.required('El estado es obligatorio.') },
+      fechaFabricacion: { required: validations.required('La fecha de fabricación es obligatoria.') },
       km: {
-        required: validations.required('Este campo es obligatorio.'),
-        integer: validations.integer('Este campo debe ser un número.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-        max: validations.maxValue('Este campo no puede ser mayor que 1000000.', 1000000),
+        required: validations.required('Los kilómetros son obligatorios.'),
+        integer:  validations.integer('Debe ser un número entero.'),
+        min:      validations.minValue('Debe ser mayor o igual a 0.', 0),
+        max:      validations.maxValue('No puede superar 1.000.000 km.', 1000000),
       },
-      patente: {
-        required: validations.required('Este campo es obligatorio.'),
-      },
-      precio: {
-        required: validations.required('Este campo es obligatorio.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
-      },
-      createdDate: {},
-      lastModifiedDate: {},
-      version: {},
-      motor: {},
+      patente:  { required: validations.required('La patente es obligatoria.') },
+      precio:   { required: validations.required('El precio es obligatorio.'), min: validations.minValue('Debe ser mayor que 0.', 0) },
+      version:  {},
+      motor:    {},
       tipoVehiculo: {},
-      inventario: {},
     };
+
     const v$ = useVuelidate(validationRules, vehiculo as any);
     v$.value.$validate();
 
@@ -125,35 +96,29 @@ export default defineComponent({
       ...useDateFormat({ entityRef: vehiculo }),
     };
   },
-  created(): void {},
   methods: {
     save(): void {
       this.isSaving = true;
-      if (this.vehiculo.id) {
-        this.vehiculoService()
-          .update(this.vehiculo)
-          .then(param => {
-            this.isSaving = false;
-            this.previousState();
-            this.alertService.showInfo(`A Vehiculo is updated with identifier ${param.id}`);
-          })
-          .catch(error => {
-            this.isSaving = false;
-            this.alertService.showHttpError(error.response);
-          });
-      } else {
-        this.vehiculoService()
-          .create(this.vehiculo)
-          .then(param => {
-            this.isSaving = false;
-            this.previousState();
-            this.alertService.showSuccess(`A Vehiculo is created with identifier ${param.id}`);
-          })
-          .catch(error => {
-            this.isSaving = false;
-            this.alertService.showHttpError(error.response);
-          });
+      if (!this.vehiculo.condicion) {
+        this.vehiculo.condicion = 'EN_VENTA';
       }
+
+      const op = this.vehiculo.id
+        ? this.vehiculoService().update(this.vehiculo)
+        : this.vehiculoService().create(this.vehiculo);
+
+      op.then(param => {
+        this.isSaving = false;
+        this.previousState();
+        this.alertService.showSuccess(
+          this.vehiculo.id
+            ? `Vehículo ${param.patente} actualizado correctamente`
+            : `Vehículo ${param.patente} creado correctamente`,
+        );
+      }).catch(error => {
+        this.isSaving = false;
+        this.alertService.showHttpError(error.response);
+      });
     },
   },
 });

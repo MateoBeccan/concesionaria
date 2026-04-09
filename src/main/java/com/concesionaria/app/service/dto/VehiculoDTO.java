@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.dto;
 
+import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
@@ -44,6 +45,17 @@ public class VehiculoDTO implements Serializable {
     private MotorDTO motor;
 
     private TipoVehiculoDTO tipoVehiculo;
+
+    public CondicionVehiculo getCondicion() {
+        return condicion;
+    }
+
+    public void setCondicion(CondicionVehiculo condicion) {
+        this.condicion = condicion;
+    }
+
+    @NotNull
+    private CondicionVehiculo condicion;
 
     public Long getId() {
         return id;
