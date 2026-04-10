@@ -14,7 +14,7 @@
       <!-- Botón nueva venta -->
       <router-link
         v-if="authenticated"
-        :to="{ name: 'VentaEditor' }"
+        :to="{ name: 'VentaWizard' }"
         class="btn btn-primary btn-sm d-none d-md-flex align-items-center gap-1"
       >
         <span>＋</span> Nueva Venta

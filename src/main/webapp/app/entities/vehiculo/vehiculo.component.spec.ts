@@ -27,7 +27,7 @@ describe('Component Tests', () => {
 
     beforeEach(() => {
       vehiculoServiceStub = sinon.createStubInstance<VehiculoService>(VehiculoService);
-      vehiculoServiceStub.retrieve.resolves({ headers: {} });
+      vehiculoServiceStub.retrieve.resolves({ data: [], headers: {} });
 
       alertService = new AlertService({
         toast: {

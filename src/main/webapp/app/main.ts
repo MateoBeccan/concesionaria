@@ -1,11 +1,8 @@
-// The Vue build version to load with the `import` command
-// (runtime-only or standalone) has been set in webpack.common with an alias.
-import { computed, createApp, provide } from 'vue';
 
+import { computed, createApp, provide } from 'vue';
 import { createPinia, storeToRefs } from 'pinia';
 
 import AccountService from '@/account/account.service';
-import { useLoginModal } from '@/account/login-modal';
 import { setupAxiosInterceptors } from '@/shared/config/axios-interceptor';
 import { initFortAwesome } from '@/shared/config/config';
 import { initBootstrapVue } from '@/shared/config/config-bootstrap-vue';
@@ -21,73 +18,86 @@ import '../content/scss/vendor.scss';
 
 const pinia = createPinia();
 
-// jhipster-needle-add-entity-service-to-main-import - JHipster will import entities services here
-
 const app = createApp({
   components: { App },
+
   setup() {
-    const { hideLogin, showLogin } = useLoginModal();
     const store = useStore();
     const accountService = new AccountService(store);
+
+    // 🌐 Idioma
     provide(
       'currentLanguage',
       computed(() => store.account?.langKey ?? navigator.language ?? 'es'),
     );
 
-    router.beforeResolve(async (to, from, next) => {
-      // Make sure login modal is closed
-      hideLogin();
-
-      if (!store.authenticated) {
-        await accountService.update();
-      }
-      if (to.meta?.authorities && to.meta.authorities.length > 0) {
-        const value = await accountService.hasAnyAuthorityAndCheckAuth(to.meta.authorities);
-        if (!value) {
-          if (from.path !== '/forbidden') {
-            next({ path: '/forbidden' });
-            return;
-          }
-        }
-      }
-      next();
-    });
-
-    setupAxiosInterceptors(
-      error => {
-        const url = error.response?.config?.url;
-        const status = error.status || error.response?.status;
-        if (status === 401) {
-          // Store logged out state.
-          store.logout();
-          if (!url.endsWith('api/account') && !url.endsWith('api/authenticate')) {
-            // Ask for a new authentication
-            showLogin();
-            return;
-          }
-        }
-        return Promise.reject(error);
-      },
-      error => {
-        return Promise.reject(error);
-      },
-    );
-
-    const { authenticated } = storeToRefs(store);
-    provide('authenticated', authenticated);
+    // 👤 Usuario
     provide(
       'currentUsername',
       computed(() => store.account?.login),
     );
 
+    // 🔐 Estado auth
+    const { authenticated } = storeToRefs(store);
+    provide('authenticated', authenticated);
+
+    // 🔥 Account service
     provide('accountService', accountService);
-    // jhipster-needle-add-entity-service-to-main - JHipster will import entities services here
+
+    // 🚀 🔒 GUARD GLOBAL (CLAVE)
+    router.beforeEach(async (to) => {
+      // 🔄 Intentar recuperar sesión si no está cargada
+      if (!store.authenticated) {
+        try {
+          await accountService.update();
+        } catch {
+          // ignore
+        }
+      }
+
+      // 🔒 Rutas protegidas
+      if (to.meta?.requiresAuth && !store.authenticated) {
+        return { name: 'Login' };
+      }
+
+      // 🔁 Evitar ir al login si ya está logueado
+      if (to.name === 'Login' && store.authenticated) {
+        return { name: 'Home' };
+      }
+
+      return true;
+    });
+
+    // 🚀 🔥 AXIOS INTERCEPTOR GLOBAL
+    setupAxiosInterceptors(
+      error => {
+        const status = error.response?.status;
+
+        if (status === 401) {
+          // 🔥 LOGOUT GLOBAL
+          store.logout();
+
+          // 🔁 Redirigir al login
+          router.replace({ name: 'Login' });
+        }
+
+        return Promise.reject(error);
+      },
+      error => Promise.reject(error),
+    );
   },
+
   template: '<App/>',
 });
 
+// 🔧 Plugins
 initFortAwesome(app);
-
 initBootstrapVue(app);
 
-app.component('JhiItemCount', JhiItemCount).component('JhiSortIndicator', JhiSortIndicator).use(router).use(pinia).mount('#app');
+// 🔧 Global components
+app
+  .component('JhiItemCount', JhiItemCount)
+  .component('JhiSortIndicator', JhiSortIndicator)
+  .use(router)
+  .use(pinia)
+  .mount('#app');

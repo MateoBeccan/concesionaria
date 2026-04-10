@@ -21,69 +21,50 @@
         Dashboard
       </router-link>
 
-      <!-- OPERACIONES -->
+      <!-- OPERACIONES (💣 LO IMPORTANTE) -->
       <div class="sidebar-section">Operaciones</div>
 
-      <router-link class="sidebar-item" :to="{ name: 'VentaEditor' }">
-        <span class="sidebar-icon">＋</span>
-        Nueva Venta
-      </router-link>
-
-      <router-link class="sidebar-item" :to="{ name: 'VentaList' }">
-        <span class="sidebar-icon">◈</span>
-        Ventas
-      </router-link>
-
       <router-link class="sidebar-item" :to="{ name: 'VehiculoSearch' }">
-        <span class="sidebar-icon">⌕</span>
+        <span class="sidebar-icon">🔍</span>
         Buscar Vehículo
       </router-link>
 
-      <!-- CATÁLOGO -->
-      <div class="sidebar-section">Catálogo</div>
-
-      <router-link class="sidebar-item" :to="{ name: 'Vehiculo' }">
-        <span class="sidebar-icon">🚙</span>
-        Vehículos
+      <router-link class="sidebar-item" :to="{ name: 'VentaWizard' }">
+        <span class="sidebar-icon">💰</span>
+        Nueva venta
       </router-link>
+
+
+
+      <!-- VENTAS -->
+      <router-link class="sidebar-item" :to="{ name: 'VentaList' }">
+        <span class="sidebar-icon">📄</span>
+        Ventas
+      </router-link>
+
+      <!-- CLIENTES -->
+      <div class="sidebar-section">Clientes</div>
 
       <router-link class="sidebar-item" :to="{ name: 'Cliente' }">
         <span class="sidebar-icon">👤</span>
         Clientes
       </router-link>
 
-      <router-link class="sidebar-item" :to="{ name: 'Inventario' }">
-        <span class="sidebar-icon">📦</span>
-        Inventario
+      <router-link class="sidebar-item" :to="{ name: 'ClienteCreate' }">
+        <span class="sidebar-icon">＋</span>
+        Nuevo Cliente
       </router-link>
 
-      <!-- CONFIGURACIÓN -->
-      <div class="sidebar-section">Configuración</div>
-
-      <router-link class="sidebar-item" :to="{ name: 'Marca' }">
-        <span class="sidebar-icon">◎</span>
-        Marcas
-      </router-link>
-
-      <router-link class="sidebar-item" :to="{ name: 'Modelo' }">
-        <span class="sidebar-icon">◎</span>
-        Modelos
-      </router-link>
-
-      <router-link class="sidebar-item" :to="{ name: 'Motor' }">
-        <span class="sidebar-icon">◎</span>
-        Motores
-      </router-link>
-
+      <!-- ADMIN (OCULTO PARA NEGOCIO) -->
       <template v-if="isAdmin">
         <div class="sidebar-section">Administración</div>
-        <router-link class="sidebar-item" :to="{ name: 'JhiUser' }">
-          <span class="sidebar-icon">👥</span>
-          Usuarios
+
+        <router-link class="sidebar-item" :to="{ name: 'Vehiculo' }">
+          🚙 Ir a Vehículos
         </router-link>
-        <router-link class="sidebar-item" :to="{ name: 'JhiHealthComponent' }">
-          <span class="sidebar-icon">♥</span>
-          Sistema
+
+        <router-link class="sidebar-item" :to="{ name: 'Inventario' }">
+          📦 Ir a Inventario
         </router-link>
       </template>
 
@@ -98,17 +79,18 @@
         >
           {{ userInitials }}
         </div>
+
         <div style="min-width:0">
           <div class="text-white fw-semibold" style="font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
             {{ username ?? 'Usuario' }}
           </div>
           <div style="font-size:.7rem;color:rgba(255,255,255,.4)">Activo</div>
         </div>
+
         <button
           class="btn btn-sm ms-auto"
           style="color:rgba(255,255,255,.5);padding:.2rem .4rem"
           @click="logout"
-          title="Cerrar sesión"
         >
           ⏻
         </button>
@@ -120,17 +102,20 @@
 
 <script lang="ts" setup>
 import { computed, inject } from 'vue';
-import type { ComputedRef } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from '@/store';
 import type AccountService from '@/account/account.service';
 
 const store = useStore();
 const router = useRouter();
-const accountService = inject<AccountService>('accountService');
+inject<AccountService>('accountService');
 
 const username = computed(() => store.account?.login);
-const isAdmin = computed(() => store.account?.authorities?.includes('ROLE_ADMIN') ?? false);
+
+const isAdmin = computed(() =>
+  store.account?.authorities?.includes('ROLE_ADMIN') ?? false
+);
+
 const userInitials = computed(() => {
   const u = store.account?.login ?? '';
   return u.slice(0, 2).toUpperCase();
@@ -143,3 +128,18 @@ async function logout() {
   router.push('/');
 }
 </script>
+
+<style scoped>
+.sidebar-subsection {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 0.5rem 0 0.2rem 1rem;
+}
+
+.sidebar-item.sub {
+  padding-left: 2rem;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+</style>

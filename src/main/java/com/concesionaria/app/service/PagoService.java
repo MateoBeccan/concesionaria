@@ -57,4 +57,6 @@ public interface PagoService {
     void delete(Long id);
 
     PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO);
+
+
 }

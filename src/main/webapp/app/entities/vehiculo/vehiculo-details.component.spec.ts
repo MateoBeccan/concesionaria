@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vitest } from 'vitest';
 import { type RouteLocation } from 'vue-router';
-
+import { afterEach } from 'vitest';
 import { type MountingOptions, shallowMount } from '@vue/test-utils';
 import sinon, { type SinonStubbedInstance } from 'sinon';
 

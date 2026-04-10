@@ -1,182 +1,123 @@
 <template>
-  <div>
+  <div class="dashboard">
 
-    <!-- PAGE HEADER -->
-    <div class="page-header">
+    <!-- HEADER -->
+    <div class="dashboard-header">
       <div>
-        <h1 class="page-title">Dashboard</h1>
-        <p class="page-subtitle">Resumen de operaciones — {{ fechaHoy }}</p>
+        <h1>Dashboard</h1>
+        <p>{{ fechaHoy }}</p>
       </div>
-      <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary">
-        ＋ Nueva Venta
-      </router-link>
     </div>
 
     <!-- KPIs -->
-    <div class="row g-3 mb-4">
+    <div class="kpi-grid">
 
-      <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="kpi-label">Ventas del mes</div>
-              <div class="kpi-value" v-if="!loadingKpis">{{ kpis.ventasMes }}</div>
-              <div v-else class="skeleton" style="height:2rem;width:4rem;margin-top:.25rem" />
-              <div class="kpi-sub">operaciones registradas</div>
-            </div>
-            <div class="kpi-icon" style="background:#eff6ff;color:#2563eb">💰</div>
+      <div class="kpi-card" v-for="kpi in kpiList" :key="kpi.label">
+        <div>
+          <div class="kpi-label">{{ kpi.label }}</div>
+
+          <div v-if="!loadingKpis" class="kpi-value">
+            {{ kpi.value }}
           </div>
+
+          <div v-else class="placeholder">...</div>
+
+          <div class="kpi-sub">{{ kpi.sub }}</div>
         </div>
-      </div>
 
-      <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="kpi-label">Vehículos disponibles</div>
-              <div class="kpi-value" v-if="!loadingKpis">{{ kpis.vehiculosDisponibles }}</div>
-              <div v-else class="skeleton" style="height:2rem;width:4rem;margin-top:.25rem" />
-              <div class="kpi-sub">en stock activo</div>
-            </div>
-            <div class="kpi-icon" style="background:#f0fdf4;color:#16a34a">🚗</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="kpi-label">Clientes activos</div>
-              <div class="kpi-value" v-if="!loadingKpis">{{ kpis.clientesActivos }}</div>
-              <div v-else class="skeleton" style="height:2rem;width:4rem;margin-top:.25rem" />
-              <div class="kpi-sub">registrados en el sistema</div>
-            </div>
-            <div class="kpi-icon" style="background:#faf5ff;color:#7c3aed">👤</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-sm-6 col-xl-3">
-        <div class="kpi-card">
-          <div class="d-flex justify-content-between align-items-start">
-            <div>
-              <div class="kpi-label">Inventario total</div>
-              <div class="kpi-value" v-if="!loadingKpis">{{ kpis.inventarioTotal }}</div>
-              <div v-else class="skeleton" style="height:2rem;width:4rem;margin-top:.25rem" />
-              <div class="kpi-sub">unidades en inventario</div>
-            </div>
-            <div class="kpi-icon" style="background:#fff7ed;color:#d97706">📦</div>
-          </div>
+        <div class="kpi-icon">
+          {{ kpi.icon }}
         </div>
       </div>
 
     </div>
 
-    <!-- ACCESOS RÁPIDOS + ÚLTIMAS VENTAS -->
-    <div class="row g-3">
+    <!-- MAIN -->
+    <div class="dashboard-main">
 
-      <!-- ACCESOS RÁPIDOS -->
-      <div class="col-lg-4">
-        <div class="card h-100">
-          <div class="card-header">Accesos rápidos</div>
-          <div class="card-body p-0">
+      <!-- ACCIONES -->
+      <div class="card">
 
-            <router-link :to="{ name: 'VentaEditor' }" class="quick-action-item">
-              <div class="quick-action-icon" style="background:#eff6ff;color:#2563eb">💰</div>
-              <div>
-                <div class="quick-action-title">Nueva Venta</div>
-                <div class="quick-action-sub">Registrar una operación</div>
-              </div>
-              <span class="ms-auto text-muted">›</span>
-            </router-link>
+        <div class="card-header">Acciones rápidas</div>
 
-            <router-link :to="{ name: 'VehiculoSearch' }" class="quick-action-item">
-              <div class="quick-action-icon" style="background:#f0fdf4;color:#16a34a">🔍</div>
-              <div>
-                <div class="quick-action-title">Buscar Vehículo</div>
-                <div class="quick-action-sub">Por patente o crear nuevo</div>
-              </div>
-              <span class="ms-auto text-muted">›</span>
-            </router-link>
+        <div class="quick-actions">
 
-            <router-link :to="{ name: 'ClienteCreate' }" class="quick-action-item">
-              <div class="quick-action-icon" style="background:#faf5ff;color:#7c3aed">👤</div>
-              <div>
-                <div class="quick-action-title">Nuevo Cliente</div>
-                <div class="quick-action-sub">Registrar un cliente</div>
-              </div>
-              <span class="ms-auto text-muted">›</span>
-            </router-link>
+          <router-link :to="{ name: 'VentaWizard' }" class="quick-item">
+            💰 Nueva Venta
+          </router-link>
 
-            <router-link :to="{ name: 'VehiculoCreate' }" class="quick-action-item" style="border-bottom:none">
-              <div class="quick-action-icon" style="background:#fff7ed;color:#d97706">🚗</div>
-              <div>
-                <div class="quick-action-title">Nuevo Vehículo</div>
-                <div class="quick-action-sub">Agregar al inventario</div>
-              </div>
-              <span class="ms-auto text-muted">›</span>
-            </router-link>
+          <router-link :to="{ name: 'VehiculoSearch' }" class="quick-item">
+            🚗 Buscar Vehículo
+          </router-link>
 
-          </div>
+          <router-link :to="{ name: 'ClienteCreate' }" class="quick-item">
+            👤 Nuevo Cliente
+          </router-link>
+
+          <router-link :to="{ name: 'VehiculoCreate' }" class="quick-item">
+            ➕ Nuevo Vehículo
+          </router-link>
+
         </div>
       </div>
 
-      <!-- ÚLTIMAS VENTAS -->
-      <div class="col-lg-8">
-        <div class="card h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Últimas ventas</span>
-            <router-link :to="{ name: 'VentaList' }" class="btn btn-sm btn-outline-secondary">
-              Ver todas
-            </router-link>
-          </div>
+      <!-- VENTAS -->
+      <div class="card">
 
-          <!-- Loading -->
-          <div v-if="loadingVentas" class="card-body">
-            <div v-for="i in 4" :key="i" class="d-flex gap-3 mb-3">
-              <div class="skeleton" style="height:1rem;width:3rem" />
-              <div class="skeleton flex-grow-1" style="height:1rem" />
-              <div class="skeleton" style="height:1rem;width:5rem" />
-            </div>
-          </div>
+        <div class="card-header d-flex justify-between">
+          <span>Últimas ventas</span>
 
-          <!-- Empty -->
-          <div v-else-if="ultimasVentas.length === 0" class="card-body text-center py-5">
-            <div style="font-size:2.5rem">📋</div>
-            <p class="text-muted mt-2 mb-0 small">No hay ventas registradas aún</p>
-            <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary btn-sm mt-3">
-              Registrar primera venta
-            </router-link>
-          </div>
-
-          <!-- Tabla -->
-          <div v-else class="table-responsive">
-            <table class="table mb-0">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Fecha</th>
-                  <th>Cliente</th>
-                  <th>Total</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="v in ultimasVentas" :key="v.id">
-                  <td class="text-muted">{{ v.id }}</td>
-                  <td>{{ formatFecha(v.fecha) }}</td>
-                  <td class="fw-semibold">{{ v.cliente?.nombre }} {{ v.cliente?.apellido }}</td>
-                  <td class="fw-semibold" style="color:var(--color-primary)">$ {{ formatPrecio(v.total) }}</td>
-                  <td>
-                    <span class="badge" :class="badgeVenta(v.estadoVenta)">{{ v.estadoVenta ?? '-' }}</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
+          <router-link :to="{ name: 'VentaList' }" class="btn btn-outline btn-sm">
+            Ver todas
+          </router-link>
         </div>
+
+        <div v-if="loadingVentas" class="empty">
+          Cargando ventas...
+        </div>
+
+        <div v-else-if="ultimasVentas.length === 0" class="empty">
+          No hay ventas registradas
+        </div>
+
+        <table v-else class="table">
+
+          <thead>
+          <tr>
+            <th>#</th>
+            <th>Fecha</th>
+            <th>Cliente</th>
+            <th>Total</th>
+            <th>Estado</th>
+          </tr>
+          </thead>
+
+          <tbody>
+          <tr v-for="v in ultimasVentas" :key="v.id">
+
+            <td>{{ v.id }}</td>
+
+            <td>{{ formatFecha(v.fecha) }}</td>
+
+            <td>
+              {{ v.cliente?.nombre }} {{ v.cliente?.apellido }}
+            </td>
+
+            <td class="price">
+              $ {{ formatPrecio(v.total) }}
+            </td>
+
+            <td>
+                <span :class="badgeVenta(v.estado)">
+                  {{ v.estado ?? '-' }}
+                </span>
+            </td>
+
+          </tr>
+          </tbody>
+
+        </table>
+
       </div>
 
     </div>
@@ -185,7 +126,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import VentaService from '@/entities/venta/venta.service';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import ClienteService from '@/entities/cliente/cliente.service';
@@ -193,37 +134,58 @@ import InventarioService from '@/entities/inventario/inventario.service';
 import type { IVenta } from '@/shared/model/venta.model';
 import { EstadoVenta } from '@/shared/model/estado-venta.model';
 
-const ventaService    = new VentaService();
+const ventaService = new VentaService();
 const vehiculoService = new VehiculoService();
-const clienteService  = new ClienteService();
+const clienteService = new ClienteService();
 const inventarioService = new InventarioService();
 
-const loadingKpis   = ref(true);
+const loadingKpis = ref(true);
 const loadingVentas = ref(true);
 const ultimasVentas = ref<IVenta[]>([]);
 
-const kpis = ref({ ventasMes: 0, vehiculosDisponibles: 0, clientesActivos: 0, inventarioTotal: 0 });
+const kpis = ref({
+  ventasMes: 0,
+  vehiculosDisponibles: 0,
+  clientesActivos: 0,
+  inventarioTotal: 0,
+});
 
-const fechaHoy = new Date().toLocaleDateString('es-AR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+const kpiList = computed(() => [
+  { label: 'Ventas', value: kpis.value.ventasMes, sub: 'este mes', icon: '💰' },
+  { label: 'Vehículos', value: kpis.value.vehiculosDisponibles, sub: 'disponibles', icon: '🚗' },
+  { label: 'Clientes', value: kpis.value.clientesActivos, sub: 'activos', icon: '👤' },
+  { label: 'Inventario', value: kpis.value.inventarioTotal, sub: 'total', icon: '📦' },
+]);
+
+const fechaHoy = new Date().toLocaleDateString('es-AR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 
 onMounted(async () => {
-  await Promise.allSettled([cargarKpis(), cargarUltimasVentas()]);
+  await Promise.all([cargarKpis(), cargarUltimasVentas()]);
 });
 
 async function cargarKpis() {
   loadingKpis.value = true;
+
   try {
-    const [ventas, vehiculos, clientes, inventario] = await Promise.allSettled([
+    const [ventas, vehiculos, clientes, inventario] = await Promise.all([
       ventaService.retrieve({ page: 0, size: 1 }),
       vehiculoService.retrieve({ page: 0, size: 1 }),
       clienteService.retrieve({ page: 0, size: 1 }),
       inventarioService.retrieve({ page: 0, size: 1 }),
     ]);
 
-    kpis.value.ventasMes           = ventas.status === 'fulfilled'     ? Number(ventas.value.headers?.['x-total-count'] ?? 0) : 0;
-    kpis.value.vehiculosDisponibles = vehiculos.status === 'fulfilled'  ? Number(vehiculos.value.headers?.['x-total-count'] ?? 0) : 0;
-    kpis.value.clientesActivos      = clientes.status === 'fulfilled'   ? Number(clientes.value.headers?.['x-total-count'] ?? 0) : 0;
-    kpis.value.inventarioTotal      = inventario.status === 'fulfilled' ? Number(inventario.value.headers?.['x-total-count'] ?? 0) : 0;
+    kpis.value.ventasMes = Number(ventas.headers['x-total-count'] ?? 0);
+    kpis.value.vehiculosDisponibles = Number(vehiculos.headers['x-total-count'] ?? 0);
+    kpis.value.clientesActivos = Number(clientes.headers['x-total-count'] ?? 0);
+    kpis.value.inventarioTotal = Number(inventario.headers['x-total-count'] ?? 0);
+
+  } catch {
+    console.error('Error cargando KPIs');
   } finally {
     loadingKpis.value = false;
   }
@@ -231,9 +193,16 @@ async function cargarKpis() {
 
 async function cargarUltimasVentas() {
   loadingVentas.value = true;
+
   try {
-    const res = await ventaService.retrieve({ page: 0, size: 5, sort: ['fecha,desc'] });
+    const res = await ventaService.retrieve({
+      page: 0,
+      size: 5,
+      sort: ['fecha,desc'],
+    });
+
     ultimasVentas.value = res.data;
+
   } catch {
     ultimasVentas.value = [];
   } finally {
@@ -243,11 +212,11 @@ async function cargarUltimasVentas() {
 
 function badgeVenta(estado?: EstadoVenta | null) {
   const map: Record<string, string> = {
-    [EstadoVenta.PENDIENTE]: 'bg-warning text-dark',
-    [EstadoVenta.PAGADA]:    'bg-success',
-    [EstadoVenta.CANCELADA]: 'bg-danger',
+    PENDIENTE: 'badge warning',
+    FINALIZADA: 'badge success',
+    CANCELADA: 'badge danger',
   };
-  return map[estado ?? ''] ?? 'bg-light text-dark border';
+  return map[estado ?? ''] ?? 'badge';
 }
 
 function formatFecha(f?: Date | string) {
@@ -260,29 +229,80 @@ function formatPrecio(p?: number | null) {
 </script>
 
 <style scoped>
-.quick-action-item {
-  display: flex;
-  align-items: center;
-  gap: .85rem;
-  padding: .9rem 1.25rem;
-  border-bottom: 1px solid var(--color-border);
-  text-decoration: none;
-  color: var(--color-text);
-  transition: background .12s;
-  cursor: pointer;
+.dashboard {
+  padding: 1.5rem;
 }
-.quick-action-item:hover { background: #f8fafc; }
 
-.quick-action-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-sm);
+.dashboard-header {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1rem;
-  flex-shrink: 0;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
 }
-.quick-action-title { font-size: .85rem; font-weight: 600; }
-.quick-action-sub   { font-size: .75rem; color: var(--color-text-muted); }
+
+.actions {
+  display: flex;
+  gap: .5rem;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 1rem;
+}
+
+.card {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.quick-item {
+  display: block;
+  padding: .6rem;
+  border-bottom: 1px solid #eee;
+}
+
+.table {
+  width: 100%;
+}
+
+.price {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.badge {
+  padding: .3rem .6rem;
+  border-radius: 10px;
+}
+
+.badge.success { background: #22c55e; color: white; }
+.badge.warning { background: #facc15; }
+.badge.danger  { background: #ef4444; color: white; }
+
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: #999;
+}
 </style>

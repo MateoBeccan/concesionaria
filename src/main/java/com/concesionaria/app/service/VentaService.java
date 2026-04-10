@@ -21,7 +21,9 @@ public interface VentaService {
 
     void delete(Long id);
 
-    // NEGOCIO
+
     VentaDTO crearVenta(Long vehiculoId, Long clienteId);
+
+    void confirmarVenta(Long ventaId);
 
 }

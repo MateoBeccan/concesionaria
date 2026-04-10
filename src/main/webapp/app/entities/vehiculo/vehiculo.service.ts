@@ -29,8 +29,9 @@ export default class VehiculoService {
     return res.data;
   }
 
-  async delete(id: number): Promise<void> {
-    await axios.delete(`${baseApiUrl}/${id}`);
+  async delete(id: number): Promise<any> {
+    const res = await axios.delete(`${baseApiUrl}/${id}`);
+    return res.data;
   }
 
   async findByPatente(patente: string): Promise<IVehiculo> {
@@ -41,5 +42,11 @@ export default class VehiculoService {
   async vender(vehiculoId: number, clienteId: number): Promise<void> {
     await axios.post(`${baseApiUrl}/${vehiculoId}/vender/${clienteId}`);
   }
+
+  async reservar(vehiculoId: number, clienteId: number): Promise<void> {
+    await axios.post(`${baseApiUrl}/${vehiculoId}/reservar?clienteId=${clienteId}`);
+  }
+
+
 }
 

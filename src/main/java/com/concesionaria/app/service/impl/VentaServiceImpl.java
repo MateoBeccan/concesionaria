@@ -1,20 +1,18 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.*;
+import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.*;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.VentaDTO;
-import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,15 +21,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class VentaServiceImpl implements VentaService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(VentaServiceImpl.class);
-
     private final VentaRepository ventaRepository;
     private final VentaMapper ventaMapper;
-
     private final VehiculoRepository vehiculoRepository;
     private final InventarioRepository inventarioRepository;
     private final ClienteRepository clienteRepository;
     private final DetalleVentaRepository detalleVentaRepository;
+    private final CotizacionRepository cotizacionRepository;
 
     public VentaServiceImpl(
         VentaRepository ventaRepository,
@@ -39,7 +35,8 @@ public class VentaServiceImpl implements VentaService {
         VehiculoRepository vehiculoRepository,
         InventarioRepository inventarioRepository,
         ClienteRepository clienteRepository,
-        DetalleVentaRepository detalleVentaRepository
+        DetalleVentaRepository detalleVentaRepository,
+        CotizacionRepository cotizacionRepository
     ) {
         this.ventaRepository = ventaRepository;
         this.ventaMapper = ventaMapper;
@@ -47,30 +44,26 @@ public class VentaServiceImpl implements VentaService {
         this.inventarioRepository = inventarioRepository;
         this.clienteRepository = clienteRepository;
         this.detalleVentaRepository = detalleVentaRepository;
+        this.cotizacionRepository = cotizacionRepository;
     }
 
-    // =========================
-    // CRUD BASE
-    // =========================
+    // ================= CRUD =================
 
     @Override
-    public VentaDTO save(VentaDTO ventaDTO) {
-        Venta venta = ventaMapper.toEntity(ventaDTO);
-        return ventaMapper.toDto(ventaRepository.save(venta));
-    }
-
-    @Override
-    public VentaDTO update(VentaDTO ventaDTO) {
-        Venta venta = ventaMapper.toEntity(ventaDTO);
-        return ventaMapper.toDto(ventaRepository.save(venta));
+    public VentaDTO save(VentaDTO dto) {
+        return ventaMapper.toDto(ventaRepository.save(ventaMapper.toEntity(dto)));
     }
 
     @Override
-    public Optional<VentaDTO> partialUpdate(VentaDTO ventaDTO) {
-        return ventaRepository
-            .findById(ventaDTO.getId())
+    public VentaDTO update(VentaDTO dto) {
+        return ventaMapper.toDto(ventaRepository.save(ventaMapper.toEntity(dto)));
+    }
+
+    @Override
+    public Optional<VentaDTO> partialUpdate(VentaDTO dto) {
+        return ventaRepository.findById(dto.getId())
             .map(existing -> {
-                ventaMapper.partialUpdate(existing, ventaDTO);
+                ventaMapper.partialUpdate(existing, dto);
                 return existing;
             })
             .map(ventaRepository::save)
@@ -84,12 +77,13 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public Page<VentaDTO> findAllWithEagerRelationships(Pageable pageable) {
-        return ventaRepository.findAllWithEagerRelationships(pageable).map(ventaMapper::toDto);
+        return ventaRepository.findAllWithEagerRelationships(pageable)
+            .map(ventaMapper::toDto);
     }
 
     @Override
     public Optional<VentaDTO> findOne(Long id) {
-        return ventaRepository.findOneWithEagerRelationships(id).map(ventaMapper::toDto);
+        return ventaRepository.findById(id).map(ventaMapper::toDto);
     }
 
     @Override
@@ -97,75 +91,67 @@ public class VentaServiceImpl implements VentaService {
         ventaRepository.deleteById(id);
     }
 
-    // =========================
-    // LÓGICA DE NEGOCIO
-    // =========================
+    // ================= NEGOCIO =================
 
     @Override
     public VentaDTO crearVenta(Long vehiculoId, Long clienteId) {
 
-        LOG.info("Creando venta vehiculo {} cliente {}", vehiculoId, clienteId);
-
-        // =========================
-        // VALIDAR CLIENTE
-        // =========================
         Cliente cliente = clienteRepository.findById(clienteId)
-            .orElseThrow(() -> new BadRequestException("El cliente no existe"));
+            .orElseThrow(() -> new RuntimeException("Cliente no existe"));
 
-        // =========================
-        // VALIDAR VEHICULO
-        // =========================
         Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId)
-            .orElseThrow(() -> new BadRequestException("El vehículo no existe"));
+            .orElseThrow(() -> new RuntimeException("Vehiculo no existe"));
 
-        if (vehiculo.getPrecio() == null || vehiculo.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("El vehículo no tiene un precio válido");
-        }
-
-        // =========================
-        // VALIDAR INVENTARIO
-        // =========================
         Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId)
-            .orElseThrow(() -> new BadRequestException("No existe inventario para el vehículo"));
+            .orElseThrow(() -> new RuntimeException("Inventario no encontrado"));
 
+        //  VALIDACIONES
         if (inv.getEstadoInventario() == EstadoInventario.VENDIDO) {
-            throw new BadRequestException("El vehículo ya fue vendido");
+            throw new RuntimeException("Vehiculo ya vendido");
         }
 
-        if (inv.getEstadoInventario() == EstadoInventario.RESERVADO) {
-            if (inv.getClienteReserva() == null ||
-                !inv.getClienteReserva().getId().equals(clienteId)) {
-
-                throw new BadRequestException("El vehículo está reservado por otro cliente");
-            }
+        if (inv.getEstadoInventario() == EstadoInventario.RESERVADO &&
+            (inv.getClienteReserva() == null || !inv.getClienteReserva().getId().equals(clienteId))) {
+            throw new RuntimeException("Reservado por otro cliente");
         }
 
-        // =========================
-        // CREAR VENTA
-        // =========================
+        if (vehiculo.getCondicion() == CondicionVehiculo.VENDIDO) {
+            throw new RuntimeException("Vehiculo ya vendido");
+        }
+
+        //  CÁLCULOS
+        BigDecimal precio = vehiculo.getPrecio();
+        BigDecimal impuesto = precio.multiply(new BigDecimal("0.21"));
+        BigDecimal total = precio.add(impuesto);
+
+        //  CREAR VENTA
         Venta venta = new Venta();
         venta.setCliente(cliente);
         venta.setFecha(Instant.now());
         venta.setCreatedDate(Instant.now());
-        venta.setEstado(EstadoVenta.PENDIENTE);
-
-        BigDecimal precio = vehiculo.getPrecio();
-        BigDecimal impuesto = BigDecimal.ZERO;
-        BigDecimal total = precio.add(impuesto);
+        venta.setLastModifiedDate(Instant.now());
 
         venta.setImporteNeto(precio);
         venta.setImpuesto(impuesto);
         venta.setTotal(total);
+
         venta.setTotalPagado(BigDecimal.ZERO);
         venta.setSaldo(total);
+        venta.setEstado(EstadoVenta.PENDIENTE);
 
-        Venta savedVenta = ventaRepository.save(venta);
+        //  COTIZACIÓN
+        Cotizacion cotizacion = cotizacionRepository
+            .findTopByOrderByFechaDesc()
+            .orElseThrow(() -> new RuntimeException("No hay cotización"));
 
-        // =========================
-        // DETALLE VENTA
-        // =========================
+        venta.setCotizacion(cotizacion.getValorVenta());
+
+
+        Venta saved = ventaRepository.save(venta);
+
+        // DETALLE
         DetalleVenta detalle = new DetalleVenta();
-        detalle.setVenta(savedVenta);
+        detalle.setVenta(saved);
         detalle.setVehiculo(vehiculo);
         detalle.setCantidad(1);
         detalle.setPrecioUnitario(precio);
@@ -173,19 +159,53 @@ public class VentaServiceImpl implements VentaService {
 
         detalleVentaRepository.save(detalle);
 
-        // =========================
-        // ACTUALIZAR INVENTARIO
-        // =========================
-        inv.setEstadoInventario(EstadoInventario.VENDIDO);
+        // INVENTARIO → RESERVADO (flujo con pago)
+        inv.setEstadoInventario(EstadoInventario.RESERVADO);
         inv.setDisponible(false);
-        inv.setClienteReserva(null);
-        inv.setFechaReserva(null);
-        inv.setFechaVencimientoReserva(null);
-
+        inv.setClienteReserva(cliente);
         inventarioRepository.save(inv);
 
-        LOG.info("Venta creada con ID {} para vehiculo {}", savedVenta.getId(), vehiculoId);
+        //  VEHICULO → RESERVADO
+        vehiculo.setCondicion(CondicionVehiculo.RESERVADO);
+        vehiculoRepository.save(vehiculo);
 
-        return ventaMapper.toDto(savedVenta);
+        return ventaMapper.toDto(saved);
+    }
+
+    // CONFIRMAR VENTA (cuando se paga)
+    @Override
+    public void confirmarVenta(Long ventaId) {
+
+        Venta venta = ventaRepository.findById(ventaId)
+            .orElseThrow(() -> new RuntimeException("Venta no existe"));
+
+        if (venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
+            throw new RuntimeException("La venta no está totalmente paga");
+        }
+
+        DetalleVenta detalle = detalleVentaRepository
+            .findFirstByVentaId(ventaId)
+            .orElseThrow(() -> new RuntimeException("Detalle no encontrado"));
+
+        Long vehiculoId = detalle.getVehiculo().getId();
+
+        Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId)
+            .orElseThrow(() -> new RuntimeException("Inventario no encontrado"));
+
+        //  INVENTARIO → VENDIDO
+        inv.setEstadoInventario(EstadoInventario.VENDIDO);
+        inv.setDisponible(false);
+        inventarioRepository.save(inv);
+
+        // VEHICULO → VENDIDO
+        Vehiculo vehiculo = inv.getVehiculo();
+        vehiculo.setCondicion(CondicionVehiculo.VENDIDO);
+        vehiculoRepository.save(vehiculo);
+
+        //  VENTA → FINALIZADA
+        venta.setEstado(EstadoVenta.FINALIZADA);
+        venta.setLastModifiedDate(Instant.now());
+
+        ventaRepository.save(venta);
     }
 }

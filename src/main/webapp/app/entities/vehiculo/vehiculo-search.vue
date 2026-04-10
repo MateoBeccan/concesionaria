@@ -126,11 +126,36 @@ function onVehiculoCreado(v: IVehiculo) {
 }
 
 function irAVenta() {
-  router.push({ name: 'VentaWizard' });
-}
+  if (!vehiculo.value?.id) return;
 
-function reservar() {
-  alertService.showInfo('Funcionalidad de reserva próximamente');
+  router.push({
+    name: 'VentaWizard',
+    query: { vehiculoId: vehiculo.value.id }
+  });
+}
+import VehiculoService from '@/entities/vehiculo/vehiculo.service';
+
+const vehiculoService = new VehiculoService();
+async function reservar() {
+  if (!vehiculo.value?.id) return;
+
+  const clienteId = window.prompt('Ingresá ID del cliente');
+
+  if (!clienteId || isNaN(Number(clienteId))) {
+    alertService.showError('ID de cliente inválido');
+    return;
+  }
+
+
+  try {
+    await vehiculoService.reservar(vehiculo.value.id, Number(clienteId));
+
+    alertService.showSuccess('Vehículo reservado correctamente');
+
+    await buscar(); // refresca el estado del vehículo
+  } catch (e: any) {
+    alertService.showHttpError(e.response);
+  }
 }
 
 function editar() {

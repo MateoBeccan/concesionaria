@@ -8,22 +8,24 @@ import com.concesionaria.app.service.dto.MarcaDTO;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import org.mapstruct.*;
 
-/**
- * Mapper for the entity {@link Modelo} and its DTO {@link ModeloDTO}.
- */
 @Mapper(componentModel = "spring")
 public interface ModeloMapper extends EntityMapper<ModeloDTO, Modelo> {
-    @Mapping(target = "marca", source = "marca", qualifiedByName = "marcaId")
-    @Mapping(target = "carroceria", source = "carroceria", qualifiedByName = "carroceriaId")
+
+    @Mapping(target = "marca", source = "marca", qualifiedByName = "marcaBasic")
+    @Mapping(target = "carroceria", source = "carroceria", qualifiedByName = "carroceriaBasic")
     ModeloDTO toDto(Modelo s);
 
-    @Named("marcaId")
+    // MARCA COMPLETA
+    @Named("marcaBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MarcaDTO toDtoMarcaId(Marca marca);
+    @Mapping(target = "nombre", source = "nombre")
+    MarcaDTO toDtoMarcaBasic(Marca marca);
 
-    @Named("carroceriaId")
+    // CARROCERIA COMPLETA
+    @Named("carroceriaBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    CarroceriaDTO toDtoCarroceriaId(Carroceria carroceria);
+    @Mapping(target = "nombre", source = "nombre")
+    CarroceriaDTO toDtoCarroceriaBasic(Carroceria carroceria);
 }

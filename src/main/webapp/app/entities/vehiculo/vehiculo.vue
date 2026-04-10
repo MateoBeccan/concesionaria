@@ -76,7 +76,7 @@
             <!--MOTOR -->
             <td>
               <span v-if="vehiculo.motor">
-                {{ vehiculo.motor.nombre }} ({{ vehiculo.motor.potenciaHp }}hp)
+                {{ vehiculo.motor.nombre }} ({{ vehiculo.motor?.potenciaHp ?? '-' }}hp)
               </span>
             </td>
 

@@ -104,56 +104,68 @@
 
       <!-- SECCIÓN: ESPECIFICACIONES -->
       <div class="card mb-3">
-        <div class="card-header">Especificaciones técnicas</div>
-        <div class="card-body">
-          <div class="row g-3">
+  <div class="card-header">Especificaciones técnicas</div>
+  <div class="card-body">
+    <div class="row g-3">
 
-            <div class="col-md-6">
-              <label class="form-label">Versión</label>
-              <select class="form-select" v-model="vehiculo.version">
-                <option :value="null">— Sin versión —</option>
-                <option
-                  v-for="v in versions"
-                  :key="v.id"
-                  :value="vehiculo.version?.id === v.id ? vehiculo.version : v"
-                >
-                  {{ v.modelo?.marca?.nombre ?? '' }} {{ v.modelo?.nombre ?? '' }} — {{ v.nombre }}
-                </option>
-              </select>
-              <small class="text-muted">Incluye marca y modelo</small>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Motor</label>
-              <select class="form-select" v-model="vehiculo.motor">
-                <option :value="null">— Sin motor —</option>
-                <option
-                  v-for="m in motors"
-                  :key="m.id"
-                  :value="vehiculo.motor?.id === m.id ? vehiculo.motor : m"
-                >
-                  {{ m.nombre }} — {{ m.potenciaHp }} HP / {{ m.cilindradaCc }} cc
-                </option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">Tipo de vehículo</label>
-              <select class="form-select" v-model="vehiculo.tipoVehiculo">
-                <option :value="null">— Sin tipo —</option>
-                <option
-                  v-for="t in tipoVehiculos"
-                  :key="t.id"
-                  :value="vehiculo.tipoVehiculo?.id === t.id ? vehiculo.tipoVehiculo : t"
-                >
-                  {{ t.nombre }}
-                </option>
-              </select>
-            </div>
-
-          </div>
-        </div>
+      <!-- MARCA -->
+      <div class="col-md-6">
+        <label class="form-label">Marca</label>
+        <select class="form-select" v-model="selectedMarca" @change="onMarcaChange">
+          <option :value="null">— Seleccionar —</option>
+          <option v-for="m in marcas" :key="m.id" :value="m">
+            {{ m.nombre }}
+          </option>
+        </select>
       </div>
+
+      <!-- MODELO -->
+      <div class="col-md-6">
+        <label class="form-label">Modelo</label>
+        <select class="form-select" v-model="selectedModelo" @change="onModeloChange">
+          <option :value="null">— Seleccionar —</option>
+          <option v-for="m in modelosFiltrados" :key="m.id" :value="m">
+            {{ m.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- VERSION -->
+      <div class="col-md-6">
+        <label class="form-label">Versión</label>
+        <select class="form-select" v-model="vehiculo.version">
+          <option :value="null">— Seleccionar —</option>
+          <option v-for="v in versionesFiltradas" :key="v.id" :value="v">
+            {{ v.nombre }}
+          </option>
+        </select>
+      </div>
+
+      <!-- MOTOR -->
+      <div class="col-md-6">
+        <label class="form-label">Motor</label>
+        <select class="form-select" v-model="vehiculo.motor">
+          <option :value="null">— Seleccionar —</option>
+          <option v-for="m in motors" :key="m.id" :value="m">
+            {{ m.nombre }} — {{ m.potenciaHp }} HP
+          </option>
+        </select>
+      </div>
+
+      <!-- TIPO VEHICULO -->
+      <div class="col-md-6">
+        <label class="form-label">Tipo de vehículo</label>
+        <select class="form-select" v-model="vehiculo.tipoVehiculo">
+          <option :value="null">— Seleccionar —</option>
+          <option v-for="t in tipoVehiculos" :key="t.id" :value="t">
+            {{ t.nombre }}
+          </option>
+        </select>
+      </div>
+
+    </div>
+  </div>
+</div>
 
       <!-- ACCIONES -->
       <div class="d-flex justify-content-end gap-2">

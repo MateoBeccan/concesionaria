@@ -63,10 +63,12 @@
             <td>{{ version.anioInicio }}</td>
             <td>{{ version.anioFin }}</td>
             <td>
-              <div v-if="version.modelo">
-                <router-link :to="{ name: 'ModeloView', params: { modeloId: version.modelo.id } }">{{ version.modelo.id }}</router-link>
-              </div>
-            </td>
+  <div v-if="version.modelo">
+    <span class="badge bg-primary">
+      {{ version.modelo?.nombre }}
+    </span>
+  </div>
+</td>
             <td class="text-end">
               <div class="btn-group">
                 <router-link :to="{ name: 'VersionView', params: { versionId: version.id } }" custom v-slot="{ navigate }">

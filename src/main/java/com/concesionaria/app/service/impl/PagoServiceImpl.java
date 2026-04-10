@@ -6,6 +6,7 @@ import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.PagoService;
+import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.PagoMapper;
@@ -29,15 +30,18 @@ public class PagoServiceImpl implements PagoService {
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
     private final VentaRepository ventaRepository;
+    private final VentaService ventaService;
 
     public PagoServiceImpl(
         PagoRepository pagoRepository,
         PagoMapper pagoMapper,
-        VentaRepository ventaRepository
+        VentaRepository ventaRepository,
+        VentaService ventaService
     ) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
         this.ventaRepository = ventaRepository;
+        this.ventaService = ventaService;
     }
 
     // =========================
@@ -53,15 +57,16 @@ public class PagoServiceImpl implements PagoService {
     @Override
     public PagoDTO update(PagoDTO pagoDTO) {
         Pago pago = pagoMapper.toEntity(pagoDTO);
+        pago.setLastModifiedDate(Instant.now());
         return pagoMapper.toDto(pagoRepository.save(pago));
     }
 
     @Override
     public Optional<PagoDTO> partialUpdate(PagoDTO pagoDTO) {
-        return pagoRepository
-            .findById(pagoDTO.getId())
+        return pagoRepository.findById(pagoDTO.getId())
             .map(existing -> {
                 pagoMapper.partialUpdate(existing, pagoDTO);
+                existing.setLastModifiedDate(Instant.now());
                 return existing;
             })
             .map(pagoRepository::save)
@@ -86,7 +91,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     // =========================
-    // LÓGICA DE NEGOCIO
+    //  LÓGICA DE NEGOCIO PRO
     // =========================
 
     @Override
@@ -102,6 +107,10 @@ public class PagoServiceImpl implements PagoService {
 
         if (venta.getEstado() == EstadoVenta.FINALIZADA) {
             throw new BadRequestException("La venta ya está completamente pagada");
+        }
+
+        if (venta.getSaldo().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("La venta ya está saldada");
         }
 
         // =========================
@@ -122,9 +131,11 @@ public class PagoServiceImpl implements PagoService {
         // CREAR PAGO
         // =========================
         Pago pago = pagoMapper.toEntity(pagoDTO);
+
         pago.setVenta(venta);
         pago.setFecha(Instant.now());
         pago.setCreatedDate(Instant.now());
+        pago.setLastModifiedDate(Instant.now());
 
         pago = pagoRepository.save(pago);
 
@@ -137,12 +148,17 @@ public class PagoServiceImpl implements PagoService {
         BigDecimal nuevoSaldo = venta.getTotal().subtract(nuevoTotalPagado);
         venta.setSaldo(nuevoSaldo);
 
+        venta.setLastModifiedDate(Instant.now());
+
         // =========================
-        // CIERRE AUTOMÁTICO
+        // CIERRE AUTOMÁTICO PRO
         // =========================
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
-            venta.setEstado(EstadoVenta.FINALIZADA);
+
             LOG.info("Venta {} completamente pagada", ventaId);
+
+            //  delegar a VentaService (SIN duplicar lógica)
+            ventaService.confirmarVenta(ventaId);
         }
 
         ventaRepository.save(venta);

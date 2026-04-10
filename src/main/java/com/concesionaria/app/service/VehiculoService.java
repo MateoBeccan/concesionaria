@@ -9,7 +9,7 @@
     /**
      * Service Interface for managing {@link com.concesionaria.app.domain.Vehiculo}.
      */
-    public interface VehiculoService {
+    public interface   VehiculoService {
         /**
          * Save a vehiculo.
          *
@@ -71,6 +71,5 @@
         void cancelarReserva(Long vehiculoId);
 
         Optional<VehiculoDTO> findByPatente(String patente);
-
 
     }

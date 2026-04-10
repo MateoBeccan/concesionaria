@@ -50,7 +50,17 @@ public class Pago implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private Moneda moneda;
 
-    // jhipster-needle-entity-add-field - JHipster will add fields here
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+// jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
         return this.id;

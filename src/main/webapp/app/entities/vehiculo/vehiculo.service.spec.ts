@@ -5,7 +5,7 @@ import dayjs from 'dayjs';
 import sinon from 'sinon';
 
 import { DATE_FORMAT, DATE_TIME_FORMAT } from '@/shared/composables/date-format';
-import { Vehiculo } from '@/shared/model/vehiculo.model';
+import { Vehiculo, type IVehiculo } from '@/shared/model/vehiculo.model';
 
 import VehiculoService from './vehiculo.service';
 
@@ -29,173 +29,172 @@ const axiosStub = {
 describe('Service Tests', () => {
   describe('Vehiculo Service', () => {
     let service: VehiculoService;
-    let elemDefault;
+    let elemDefault: IVehiculo;
     let currentDate: Date;
 
     beforeEach(() => {
       service = new VehiculoService();
       currentDate = new Date();
-      elemDefault = new Vehiculo(123, 'NUEVO', currentDate, 0, 'AAAAAAA', 0, currentDate, currentDate);
+
+      elemDefault = {
+        id: 123,
+        estado: 'NUEVO',
+        condicion: 'EN_VENTA',
+        fechaFabricacion: currentDate,
+        km: 0,
+        patente: 'AAA123',
+        precio: 0,
+        createdDate: currentDate,
+        lastModifiedDate: currentDate,
+      };
     });
 
     describe('Service methods', () => {
       it('should find an element', async () => {
         const returnedFromService = {
+          ...elemDefault,
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          ...elemDefault,
         };
+
         axiosStub.get.resolves({ data: returnedFromService });
 
-        return service.find(123).then(res => {
-          expect(res).toMatchObject(elemDefault);
-        });
+        const res = await service.find(123);
+        expect(res).toMatchObject(elemDefault);
       });
 
       it('should not find an element', async () => {
         axiosStub.get.rejects(error);
-        return service
-          .find(123)
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+
+        await expect(service.find(123)).rejects.toMatchObject(error);
       });
 
       it('should create a Vehiculo', async () => {
         const returnedFromService = {
-          id: 123,
+          ...elemDefault,
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          ...elemDefault,
         };
-        const expected = { fechaFabricacion: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
+
+        const expected = {
+          ...elemDefault,
+          fechaFabricacion: currentDate,
+          createdDate: currentDate,
+          lastModifiedDate: currentDate,
+        };
 
         axiosStub.post.resolves({ data: returnedFromService });
-        return service.create({}).then(res => {
-          expect(res).toMatchObject(expected);
-        });
+
+        const res = await service.create(elemDefault);
+        expect(res).toMatchObject(expected);
       });
 
       it('should not create a Vehiculo', async () => {
         axiosStub.post.rejects(error);
 
-        return service
-          .create({})
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+        await expect(service.create(elemDefault)).rejects.toMatchObject(error);
       });
 
       it('should update a Vehiculo', async () => {
         const returnedFromService = {
-          estado: 'BBBBBB',
+          ...elemDefault,
+          km: 10,
+          patente: 'BBB123',
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          km: 1,
-          patente: 'BBBBBB',
-          precio: 1,
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          ...elemDefault,
         };
 
-        const expected = { fechaFabricacion: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
+        const expected = {
+          ...returnedFromService,
+          fechaFabricacion: currentDate,
+          createdDate: currentDate,
+          lastModifiedDate: currentDate,
+        };
+
         axiosStub.put.resolves({ data: returnedFromService });
 
-        return service.update(expected).then(res => {
-          expect(res).toMatchObject(expected);
-        });
+        const res = await service.update(expected);
+        expect(res).toMatchObject(expected);
       });
 
       it('should not update a Vehiculo', async () => {
         axiosStub.put.rejects(error);
 
-        return service
-          .update({})
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+        await expect(service.update(elemDefault)).rejects.toMatchObject(error);
       });
 
       it('should partial update a Vehiculo', async () => {
-        const patchObject = {
-          estado: 'BBBBBB',
-          fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          km: 1,
-          patente: 'BBBBBB',
-          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          ...new Vehiculo(),
+        const patchObject: Partial<IVehiculo> = {
+          id: 123,
+          km: 5,
         };
-        const returnedFromService = Object.assign(patchObject, elemDefault);
 
-        const expected = { fechaFabricacion: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
+        const returnedFromService = {
+          ...elemDefault,
+          ...patchObject,
+          fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
+          createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+          lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
+        };
+
+        const expected = {
+          ...returnedFromService,
+          fechaFabricacion: currentDate,
+          createdDate: currentDate,
+          lastModifiedDate: currentDate,
+        };
+
         axiosStub.patch.resolves({ data: returnedFromService });
 
-        return service.partialUpdate(patchObject).then(res => {
-          expect(res).toMatchObject(expected);
-        });
+        const res = await service.partialUpdate(patchObject);
+        expect(res).toMatchObject(expected);
       });
 
       it('should not partial update a Vehiculo', async () => {
         axiosStub.patch.rejects(error);
 
-        return service
-          .partialUpdate({})
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+        await expect(service.partialUpdate({})).rejects.toMatchObject(error);
       });
 
       it('should return a list of Vehiculo', async () => {
         const returnedFromService = {
-          estado: 'BBBBBB',
+          ...elemDefault,
           fechaFabricacion: dayjs(currentDate).format(DATE_FORMAT),
-          km: 1,
-          patente: 'BBBBBB',
-          precio: 1,
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          ...elemDefault,
         };
-        const expected = { fechaFabricacion: currentDate, createdDate: currentDate, lastModifiedDate: currentDate, ...returnedFromService };
-        axiosStub.get.resolves([returnedFromService]);
-        return service.retrieve({ sort: {}, page: 0, size: 10 }).then(res => {
-          expect(res).toContainEqual(expected);
+
+        axiosStub.get.resolves({
+          data: [returnedFromService],
+          headers: {},
         });
+
+        const res = await service.retrieve({});
+
+        expect(res.data).toBeDefined();
+        expect(res.data[0]).toMatchObject(elemDefault);
       });
 
       it('should not return a list of Vehiculo', async () => {
         axiosStub.get.rejects(error);
 
-        return service
-          .retrieve()
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+        await expect(service.retrieve()).rejects.toMatchObject(error);
       });
 
       it('should delete a Vehiculo', async () => {
-        axiosStub.delete.resolves({ ok: true });
-        return service.delete(123).then(res => {
-          expect(res.ok).toBeTruthy();
-        });
+        axiosStub.delete.resolves({ data: { ok: true } });
+
+        const res = await service.delete(123);
+        expect(res.ok).toBeTruthy();
       });
 
       it('should not delete a Vehiculo', async () => {
         axiosStub.delete.rejects(error);
 
-        return service
-          .delete(123)
-          .then()
-          .catch(err => {
-            expect(err).toMatchObject(error);
-          });
+        await expect(service.delete(123)).rejects.toMatchObject(error);
       });
     });
   });

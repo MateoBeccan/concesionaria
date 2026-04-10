@@ -1,45 +1,187 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <div class="row-md">
-      <div class="col-md-12">
-        <b-alert data-cy="loginError" variant="danger" :model-value="authenticationError"
-          ><strong>¡El inicio de sesión ha fallado!</strong> Por favor, revise las credenciales e intente de nuevo.</b-alert
+  <div class="login-container">
+
+    <div class="login-card">
+
+      <!-- HEADER -->
+      <div class="login-header">
+        <h2>Bienvenido</h2>
+        <p>Iniciá sesión en AutoGestión</p>
+      </div>
+
+      <!-- ERROR -->
+      <div v-if="authenticationError" class="alert alert-danger">
+        Usuario o contraseña incorrectos
+      </div>
+
+      <!-- FORM -->
+      <form @submit.prevent="doLogin">
+
+        <!-- USER -->
+        <div class="form-group">
+          <label>Usuario</label>
+          <input
+            type="text"
+            v-model="login"
+            class="form-control"
+            placeholder="Ingrese su usuario"
+            required
+          />
+        </div>
+
+        <!-- PASSWORD -->
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input
+            type="password"
+            v-model="password"
+            class="form-control"
+            placeholder="Ingrese su contraseña"
+            required
+          />
+        </div>
+
+        <!-- REMEMBER -->
+        <div class="form-check mb-3">
+          <input
+            type="checkbox"
+            v-model="rememberMe"
+            class="form-check-input"
+            id="rememberMe"
+          />
+          <label class="form-check-label" for="rememberMe">
+            Recordarme
+          </label>
+        </div>
+
+        <!-- BUTTON -->
+        <button
+          type="submit"
+          class="btn btn-primary w-100"
+          :disabled="loading"
         >
+          <span v-if="loading">Ingresando...</span>
+          <span v-else>Iniciar sesión</span>
+        </button>
+
+      </form>
+
+      <!-- FOOTER -->
+      <div class="login-footer">
+        <router-link to="/account/reset/request">
+          ¿Olvidaste tu contraseña?
+        </router-link>
       </div>
-      <div class="col-md-12">
-        <b-form @submit.prevent="doLogin()">
-          <b-form-group label="Usuario" label-for="username">
-            <b-form-input id="username" type="text" name="username" placeholder="Nombre de usuario" v-model="login" data-cy="username">
-            </b-form-input>
-          </b-form-group>
-          <b-form-group label="Contraseña" label-for="password">
-            <b-form-input id="password" type="password" name="password" placeholder="Su contraseña" v-model="password" data-cy="password">
-            </b-form-input>
-          </b-form-group>
-          <b-form-checkbox id="rememberMe" name="rememberMe" v-model="rememberMe" checked>
-            <span>Iniciar la sesión automáticamente</span>
-          </b-form-checkbox>
-          <div>
-            <b-button data-cy="submit" type="submit" variant="primary">Iniciar sesión</b-button>
-          </div>
-        </b-form>
-        <p></p>
-        <div>
-          <b-alert :model-value="true" variant="warning">
-            <b-link :to="'/account/reset/request'" class="alert-link" data-cy="forgetYourPasswordSelector"
-              >¿Ha olvidado su contraseña?</b-link
-            >
-          </b-alert>
-        </div>
-        <div>
-          <b-alert :model-value="true" variant="warning">
-            <span>¿Aún no tienes una cuenta?</span>
-            <b-link :to="'/register'" class="alert-link">Crea una cuenta</b-link>
-          </b-alert>
-        </div>
-      </div>
+
     </div>
+
   </div>
 </template>
 
-<script lang="ts" src="./login-form.component.ts"></script>
+<script lang="ts">
+import { defineComponent, ref, inject } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import type AccountService from '@/account/account.service';
+
+export default defineComponent({
+  setup() {
+    const login = ref('');
+    const password = ref('');
+    const rememberMe = ref(false);
+    const authenticationError = ref(false);
+    const loading = ref(false);
+
+    const router = useRouter();
+    const accountService = inject<AccountService>('accountService');
+
+    const doLogin = async () => {
+      loading.value = true;
+      authenticationError.value = false;
+
+      try {
+        const response = await axios.post('api/authenticate', {
+          username: login.value,
+          password: password.value,
+          rememberMe: rememberMe.value,
+        });
+
+        const bearer = response.headers.authorization;
+
+        if (bearer?.startsWith('Bearer ')) {
+          const token = bearer.substring(7);
+
+          if (rememberMe.value) {
+            localStorage.setItem('jhi-authenticationToken', token);
+            sessionStorage.removeItem('jhi-authenticationToken');
+          } else {
+            sessionStorage.setItem('jhi-authenticationToken', token);
+            localStorage.removeItem('jhi-authenticationToken');
+          }
+        }
+
+        await accountService.retrieveAccount();
+
+        // 🔥 REDIRECCIÓN PRO
+        await router.replace({ name: 'Home' });
+
+      } catch (e) {
+        authenticationError.value = true;
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    return {
+      login,
+      password,
+      rememberMe,
+      authenticationError,
+      loading,
+      doLogin,
+    };
+  },
+});
+</script>
+
+<style scoped>
+.login-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-header h2 {
+  font-weight: bold;
+}
+
+.login-header p {
+  color: #6c757d;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.login-footer {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+</style>

@@ -13,17 +13,22 @@ import org.mapstruct.*;
  */
 @Mapper(componentModel = "spring")
 public interface ClienteMapper extends EntityMapper<ClienteDTO, Cliente> {
-    @Mapping(target = "condicionIva", source = "condicionIva", qualifiedByName = "condicionIvaId")
-    @Mapping(target = "tipoDocumento", source = "tipoDocumento", qualifiedByName = "tipoDocumentoId")
+
+    @Mapping(target = "condicionIva", source = "condicionIva", qualifiedByName = "condicionIvaBasic")
+    @Mapping(target = "tipoDocumento", source = "tipoDocumento", qualifiedByName = "tipoDocumentoBasic")
     ClienteDTO toDto(Cliente s);
 
-    @Named("condicionIvaId")
+    //  CONDICION IVA
+    @Named("condicionIvaBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    CondicionIvaDTO toDtoCondicionIvaId(CondicionIva condicionIva);
+    @Mapping(target = "codigo", source = "codigo")
+    CondicionIvaDTO toDtoCondicionIvaBasic(CondicionIva condicionIva);
 
-    @Named("tipoDocumentoId")
+    //  TIPO DOCUMENTO
+    @Named("tipoDocumentoBasic")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    TipoDocumentoDTO toDtoTipoDocumentoId(TipoDocumento tipoDocumento);
+    @Mapping(target = "codigo", source = "codigo")
+    TipoDocumentoDTO toDtoTipoDocumentoBasic(TipoDocumento tipoDocumento);
 }

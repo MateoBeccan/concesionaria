@@ -20,10 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class InventarioServiceImpl implements InventarioService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(InventarioServiceImpl.class);
-
     private final InventarioRepository inventarioRepository;
-
     private final InventarioMapper inventarioMapper;
 
     public InventarioServiceImpl(InventarioRepository inventarioRepository, InventarioMapper inventarioMapper) {
@@ -32,53 +29,38 @@ public class InventarioServiceImpl implements InventarioService {
     }
 
     @Override
-    public InventarioDTO save(InventarioDTO inventarioDTO) {
-        LOG.debug("Request to save Inventario : {}", inventarioDTO);
-        Inventario inventario = inventarioMapper.toEntity(inventarioDTO);
-        inventario = inventarioRepository.save(inventario);
-        return inventarioMapper.toDto(inventario);
+    public InventarioDTO save(InventarioDTO dto) {
+        return inventarioMapper.toDto(inventarioRepository.save(inventarioMapper.toEntity(dto)));
     }
 
     @Override
-    public InventarioDTO update(InventarioDTO inventarioDTO) {
-        LOG.debug("Request to update Inventario : {}", inventarioDTO);
-        Inventario inventario = inventarioMapper.toEntity(inventarioDTO);
-        inventario = inventarioRepository.save(inventario);
-        return inventarioMapper.toDto(inventario);
+    public InventarioDTO update(InventarioDTO dto) {
+        return inventarioMapper.toDto(inventarioRepository.save(inventarioMapper.toEntity(dto)));
     }
 
     @Override
-    public Optional<InventarioDTO> partialUpdate(InventarioDTO inventarioDTO) {
-        LOG.debug("Request to partially update Inventario : {}", inventarioDTO);
-
-        return inventarioRepository
-            .findById(inventarioDTO.getId())
-            .map(existingInventario -> {
-                inventarioMapper.partialUpdate(existingInventario, inventarioDTO);
-
-                return existingInventario;
+    public Optional<InventarioDTO> partialUpdate(InventarioDTO dto) {
+        return inventarioRepository.findById(dto.getId())
+            .map(existing -> {
+                inventarioMapper.partialUpdate(existing, dto);
+                return existing;
             })
             .map(inventarioRepository::save)
             .map(inventarioMapper::toDto);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Page<InventarioDTO> findAll(Pageable pageable) {
-        LOG.debug("Request to get all Inventarios");
         return inventarioRepository.findAll(pageable).map(inventarioMapper::toDto);
     }
 
     @Override
-    @Transactional(readOnly = true)
     public Optional<InventarioDTO> findOne(Long id) {
-        LOG.debug("Request to get Inventario : {}", id);
         return inventarioRepository.findById(id).map(inventarioMapper::toDto);
     }
 
     @Override
     public void delete(Long id) {
-        LOG.debug("Request to delete Inventario : {}", id);
         inventarioRepository.deleteById(id);
     }
 }

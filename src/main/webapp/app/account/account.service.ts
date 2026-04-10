@@ -46,14 +46,26 @@ export default class AccountService {
     if (this.store.logon) {
       return this.store.logon;
     }
-    const token = localStorage.getItem('jhi-authenticationToken') ?? sessionStorage.getItem('jhi-authenticationToken');
-    if (this.authenticated && this.userAuthorities && token) {
+
+    const token =
+      localStorage.getItem('jhi-authenticationToken') ??
+      sessionStorage.getItem('jhi-authenticationToken');
+
+    // 🔥 SI NO HAY TOKEN → NO LLAMAR API
+    if (!token) {
+      this.store.logout();
+      return;
+    }
+
+    // 🔥 SI YA ESTÁ AUTENTICADO → NO RECARGAR
+    if (this.authenticated && this.userAuthorities) {
       return;
     }
 
     const promise = this.retrieveAccount();
     this.store.authenticate(promise);
     promise.then(() => this.store.authenticate(null));
+
     await promise;
   }
 

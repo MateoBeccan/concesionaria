@@ -111,19 +111,20 @@
             <td>{{ formatDateShort(cliente.createdDate) || '' }}</td>
             <td>{{ formatDateShort(cliente.lastModifiedDate) || '' }}</td>
             <td>
-              <div v-if="cliente.condicionIva">
-                <router-link :to="{ name: 'CondicionIvaView', params: { condicionIvaId: cliente.condicionIva.id } }">{{
-                  cliente.condicionIva.id
-                }}</router-link>
-              </div>
-            </td>
-            <td>
-              <div v-if="cliente.tipoDocumento">
-                <router-link :to="{ name: 'TipoDocumentoView', params: { tipoDocumentoId: cliente.tipoDocumento.id } }">{{
-                  cliente.tipoDocumento.id
-                }}</router-link>
-              </div>
-            </td>
+  <div v-if="cliente.condicionIva">
+    <span class="badge bg-info text-dark">
+     {{ cliente.condicionIva?.codigo }}
+    </span>
+  </div>
+</td>
+
+<td>
+  <div v-if="cliente.tipoDocumento">
+    <span class="badge bg-secondary">
+      {{ cliente.tipoDocumento?.codigo }}
+    </span>
+  </div>
+</td>
             <td class="text-end">
               <div class="btn-group">
                 <router-link :to="{ name: 'ClienteView', params: { clienteId: cliente.id } }" custom v-slot="{ navigate }">
