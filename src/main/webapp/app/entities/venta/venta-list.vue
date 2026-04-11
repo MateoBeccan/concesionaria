@@ -6,7 +6,7 @@
         <h4 class="fw-semibold mb-0">Ventas</h4>
         <p class="text-muted small mb-0" v-if="!loading">{{ total }} registros encontrados</p>
       </div>
-      <router-link :to="{ name: 'VentaWizard' }" class="btn btn-primary">
+      <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary">
         + Nueva venta
       </router-link>
     </div>

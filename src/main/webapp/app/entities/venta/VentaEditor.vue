@@ -337,6 +337,6 @@ async function confirmarVenta() {
 }
 
 function labelEstado(e: string) {
-  return { PENDIENTE: 'Pendiente', PAGADA: 'Pagada', CANCELADA: 'Cancelada', RESERVADA: 'Reservada' }[e] ?? e;
+    return { PENDIENTE: 'Pendiente', PAGADA: 'Pagada', CANCELADA: 'Cancelada', RESERVADA: 'Reservada' }[e] ?? e;
 }
 </script>

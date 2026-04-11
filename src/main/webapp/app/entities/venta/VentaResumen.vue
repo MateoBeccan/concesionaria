@@ -136,7 +136,7 @@ function labelEstado(e?: string | null) {
     [EstadoVenta.PENDIENTE]:  'Pendiente',
     [EstadoVenta.PAGADA]:     'Pagada',
     [EstadoVenta.CANCELADA]:  'Cancelada',
-    [EstadoVenta.RESERVADA]:  'Reservada',
+
   }[e ?? ''] ?? e ?? '—';
 }
 </script>

@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { type Ref, defineComponent, inject, onMounted, ref, watch, computed } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
@@ -13,6 +13,7 @@ export default defineComponent({
     const clienteService = inject('clienteService', () => new ClienteService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
+    // 🔹 PAGINACIÓN / ORDEN
     const itemsPerPage = ref(20);
     const queryCount: Ref<number> = ref(null);
     const page: Ref<number> = ref(1);
@@ -20,10 +21,42 @@ export default defineComponent({
     const reverse = ref(false);
     const totalItems = ref(0);
 
+    // 🔹 DATA
     const clientes: Ref<ICliente[]> = ref([]);
-
     const isFetching = ref(false);
 
+    // 🔹 🔥 FILTROS
+    const search = ref('');
+    const filtroActivo = ref('');
+    const filtroCiudad = ref('');
+
+    const resetFiltros = () => {
+      search.value = '';
+      filtroActivo.value = '';
+      filtroCiudad.value = '';
+    };
+
+    // 🔹 COMPUTED FILTRADO
+    const filteredClientes = computed(() => {
+      return (clientes.value || []).filter((c: any) => {
+        const texto = `${c.nombre} ${c.apellido} ${c.email} ${c.nroDocumento}`.toLowerCase();
+
+        const matchSearch = texto.includes(search.value.toLowerCase());
+
+        const matchActivo =
+          filtroActivo.value === ''
+            ? true
+            : c.activo.toString() === filtroActivo.value;
+
+        const matchCiudad =
+          !filtroCiudad.value ||
+          c.ciudad?.toLowerCase().includes(filtroCiudad.value.toLowerCase());
+
+        return matchSearch && matchActivo && matchCiudad;
+      });
+    });
+
+    // 🔹 FUNCIONES BASE
     const clear = () => {
       page.value = 1;
     };
@@ -63,19 +96,23 @@ export default defineComponent({
       await retrieveClientes();
     });
 
+    // 🔹 DELETE
     const removeId: Ref<number> = ref(null);
     const removeEntity = ref<any>(null);
+
     const prepareRemove = (instance: ICliente) => {
       removeId.value = instance.id;
       removeEntity.value.show();
     };
+
     const closeDialog = () => {
       removeEntity.value.hide();
     };
+
     const removeCliente = async () => {
       try {
         await clienteService().delete(removeId.value);
-        const message = `A Cliente is deleted with identifier ${removeId.value}`;
+        const message = `Cliente eliminado con ID ${removeId.value}`;
         alertService.showInfo(message, { variant: 'danger' });
         removeId.value = null;
         retrieveClientes();
@@ -85,6 +122,7 @@ export default defineComponent({
       }
     };
 
+    // 🔹 ORDEN
     const changeOrder = (newOrder: string) => {
       if (propOrder.value === newOrder) {
         reverse.value = !reverse.value;
@@ -94,34 +132,39 @@ export default defineComponent({
       propOrder.value = newOrder;
     };
 
-    // Whenever order changes, reset the pagination
+    // 🔹 WATCHERS
     watch([propOrder, reverse], async () => {
       if (page.value === 1) {
-        // first page, retrieve new data
         await retrieveClientes();
       } else {
-        // reset the pagination
         clear();
       }
     });
 
-    // Whenever page changes, switch to the new page.
     watch(page, async () => {
       await retrieveClientes();
     });
 
     return {
       clientes,
+      filteredClientes, // 🔥 IMPORTANTE (para el template)
+      search,
+      filtroActivo,
+      filtroCiudad,
+      resetFiltros,
+
       handleSyncList,
       isFetching,
       retrieveClientes,
       clear,
       ...dateFormat,
+
       removeId,
       removeEntity,
       prepareRemove,
       closeDialog,
       removeCliente,
+
       itemsPerPage,
       queryCount,
       page,

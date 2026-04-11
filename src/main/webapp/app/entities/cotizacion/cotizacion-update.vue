@@ -1,110 +1,105 @@
 <template>
   <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <form name="editForm" novalidate @submit.prevent="save()">
-        <h2 id="concesionariaApp.cotizacion.home.createOrEditLabel" data-cy="CotizacionCreateUpdateHeading">Crear o editar Cotizacion</h2>
-        <div>
-          <div class="mb-3" v-if="cotizacion.id">
-            <label for="id">ID</label>
-            <input type="text" class="form-control" id="id" name="id" v-model="cotizacion.id" readonly />
+    <div class="col-10 col-lg-6">
+      <form @submit.prevent="save()">
+
+        <div class="card shadow-sm p-4">
+
+          <!-- HEADER -->
+          <div class="mb-4">
+            <h3 class="mb-0">
+              {{ cotizacion.id ? 'Editar Cotización' : 'Nueva Cotización' }}
+            </h3>
+            <small class="text-muted" v-if="cotizacion.id">
+              ID: {{ cotizacion.id }}
+            </small>
           </div>
+
+          <!-- FECHA -->
           <div class="mb-3">
-            <label class="form-control-label" for="cotizacion">Fecha</label>
-            <div class="d-flex">
+            <label class="form-label">Fecha *</label>
+            <input
+              type="datetime-local"
+              class="form-control"
+              v-model="v$.fecha.$model"
+            />
+          </div>
+
+          <!-- VALORES -->
+          <h5 class="border-bottom pb-2 mb-3">Valores</h5>
+
+          <div class="row mb-3">
+
+            <div class="col-md-6">
+              <label class="form-label">Valor Compra *</label>
               <input
-                id="cotizacion-fecha"
-                data-cy="fecha"
-                type="datetime-local"
+                type="number"
                 class="form-control"
-                name="fecha"
-                :class="{ valid: !v$.fecha.$invalid, invalid: v$.fecha.$invalid }"
-                required
-                :value="convertDateTimeFromServer(v$.fecha.$model)"
-                @change="updateInstantField('fecha', $event)"
+                v-model.number="v$.valorCompra.$model"
               />
             </div>
-            <div v-if="v$.fecha.$anyDirty && v$.fecha.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.fecha.$errors" :key="error.$uid">{{ error.$message }}</small>
+
+            <div class="col-md-6">
+              <label class="form-label">Valor Venta *</label>
+              <input
+                type="number"
+                class="form-control fw-bold text-success"
+                v-model.number="v$.valorVenta.$model"
+              />
             </div>
+
           </div>
+
+          <!-- MONEDA -->
           <div class="mb-3">
-            <label class="form-control-label" for="cotizacion">Valor Compra</label>
-            <input
-              type="number"
-              class="form-control"
-              name="valorCompra"
-              id="cotizacion-valorCompra"
-              data-cy="valorCompra"
-              :class="{ valid: !v$.valorCompra.$invalid, invalid: v$.valorCompra.$invalid }"
-              v-model.number="v$.valorCompra.$model"
-              required
-            />
-            <div v-if="v$.valorCompra.$anyDirty && v$.valorCompra.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.valorCompra.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="cotizacion">Valor Venta</label>
-            <input
-              type="number"
-              class="form-control"
-              name="valorVenta"
-              id="cotizacion-valorVenta"
-              data-cy="valorVenta"
-              :class="{ valid: !v$.valorVenta.$invalid, invalid: v$.valorVenta.$invalid }"
-              v-model.number="v$.valorVenta.$model"
-              required
-            />
-            <div v-if="v$.valorVenta.$anyDirty && v$.valorVenta.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.valorVenta.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="cotizacion">Activo</label>
-            <input
-              type="checkbox"
-              class="form-check"
-              name="activo"
-              id="cotizacion-activo"
-              data-cy="activo"
-              :class="{ valid: !v$.activo.$invalid, invalid: v$.activo.$invalid }"
-              v-model="v$.activo.$model"
-              required
-            />
-            <div v-if="v$.activo.$anyDirty && v$.activo.$invalid">
-              <small class="form-text text-danger" v-for="error of v$.activo.$errors" :key="error.$uid">{{ error.$message }}</small>
-            </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-control-label" for="cotizacion">Moneda</label>
-            <select class="form-control" id="cotizacion-moneda" data-cy="moneda" name="moneda" v-model="cotizacion.moneda">
-              <option :value="null"></option>
-              <option
-                :value="cotizacion.moneda && monedaOption.id === cotizacion.moneda.id ? cotizacion.moneda : monedaOption"
-                v-for="monedaOption in monedas"
-                :key="monedaOption.id"
-              >
-                {{ monedaOption.id }}
+            <label class="form-label">Moneda</label>
+            <select class="form-control" v-model="v$.moneda.$model">
+              <option :value="null">Seleccione...</option>
+              <option v-for="m in monedas" :key="m.id" :value="m">
+                {{ m.codigo || m.id }}
               </option>
             </select>
           </div>
+
+          <!-- ESTADO -->
+          <div class="form-check form-switch mb-4">
+            <input
+              type="checkbox"
+              class="form-check-input"
+              v-model="v$.activo.$model"
+              id="activoSwitch"
+            />
+            <label class="form-check-label" for="activoSwitch">
+              Cotización activa
+            </label>
+          </div>
+
+          <!-- BOTONES -->
+          <div class="d-flex justify-content-end gap-2">
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              @click="previousState()"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+              :disabled="v$.$invalid || isSaving"
+            >
+              Guardar
+            </button>
+
+          </div>
+
         </div>
-        <div>
-          <button type="button" id="cancel-save" data-cy="entityCreateCancelButton" class="btn btn-secondary" @click="previousState()">
-            <font-awesome-icon icon="ban"></font-awesome-icon>&nbsp;<span>Cancelar</span>
-          </button>
-          <button
-            type="submit"
-            id="save-entity"
-            data-cy="entityCreateSaveButton"
-            :disabled="v$.$invalid || isSaving"
-            class="btn btn-primary"
-          >
-            <font-awesome-icon icon="save"></font-awesome-icon>&nbsp;<span>Guardar</span>
-          </button>
-        </div>
+
       </form>
     </div>
   </div>
 </template>
+
 <script lang="ts" src="./cotizacion-update.component.ts"></script>

@@ -29,7 +29,7 @@
         Buscar Vehículo
       </router-link>
 
-      <router-link class="sidebar-item" :to="{ name: 'VentaWizard' }">
+      <router-link class="sidebar-item" :to="{ name: 'VentaEditor' }">
         <span class="sidebar-icon">💰</span>
         Nueva venta
       </router-link>
@@ -65,6 +65,11 @@
 
         <router-link class="sidebar-item" :to="{ name: 'Inventario' }">
           📦 Ir a Inventario
+        </router-link>
+
+        <router-link class="sidebar-item" :to="{ name: 'Cotizacion' }">
+          <span class="sidebar-icon">💱</span>
+          Cotizaciones
         </router-link>
       </template>
 

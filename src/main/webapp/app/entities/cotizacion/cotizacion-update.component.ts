@@ -20,20 +20,34 @@ export default defineComponent({
     const cotizacion: Ref<ICotizacion> = ref(new Cotizacion());
 
     const monedaService = inject('monedaService', () => new MonedaService());
-
     const monedas: Ref<IMoneda[]> = ref([]);
+
     const isSaving = ref(false);
-    const currentLanguage = inject('currentLanguage', () => computed(() => navigator.language ?? 'es'), true);
 
     const route = useRoute();
     const router = useRouter();
 
     const previousState = () => router.go(-1);
 
+    // 🔥 CONVERSIÓN A ISO (CLAVE)
+    const convertToInstant = (value: any) => {
+      return value ? new Date(value).toISOString() : null;
+    };
+
+    // 🔥 CONVERTIR PARA INPUT (cuando viene del backend)
+    const convertFromInstant = (value: any) => {
+      if (!value) return null;
+      const date = new Date(value);
+      return date.toISOString().slice(0, 16); // formato datetime-local
+    };
+
     const retrieveCotizacion = async cotizacionId => {
       try {
         const res = await cotizacionService().find(cotizacionId);
-        res.fecha = new Date(res.fecha);
+
+        // 🔥 FIX FECHA
+        res.fecha = convertFromInstant(res.fecha);
+
         cotizacion.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -55,23 +69,25 @@ export default defineComponent({
     initRelationships();
 
     const validations = useValidation();
+
     const validationRules = {
       fecha: {
         required: validations.required('Este campo es obligatorio.'),
       },
       valorCompra: {
         required: validations.required('Este campo es obligatorio.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+        min: validations.minValue('Debe ser mayor a 0.', 0),
       },
       valorVenta: {
         required: validations.required('Este campo es obligatorio.'),
-        min: validations.minValue('Este campo debe ser mayor que 0.', 0),
+        min: validations.minValue('Debe ser mayor a 0.', 0),
       },
       activo: {
         required: validations.required('Este campo es obligatorio.'),
       },
       moneda: {},
     };
+
     const v$ = useVuelidate(validationRules, cotizacion as any);
     v$.value.$validate();
 
@@ -81,23 +97,30 @@ export default defineComponent({
       cotizacion,
       previousState,
       isSaving,
-      currentLanguage,
       monedas,
       v$,
+      convertToInstant, // 🔥 IMPORTANTE
       ...useDateFormat({ entityRef: cotizacion }),
     };
   },
-  created(): void {},
+
   methods: {
     save(): void {
       this.isSaving = true;
-      if (this.cotizacion.id) {
+
+      // 🔥 CLON + FIX FECHA
+      const entity = {
+        ...this.cotizacion,
+        fecha: this.convertToInstant(this.cotizacion.fecha),
+      };
+
+      if (entity.id) {
         this.cotizacionService()
-          .update(this.cotizacion)
+          .update(entity)
           .then(param => {
             this.isSaving = false;
             this.previousState();
-            this.alertService.showInfo(`A Cotizacion is updated with identifier ${param.id}`);
+            this.alertService.showInfo(`Cotización actualizada (ID: ${param.id})`);
           })
           .catch(error => {
             this.isSaving = false;
@@ -105,11 +128,11 @@ export default defineComponent({
           });
       } else {
         this.cotizacionService()
-          .create(this.cotizacion)
+          .create(entity)
           .then(param => {
             this.isSaving = false;
             this.previousState();
-            this.alertService.showSuccess(`A Cotizacion is created with identifier ${param.id}`);
+            this.alertService.showSuccess(`Cotización creada (ID: ${param.id})`);
           })
           .catch(error => {
             this.isSaving = false;

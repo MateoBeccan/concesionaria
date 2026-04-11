@@ -1,116 +1,119 @@
 <template>
   <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <div v-if="cliente">
-        <h2 class="jh-entity-heading" data-cy="clienteDetailsHeading"><span>ClienteCliente</span> {{ cliente.id }}</h2>
-        <dl class="row-md jh-entity-details">
-          <dt>
-            <span>Nombre</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.nombre }}</span>
-          </dd>
-          <dt>
-            <span>Apellido</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.apellido }}</span>
-          </dd>
-          <dt>
-            <span>Nro Documento</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.nroDocumento }}</span>
-          </dd>
-          <dt>
-            <span>Telefono</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.telefono }}</span>
-          </dd>
-          <dt>
-            <span>Email</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.email }}</span>
-          </dd>
-          <dt>
-            <span>Direccion</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.direccion }}</span>
-          </dd>
-          <dt>
-            <span>Ciudad</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.ciudad }}</span>
-          </dd>
-          <dt>
-            <span>Provincia</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.provincia }}</span>
-          </dd>
-          <dt>
-            <span>Pais</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.pais }}</span>
-          </dd>
-          <dt>
-            <span>Activo</span>
-          </dt>
-          <dd>
-            <span>{{ cliente.activo }}</span>
-          </dd>
-          <dt>
-            <span>Fecha Alta</span>
-          </dt>
-          <dd>
-            <span v-if="cliente.fechaAlta">{{ formatDateLong(cliente.fechaAlta) }}</span>
-          </dd>
-          <dt>
-            <span>Created Date</span>
-          </dt>
-          <dd>
-            <span v-if="cliente.createdDate">{{ formatDateLong(cliente.createdDate) }}</span>
-          </dd>
-          <dt>
-            <span>Last Modified Date</span>
-          </dt>
-          <dd>
-            <span v-if="cliente.lastModifiedDate">{{ formatDateLong(cliente.lastModifiedDate) }}</span>
-          </dd>
-          <dt>
-            <span>Condicion Iva</span>
-          </dt>
-          <dd>
+    <div class="col-10 col-lg-8">
+      <div v-if="cliente" class="card shadow-sm p-4">
+
+        <!-- HEADER -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h3 class="mb-0">
+              {{ cliente.nombre }} {{ cliente.apellido }}
+            </h3>
+            <small class="text-muted">ID: {{ cliente.id }}</small>
+          </div>
+
+          <span
+            class="badge"
+            :class="cliente.activo ? 'bg-success' : 'bg-secondary'"
+          >
+            {{ cliente.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+
+        <!-- DATOS PERSONALES -->
+        <h5 class="border-bottom pb-2 mb-3">Datos personales</h5>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <strong>Documento:</strong>
+            <div>{{ cliente.nroDocumento }}</div>
+          </div>
+
+          <div class="col-md-6">
+            <strong>Condición IVA:</strong>
             <div v-if="cliente.condicionIva">
-              <router-link :to="{ name: 'CondicionIvaView', params: { condicionIvaId: cliente.condicionIva.id } }">{{
-                cliente.condicionIva.id
-              }}</router-link>
+              <router-link
+                :to="{ name: 'CondicionIvaView', params: { condicionIvaId: cliente.condicionIva.id } }"
+              >
+                {{ cliente.condicionIva.descripcion || cliente.condicionIva.id }}
+              </router-link>
             </div>
-          </dd>
-          <dt>
-            <span>Tipo Documento</span>
-          </dt>
-          <dd>
-            <div v-if="cliente.tipoDocumento">
-              <router-link :to="{ name: 'TipoDocumentoView', params: { tipoDocumentoId: cliente.tipoDocumento.id } }">{{
-                cliente.tipoDocumento.id
-              }}</router-link>
+          </div>
+        </div>
+
+        <!-- CONTACTO -->
+        <h5 class="border-bottom pb-2 mb-3">Contacto</h5>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <strong>Teléfono:</strong>
+            <div>{{ cliente.telefono || '-' }}</div>
+          </div>
+
+          <div class="col-md-6">
+            <strong>Email:</strong>
+            <div>{{ cliente.email }}</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <strong>Dirección:</strong>
+            <div>
+              {{ cliente.direccion || '-' }},
+              {{ cliente.ciudad || '-' }},
+              {{ cliente.provincia || '-' }},
+              {{ cliente.pais || '-' }}
             </div>
-          </dd>
-        </dl>
-        <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
-          <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>
-        </button>
-        <router-link v-if="cliente.id" :to="{ name: 'ClienteEdit', params: { clienteId: cliente.id } }" custom v-slot="{ navigate }">
-          <button @click="navigate" class="btn btn-primary">
-            <font-awesome-icon icon="pencil-alt"></font-awesome-icon>&nbsp;<span>Editar</span>
+          </div>
+        </div>
+
+        <!-- DATOS DEL SISTEMA -->
+        <h5 class="border-bottom pb-2 mb-3">Información del sistema</h5>
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <strong>Fecha Alta:</strong>
+            <div v-if="cliente.fechaAlta">
+              {{ formatDateLong(cliente.fechaAlta) }}
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <strong>Creado:</strong>
+            <div v-if="cliente.createdDate">
+              {{ formatDateLong(cliente.createdDate) }}
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <strong>Última modificación:</strong>
+            <div v-if="cliente.lastModifiedDate">
+              {{ formatDateLong(cliente.lastModifiedDate) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button
+            @click.prevent="previousState()"
+            class="btn btn-outline-secondary"
+          >
+            <font-awesome-icon icon="arrow-left" />
+            Volver
           </button>
-        </router-link>
+
+          <router-link
+            v-if="cliente.id"
+            :to="{ name: 'ClienteEdit', params: { clienteId: cliente.id } }"
+            custom
+            v-slot="{ navigate }"
+          >
+            <button @click="navigate" class="btn btn-primary">
+              <font-awesome-icon icon="pencil-alt" />
+              Editar
+            </button>
+          </router-link>
+        </div>
+
       </div>
     </div>
   </div>
