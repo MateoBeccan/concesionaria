@@ -1,7 +1,5 @@
 <template>
   <aside class="app-sidebar">
-
-    <!-- BRAND -->
     <div class="sidebar-brand">
       <span class="brand-icon">🚗</span>
       <div>
@@ -10,136 +8,228 @@
       </div>
     </div>
 
-    <!-- NAV -->
     <nav class="sidebar-nav">
+      <template v-for="section in visibleSections" :key="section.title">
+        <div class="sidebar-section">{{ section.title }}</div>
 
-      <!-- PRINCIPAL -->
-      <div class="sidebar-section">Principal</div>
-
-      <router-link class="sidebar-item" :to="{ name: 'Home' }">
-        <span class="sidebar-icon">⊞</span>
-        Dashboard
-      </router-link>
-
-      <!-- OPERACIONES (💣 LO IMPORTANTE) -->
-      <div class="sidebar-section">Operaciones</div>
-
-      <router-link class="sidebar-item" :to="{ name: 'VehiculoSearch' }">
-        <span class="sidebar-icon">🔍</span>
-        Buscar Vehículo
-      </router-link>
-
-      <router-link class="sidebar-item" :to="{ name: 'VentaWizard' }">
-        <span class="sidebar-icon">💰</span>
-        Nueva venta
-      </router-link>
-
-
-
-      <!-- VENTAS -->
-      <router-link class="sidebar-item" :to="{ name: 'VentaList' }">
-        <span class="sidebar-icon">📄</span>
-        Ventas
-      </router-link>
-
-      <!-- CLIENTES -->
-      <div class="sidebar-section">Clientes</div>
-
-      <router-link class="sidebar-item" :to="{ name: 'Cliente' }">
-        <span class="sidebar-icon">👤</span>
-        Clientes
-      </router-link>
-
-      <router-link class="sidebar-item" :to="{ name: 'ClienteCreate' }">
-        <span class="sidebar-icon">＋</span>
-        Nuevo Cliente
-      </router-link>
-
-      <!-- ADMIN (OCULTO PARA NEGOCIO) -->
-      <template v-if="isAdmin">
-        <div class="sidebar-section">Administración</div>
-
-        <router-link class="sidebar-item" :to="{ name: 'Vehiculo' }">
-          🚙 Ir a Vehículos
-        </router-link>
-
-        <router-link class="sidebar-item" :to="{ name: 'Inventario' }">
-          📦 Ir a Inventario
+        <router-link v-for="item in section.items" :key="item.name" class="sidebar-item" :to="{ name: item.name }">
+          <span class="sidebar-icon">{{ item.icon }}</span>
+          <span>{{ item.label }}</span>
         </router-link>
       </template>
-
     </nav>
 
-    <!-- FOOTER -->
     <div class="sidebar-footer">
-      <div class="d-flex align-items-center gap-2">
-        <div
-          class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
-          style="width:32px;height:32px;font-size:.75rem;flex-shrink:0"
-        >
-          {{ userInitials }}
-        </div>
-
-        <div style="min-width:0">
-          <div class="text-white fw-semibold" style="font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            {{ username ?? 'Usuario' }}
-          </div>
-          <div style="font-size:.7rem;color:rgba(255,255,255,.4)">Activo</div>
-        </div>
-
-        <button
-          class="btn btn-sm ms-auto"
-          style="color:rgba(255,255,255,.5);padding:.2rem .4rem"
-          @click="logout"
-        >
-          ⏻
-        </button>
+      <div class="user-avatar">{{ userInitials }}</div>
+      <div class="user-meta">
+        <div class="user-name">{{ username ?? 'Usuario' }}</div>
+        <div class="user-status">{{ roleLabel }}</div>
       </div>
+      <button class="logout-btn" @click="logout" title="Cerrar sesión">⏻</button>
     </div>
-
   </aside>
 </template>
 
 <script lang="ts" setup>
-import { computed, inject } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from '@/store';
-import type AccountService from '@/account/account.service';
+
+interface SidebarItem {
+  name: string;
+  label: string;
+  icon: string;
+}
+
+interface SidebarSection {
+  title: string;
+  roles?: string[];
+  items: SidebarItem[];
+}
+
+const SIDEBAR_SECTIONS: SidebarSection[] = [
+  {
+    title: 'Principal',
+    items: [{ name: 'Home', label: 'Dashboard', icon: '⊞' }],
+  },
+  {
+    title: 'Operaciones',
+    items: [
+      { name: 'VehiculoSearch', label: 'Buscar Vehículo', icon: '🔍' },
+      { name: 'VentaWizard', label: 'Nueva venta', icon: '💰' },
+      { name: 'VentaList', label: 'Ventas', icon: '📄' },
+    ],
+  },
+  {
+    title: 'Clientes',
+    items: [
+      { name: 'Cliente', label: 'Clientes', icon: '👤' },
+      { name: 'ClienteCreate', label: 'Nuevo Cliente', icon: '＋' },
+    ],
+  },
+  {
+    title: 'Administración',
+    roles: ['ROLE_ADMIN'],
+    items: [
+      { name: 'Vehiculo', label: 'Vehículos', icon: '🚙' },
+      { name: 'Inventario', label: 'Inventario', icon: '📦' },
+    ],
+  },
+];
 
 const store = useStore();
 const router = useRouter();
-inject<AccountService>('accountService');
 
 const username = computed(() => store.account?.login);
+const authorities = computed(() => store.account?.authorities ?? []);
+const isAdmin = computed(() => authorities.value.includes('ROLE_ADMIN'));
 
-const isAdmin = computed(() =>
-  store.account?.authorities?.includes('ROLE_ADMIN') ?? false
-);
+const roleLabel = computed(() => (isAdmin.value ? 'Administrador' : 'Usuario'));
 
 const userInitials = computed(() => {
   const u = store.account?.login ?? '';
   return u.slice(0, 2).toUpperCase();
 });
 
+const visibleSections = computed(() =>
+  SIDEBAR_SECTIONS.filter(section => {
+    if (!section.roles?.length) return true;
+    return section.roles.some(role => authorities.value.includes(role));
+  }),
+);
+
 async function logout() {
   localStorage.removeItem('jhi-authenticationToken');
   sessionStorage.removeItem('jhi-authenticationToken');
   store.logout();
-  router.push('/');
+  await router.push({ name: 'Login' });
 }
 </script>
 
 <style scoped>
-.sidebar-subsection {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  opacity: 0.6;
-  margin: 0.5rem 0 0.2rem 1rem;
+.app-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-.sidebar-item.sub {
-  padding-left: 2rem;
-  font-size: 0.85rem;
-  opacity: 0.85;
+.sidebar-brand {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-content: center;
+  background: #2563eb;
+}
+
+.brand-name {
+  display: block;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.brand-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.sidebar-nav {
+  padding: 0.9rem 0.55rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-section {
+  margin: 0.65rem 0.55rem 0.3rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 10px;
+  padding: 0.5rem 0.6rem;
+  color: #e2e8f0;
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+
+.sidebar-item:hover {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.sidebar-item.router-link-active {
+  background: rgba(37, 99, 235, 0.3);
+  color: #fff;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 0.85rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1d4ed8;
+  color: #fff;
+  display: grid;
+  place-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.user-meta {
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-status {
+  font-size: 0.7rem;
+  color: #94a3b8;
+}
+
+.logout-btn {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  color: #fff;
 }
 </style>

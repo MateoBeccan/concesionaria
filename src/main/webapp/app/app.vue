@@ -2,14 +2,14 @@
   <BToastOrchestrator />
 
   <!-- Layout autenticado -->
-  <AppLayout v-if="authenticated">
+  <AppLayout v-if="useAuthenticatedLayout">
     <router-view />
   </AppLayout>
 
-  <!-- Layout sin autenticar: solo router-view centrado -->
-  <div v-else class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+  <!-- Layout público -->
+  <PublicLayout v-else>
     <router-view />
-  </div>
+  </PublicLayout>
 
   <!-- Modal de login global -->
   <b-modal id="login-page" focus="username" v-model="loginModalOpen" :no-footer="true" lazy>
