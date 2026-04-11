@@ -1,4 +1,5 @@
 import { createRouter as createVueRouter, createWebHistory } from 'vue-router';
+import AccountService from '@/account/account.service';
 import { useStore } from '@/store';
 
 // 🔥 VISTAS
@@ -56,27 +57,50 @@ export const createRouter = () =>
 
 const router = createRouter();
 
-
-// 🔥 🔒 GUARD GLOBAL (LA CLAVE DEL PROBLEMA)
-router.beforeEach((to) => {
+// 🔥 🔒 GUARD GLOBAL CENTRALIZADO
+router.beforeEach(async to => {
   const store = useStore();
+  const accountService = new AccountService(store);
+  const requiresAuth = to.meta?.requiresAuth || Array.isArray(to.meta?.authorities);
 
-  // ❌ No autenticado → bloquear acceso
-  if (to.meta?.requiresAuth && !store.authenticated) {
-    return { name: 'Login' };
+  // 🔄 Intentar recuperar sesión si la ruta lo requiere y aún no está autenticado
+  if (requiresAuth && !store.authenticated) {
+    try {
+      await accountService.update();
+    } catch {
+      // ignore
+    }
   }
 
-  // ✔ Si está logueado y quiere ir a login → redirigir a home
+  // 🔁 Evitar ir al login si ya está logueado
   if (to.name === 'Login' && store.authenticated) {
     return { name: 'Home' };
+  }
+
+  // ❌ Ruta protegida sin sesión
+  if (requiresAuth && !store.authenticated) {
+    if (to.name === 'Login') return true;
+    return {
+      name: 'Login',
+      query: to.fullPath ? { redirect: to.fullPath } : undefined,
+    };
+  }
+
+  // ⛔ Sesión válida pero sin permisos
+  const requiredAuthorities = to.meta?.authorities as string[] | undefined;
+  if (requiredAuthorities?.length) {
+    const hasAnyAuthority = requiredAuthorities.some(authority => store.account?.authorities?.includes(authority));
+    if (!hasAnyAuthority) {
+      if (to.name === 'Forbidden') return true;
+      return { name: 'Forbidden' };
+    }
   }
 
   return true;
 });
 
-
 // 🔥 NOT FOUND
-router.beforeResolve((to) => {
+router.beforeResolve(to => {
   if (!to.matched.length) {
     return { path: '/not-found' };
   }
