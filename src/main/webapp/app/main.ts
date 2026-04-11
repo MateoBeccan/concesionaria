@@ -1,4 +1,3 @@
-
 import { computed, createApp, provide } from 'vue';
 import { createPinia, storeToRefs } from 'pinia';
 
@@ -44,30 +43,6 @@ const app = createApp({
     // 🔥 Account service
     provide('accountService', accountService);
 
-    // 🚀 🔒 GUARD GLOBAL (CLAVE)
-    router.beforeEach(async (to) => {
-      // 🔄 Intentar recuperar sesión si no está cargada
-      if (!store.authenticated) {
-        try {
-          await accountService.update();
-        } catch {
-          // ignore
-        }
-      }
-
-      // 🔒 Rutas protegidas
-      if (to.meta?.requiresAuth && !store.authenticated) {
-        return { name: 'Login' };
-      }
-
-      // 🔁 Evitar ir al login si ya está logueado
-      if (to.name === 'Login' && store.authenticated) {
-        return { name: 'Home' };
-      }
-
-      return true;
-    });
-
     // 🚀 🔥 AXIOS INTERCEPTOR GLOBAL
     setupAxiosInterceptors(
       error => {
@@ -95,9 +70,4 @@ initFortAwesome(app);
 initBootstrapVue(app);
 
 // 🔧 Global components
-app
-  .component('JhiItemCount', JhiItemCount)
-  .component('JhiSortIndicator', JhiSortIndicator)
-  .use(router)
-  .use(pinia)
-  .mount('#app');
+app.component('JhiItemCount', JhiItemCount).component('JhiSortIndicator', JhiSortIndicator).use(router).use(pinia).mount('#app');

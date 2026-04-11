@@ -1,86 +1,135 @@
 <template>
   <header class="app-topbar">
-
-    <!-- TÍTULO DE PÁGINA (slot) -->
-    <div class="flex-grow-1">
-      <slot name="title">
-        <span class="fw-semibold" style="font-size:.95rem;color:var(--color-text)">{{ pageTitle }}</span>
-      </slot>
+    <div class="topbar-title-wrap">
+      <h2 class="topbar-title">{{ pageMeta.title }}</h2>
+      <p class="topbar-subtitle mb-0">{{ pageMeta.subtitle }}</p>
     </div>
 
-    <!-- ACCIONES RÁPIDAS -->
-    <div class="d-flex align-items-center gap-3">
+    <div class="topbar-actions">
+      <router-link :to="{ name: 'VentaWizard' }" class="btn btn-primary btn-sm d-none d-md-inline-flex">+ Nueva venta</router-link>
 
-      <!-- Botón nueva venta -->
-      <router-link
-        v-if="authenticated"
-        :to="{ name: 'VentaEditor' }"
-        class="btn btn-primary btn-sm d-none d-md-flex align-items-center gap-1"
+      <router-link v-if="isAdmin" :to="{ name: 'JhiMetricsComponent' }" class="btn btn-outline-secondary btn-sm d-none d-lg-inline-flex"
+        >Panel admin</router-link
       >
-        <span>＋</span> Nueva Venta
-      </router-link>
 
-      <!-- Notificaciones (placeholder) -->
-      <button
-        class="btn btn-sm"
-        style="color:var(--color-text-muted);position:relative;padding:.35rem .5rem"
-        title="Notificaciones"
-      >
-        🔔
-        <span
-          class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger"
-          style="font-size:.55rem;padding:.2em .4em"
-        >
-          3
-        </span>
-      </button>
-
-      <!-- Usuario -->
-      <div v-if="authenticated" class="d-flex align-items-center gap-2" style="cursor:default">
-        <div
-          class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold"
-          style="width:32px;height:32px;font-size:.75rem;flex-shrink:0"
-        >
-          {{ userInitials }}
-        </div>
-        <span class="d-none d-md-block fw-semibold" style="font-size:.85rem">{{ username }}</span>
+      <div class="role-pill" :class="isAdmin ? 'admin' : 'user'">
+        {{ isAdmin ? 'Admin' : 'Usuario' }}
       </div>
 
-      <!-- Login si no autenticado -->
-      <button v-else class="btn btn-primary btn-sm" @click="showLogin()">
-        Iniciar sesión
-      </button>
-
+      <div class="user-chip">
+        <div class="chip-avatar">{{ userInitials }}</div>
+        <span class="chip-name d-none d-md-inline">{{ username ?? 'Usuario' }}</span>
+      </div>
     </div>
   </header>
 </template>
 
 <script lang="ts" setup>
-import { computed, inject } from 'vue';
-import type { ComputedRef } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useStore } from '@/store';
-import { useLoginModal } from '@/account/login-modal';
+
+interface PageMeta {
+  title: string;
+  subtitle: string;
+}
+
+const PAGE_META_BY_ROUTE: Record<string, PageMeta> = {
+  Home: { title: 'Dashboard', subtitle: 'Resumen general del negocio' },
+  VentaWizard: { title: 'Nueva venta', subtitle: 'Generá una operación completa' },
+  VentaList: { title: 'Ventas', subtitle: 'Seguimiento de operaciones y estados' },
+  VehiculoSearch: { title: 'Buscar vehículo', subtitle: 'Catálogo y disponibilidad' },
+  Vehiculo: { title: 'Vehículos', subtitle: 'Gestión de unidades' },
+  Cliente: { title: 'Clientes', subtitle: 'Gestión de clientes y contactos' },
+  Inventario: { title: 'Inventario', subtitle: 'Stock y movimientos' },
+};
+
+const DEFAULT_PAGE_META: PageMeta = {
+  title: 'AutoGestión',
+  subtitle: 'Plataforma de concesionaria',
+};
 
 const store = useStore();
 const route = useRoute();
-const { showLogin } = useLoginModal();
 
-const authenticated = computed(() => store.authenticated);
 const username = computed(() => store.account?.login);
 const userInitials = computed(() => (store.account?.login ?? '').slice(0, 2).toUpperCase());
-
-const PAGE_TITLES: Record<string, string> = {
-  Home:          'Dashboard',
-  VentaWizard:   'Nueva Venta',
-  VentaList:     'Ventas',
-  VehiculoSearch:'Buscar Vehículo',
-  Vehiculo:      'Vehículos',
-  Cliente:       'Clientes',
-  Inventario:    'Inventario',
-  Marca:         'Marcas',
-  Modelo:        'Modelos',
-};
-
-const pageTitle = computed(() => PAGE_TITLES[route.name as string] ?? '');
+const isAdmin = computed(() => store.account?.authorities?.includes('ROLE_ADMIN') ?? false);
+const pageMeta = computed(() => PAGE_META_BY_ROUTE[route.name as string] ?? DEFAULT_PAGE_META);
 </script>
+
+<style scoped>
+.app-topbar {
+  min-height: 72px;
+  background: #fff;
+  border-bottom: 1px solid #e3e9f3;
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.topbar-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.topbar-subtitle {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.role-pill {
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.role-pill.user {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-pill.admin {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.35rem;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.chip-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #fff;
+  display: grid;
+  place-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.chip-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1f2937;
+  padding-right: 0.3rem;
+}
+</style>

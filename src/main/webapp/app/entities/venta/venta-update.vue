@@ -1,6 +1,5 @@
 <template>
-  <div class="container py-4" style="max-width:720px">
-
+  <div class="container py-4" style="max-width: 720px">
     <div class="page-header">
       <div>
         <h1 class="page-title">{{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}</h1>
@@ -10,26 +9,22 @@
     </div>
 
     <form @submit.prevent="save()" novalidate>
-
       <!-- PARTES -->
       <div class="card mb-3">
         <div class="card-header">Partes de la operación</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-12">
               <label class="form-label">Cliente</label>
               <select class="form-select" v-model="venta.cliente">
                 <option :value="null">— Seleccionar cliente —</option>
-                <option v-for="c in clientes" :key="c.id" :value="c">
-                  {{ c.nombre }} {{ c.apellido }} — {{ c.nroDocumento }}
-                </option>
+                <option v-for="c in clientes" :key="c.id" :value="c">{{ c.nombre }} {{ c.apellido }} — {{ c.nroDocumento }}</option>
               </select>
             </div>
 
             <div class="col-md-6">
               <label class="form-label">Estado</label>
-              <select class="form-select" v-model="venta.estadoVenta">
+              <select class="form-select" v-model="venta.estado">
                 <option :value="null">— Seleccionar estado —</option>
                 <option v-for="e in estadoVentas" :key="e" :value="e">
                   {{ { PENDIENTE: 'Pendiente', PAGADA: 'Pagada', CANCELADA: 'Cancelada' }[e] ?? e }}
@@ -68,7 +63,6 @@
                 <span v-for="e of v$.fecha.$errors" :key="e.$uid">{{ e.$message }}</span>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -78,13 +72,17 @@
         <div class="card-header">Importes</div>
         <div class="card-body">
           <div class="row g-3">
-
             <div class="col-md-6">
               <label class="form-label">Cotización <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" v-model.number="v$.cotizacion.$model"
-                  :class="{ 'is-invalid': v$.cotizacion.$dirty && v$.cotizacion.$invalid }" min="0" />
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="v$.cotizacion.$model"
+                  :class="{ 'is-invalid': v$.cotizacion.$dirty && v$.cotizacion.$invalid }"
+                  min="0"
+                />
               </div>
             </div>
 
@@ -100,8 +98,13 @@
               <label class="form-label">Importe neto <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" v-model.number="v$.importeNeto.$model"
-                  :class="{ 'is-invalid': v$.importeNeto.$dirty && v$.importeNeto.$invalid }" min="0" />
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="v$.importeNeto.$model"
+                  :class="{ 'is-invalid': v$.importeNeto.$dirty && v$.importeNeto.$invalid }"
+                  min="0"
+                />
               </div>
             </div>
 
@@ -109,8 +112,13 @@
               <label class="form-label">Impuesto <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" v-model.number="v$.impuesto.$model"
-                  :class="{ 'is-invalid': v$.impuesto.$dirty && v$.impuesto.$invalid }" min="0" />
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="v$.impuesto.$model"
+                  :class="{ 'is-invalid': v$.impuesto.$dirty && v$.impuesto.$invalid }"
+                  min="0"
+                />
               </div>
             </div>
 
@@ -118,8 +126,13 @@
               <label class="form-label">Total <span class="text-danger">*</span></label>
               <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" class="form-control" v-model.number="v$.total.$model"
-                  :class="{ 'is-invalid': v$.total.$dirty && v$.total.$invalid }" min="0" />
+                <input
+                  type="number"
+                  class="form-control"
+                  v-model.number="v$.total.$model"
+                  :class="{ 'is-invalid': v$.total.$dirty && v$.total.$invalid }"
+                  min="0"
+                />
               </div>
             </div>
 
@@ -146,7 +159,6 @@
                 <span v-for="e of v$.observaciones.$errors" :key="e.$uid">{{ e.$message }}</span>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -159,7 +171,6 @@
           {{ venta.id ? 'Guardar cambios' : 'Crear venta' }}
         </button>
       </div>
-
     </form>
   </div>
 </template>

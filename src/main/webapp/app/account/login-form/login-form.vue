@@ -1,8 +1,6 @@
 <template>
   <div class="login-container">
-
     <div class="login-card">
-
       <!-- HEADER -->
       <div class="login-header">
         <h2>Bienvenido</h2>
@@ -10,77 +8,46 @@
       </div>
 
       <!-- ERROR -->
-      <div v-if="authenticationError" class="alert alert-danger">
-        Usuario o contraseña incorrectos
-      </div>
+      <div v-if="authenticationError" class="alert alert-danger">Usuario o contraseña incorrectos</div>
 
       <!-- FORM -->
       <form @submit.prevent="doLogin">
-
         <!-- USER -->
         <div class="form-group">
           <label>Usuario</label>
-          <input
-            type="text"
-            v-model="login"
-            class="form-control"
-            placeholder="Ingrese su usuario"
-            required
-          />
+          <input type="text" v-model="login" class="form-control" placeholder="Ingrese su usuario" required />
         </div>
 
         <!-- PASSWORD -->
         <div class="form-group">
           <label>Contraseña</label>
-          <input
-            type="password"
-            v-model="password"
-            class="form-control"
-            placeholder="Ingrese su contraseña"
-            required
-          />
+          <input type="password" v-model="password" class="form-control" placeholder="Ingrese su contraseña" required />
         </div>
 
         <!-- REMEMBER -->
         <div class="form-check mb-3">
-          <input
-            type="checkbox"
-            v-model="rememberMe"
-            class="form-check-input"
-            id="rememberMe"
-          />
-          <label class="form-check-label" for="rememberMe">
-            Recordarme
-          </label>
+          <input type="checkbox" v-model="rememberMe" class="form-check-input" id="rememberMe" />
+          <label class="form-check-label" for="rememberMe"> Recordarme </label>
         </div>
 
         <!-- BUTTON -->
-        <button
-          type="submit"
-          class="btn btn-primary w-100"
-          :disabled="loading"
-        >
+        <button type="submit" class="btn btn-primary w-100" :disabled="loading">
           <span v-if="loading">Ingresando...</span>
           <span v-else>Iniciar sesión</span>
         </button>
-
       </form>
 
       <!-- FOOTER -->
       <div class="login-footer">
-        <router-link to="/account/reset/request">
-          ¿Olvidaste tu contraseña?
-        </router-link>
+        <router-link to="/account/reset/request"> ¿Olvidaste tu contraseña? </router-link>
       </div>
-
     </div>
-
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, ref, inject } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import type AccountService from '@/account/account.service';
 
@@ -92,6 +59,7 @@ export default defineComponent({
     const authenticationError = ref(false);
     const loading = ref(false);
 
+    const route = useRoute();
     const router = useRouter();
     const accountService = inject<AccountService>('accountService');
 
@@ -123,9 +91,9 @@ export default defineComponent({
         await accountService.retrieveAccount();
 
         // 🔥 REDIRECCIÓN PRO
-        await router.replace({ name: 'Home' });
-
-      } catch (e) {
+        const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null;
+        await router.replace(redirect ?? '/');
+      } catch {
         authenticationError.value = true;
       } finally {
         loading.value = false;
@@ -159,7 +127,7 @@ export default defineComponent({
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
 .login-header {

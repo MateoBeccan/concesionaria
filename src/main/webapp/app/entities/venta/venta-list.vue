@@ -1,14 +1,11 @@
 <template>
   <div class="container py-4">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
         <h4 class="fw-semibold mb-0">Ventas</h4>
         <p class="text-muted small mb-0" v-if="!loading">{{ total }} registros encontrados</p>
       </div>
-      <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary">
-        + Nueva venta
-      </router-link>
+      <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary"> + Nueva venta </router-link>
     </div>
 
     <!-- LOADING SKELETON -->
@@ -32,12 +29,10 @@
 
     <!-- EMPTY STATE -->
     <div v-else-if="ventas.length === 0" class="text-center py-5">
-      <div style="font-size:3rem">📋</div>
+      <div style="font-size: 3rem">📋</div>
       <h5 class="mt-3 text-muted">No hay ventas registradas</h5>
       <p class="text-muted small">Comenzá registrando la primera venta.</p>
-      <router-link :to="{ name: 'VentaWizard' }" class="btn btn-primary mt-2">
-        + Nueva venta
-      </router-link>
+      <router-link :to="{ name: 'VentaWizard' }" class="btn btn-primary mt-2"> + Nueva venta </router-link>
     </div>
 
     <!-- TABLA -->
@@ -63,15 +58,12 @@
               </td>
               <td class="fw-semibold text-primary">$ {{ formatPrecio(venta.total) }}</td>
               <td>
-                <span class="badge" :class="badgeEstadoVenta(venta.estadoVenta)">
-                  {{ venta.estadoVenta ?? '-' }}
+                <span class="badge" :class="badgeEstadoVenta(venta.estado)">
+                  {{ venta.estado ?? '-' }}
                 </span>
               </td>
               <td class="text-end pe-4">
-                <router-link
-                  :to="{ name: 'VentaView', params: { ventaId: venta.id } }"
-                  class="btn btn-sm btn-outline-secondary"
-                >
+                <router-link :to="{ name: 'VentaView', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-secondary">
                   Ver
                 </router-link>
               </td>
@@ -80,7 +72,6 @@
         </table>
       </div>
     </div>
-
   </div>
 </template>
 
