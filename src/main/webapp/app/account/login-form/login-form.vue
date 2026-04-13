@@ -1,32 +1,35 @@
 <template>
   <div class="login-shell">
-    <div class="login-panel">
-      <section class="login-aside">
-        <div class="brand-badge">AutoGestión</div>
-        <h1 class="login-title">Ingresá a tu concesionaria desde un solo lugar</h1>
-        <p class="login-copy">Gestioná clientes, vehículos, cotizaciones y ventas con una experiencia simple, segura y profesional.</p>
+    <section class="login-panel">
+      <div class="login-intro">
+        <p class="intro-eyebrow">Acceso seguro</p>
+        <h1 class="intro-title">Ingresa al sistema de concesionaria</h1>
+        <p class="intro-copy">
+          Accede a ventas, clientes, inventario y catalogo tecnico desde una experiencia simple, clara y alineada con el
+          resto del sistema.
+        </p>
 
-        <div class="login-highlights">
+        <div class="intro-highlights">
           <div class="highlight-item">
-            <span class="highlight-dot" />
-            <span>Acceso rápido al dashboard comercial</span>
+            <strong>Ventas</strong>
+            <span>Flujo guiado para operar rapido.</span>
           </div>
           <div class="highlight-item">
-            <span class="highlight-dot" />
-            <span>Seguimiento centralizado de operaciones</span>
+            <strong>Inventario</strong>
+            <span>Estado real de disponibilidad y reservas.</span>
           </div>
           <div class="highlight-item">
-            <span class="highlight-dot" />
-            <span>Sesión segura compatible con tu backend actual</span>
+            <strong>Admin</strong>
+            <span>Catalogo tecnico y configuracion centralizada.</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      <section class="login-card">
+      <div class="login-card">
         <div class="login-card-header">
-          <p class="eyebrow">Acceso</p>
-          <h2>Iniciar sesión</h2>
-          <p class="login-card-copy">Usá tus credenciales para continuar.</p>
+          <p class="eyebrow">Inicio de sesion</p>
+          <h2>Bienvenido</h2>
+          <p class="login-card-copy">Usa tus credenciales para continuar.</p>
         </div>
 
         <div v-if="backendError" class="alert alert-danger login-alert" role="alert">
@@ -51,8 +54,8 @@
 
           <div class="field-group">
             <div class="password-label-row">
-              <label for="password" class="form-label">Contraseña</label>
-              <router-link class="forgot-link" to="/account/reset/request">Olvidé mi contraseña</router-link>
+              <label for="password" class="form-label">Contrasena</label>
+              <router-link class="forgot-link" to="/account/reset/request">Olvide mi contrasena</router-link>
             </div>
 
             <div class="password-input-wrap">
@@ -63,7 +66,7 @@
                 autocomplete="current-password"
                 class="form-control form-control-lg password-input"
                 :class="{ 'is-invalid': passwordError }"
-                placeholder="Ingresá tu contraseña"
+                placeholder="Ingresa tu contrasena"
                 @blur="touched.password = true"
               />
               <button type="button" class="password-toggle" @click="togglePassword">
@@ -77,7 +80,7 @@
           <div class="login-form-footer">
             <div class="form-check">
               <input id="rememberMe" v-model="rememberMe" type="checkbox" class="form-check-input" />
-              <label class="form-check-label" for="rememberMe">Mantener sesión iniciada</label>
+              <label class="form-check-label" for="rememberMe">Mantener sesion iniciada</label>
             </div>
           </div>
 
@@ -86,8 +89,8 @@
             {{ loading ? 'Ingresando...' : 'Ingresar' }}
           </button>
         </form>
-      </section>
-    </div>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -120,15 +123,15 @@ export default defineComponent({
 
     const loginError = computed(() => {
       if (!touched.login && login.value.length === 0) return '';
-      if (!login.value.trim()) return 'Ingresá tu usuario o email.';
-      if (!emailPattern.test(login.value.trim())) return 'Ingresá un email válido.';
+      if (!login.value.trim()) return 'Ingresa tu usuario o email.';
+      if (!emailPattern.test(login.value.trim())) return 'Ingresa un email valido.';
       return '';
     });
 
     const passwordError = computed(() => {
       if (!touched.password && password.value.length === 0) return '';
-      if (!password.value) return 'Ingresá tu contraseña.';
-      if (password.value.length < 4) return 'La contraseña debe tener al menos 4 caracteres.';
+      if (!password.value) return 'Ingresa tu contrasena.';
+      if (password.value.length < 4) return 'La contrasena debe tener al menos 4 caracteres.';
       return '';
     });
 
@@ -145,7 +148,7 @@ export default defineComponent({
       backendError.value = '';
 
       if (!isFormValid.value || !accountService) {
-        if (!accountService) backendError.value = 'No se pudo inicializar el servicio de autenticación.';
+        if (!accountService) backendError.value = 'No se pudo inicializar el servicio de autenticacion.';
         return;
       }
 
@@ -181,7 +184,7 @@ export default defineComponent({
         if (status === 401) {
           backendError.value = 'Las credenciales ingresadas no son correctas.';
         } else {
-          backendError.value = error?.response?.data?.message ?? 'No pudimos iniciar sesión. Intentá nuevamente.';
+          backendError.value = error?.response?.data?.message ?? 'No pudimos iniciar sesion. Intenta nuevamente.';
         }
       } finally {
         loading.value = false;
@@ -208,102 +211,88 @@ export default defineComponent({
 
 <style scoped>
 .login-shell {
-  min-height: 100vh;
+  width: 100%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 2rem 1.25rem;
-  background:
-    radial-gradient(circle at top left, rgba(37, 99, 235, 0.18), transparent 35%),
-    linear-gradient(135deg, #eef4ff 0%, #f8fafc 55%, #e8eef8 100%);
 }
 
 .login-panel {
-  width: min(1040px, 100%);
+  width: min(980px, 100%);
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.22);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
   border-radius: 28px;
   overflow: hidden;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
 }
 
-.login-aside {
-  padding: 3rem;
-  background: linear-gradient(160deg, #0f172a 0%, #16233c 55%, #1d4ed8 100%);
-  color: #f8fafc;
+.login-intro {
+  padding: 2.5rem 2.6rem;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 26%),
+    linear-gradient(155deg, #0f172a 0%, #16253f 62%, #1d4ed8 100%);
+  color: #eff6ff;
 }
 
-.brand-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.45rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.12);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.login-title {
-  margin: 1.5rem 0 0.9rem;
-  font-size: clamp(2rem, 4vw, 3rem);
-  line-height: 1.05;
-  font-weight: 800;
-}
-
-.login-copy {
-  max-width: 32rem;
-  margin: 0;
-  color: rgba(226, 232, 240, 0.9);
-  font-size: 1rem;
-  line-height: 1.7;
-}
-
-.login-highlights {
-  margin-top: 2rem;
-  display: grid;
-  gap: 0.9rem;
-}
-
-.highlight-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: rgba(241, 245, 249, 0.92);
-  font-size: 0.95rem;
-}
-
-.highlight-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #60a5fa;
-  box-shadow: 0 0 0 6px rgba(96, 165, 250, 0.18);
-}
-
-.login-card {
-  padding: 3rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.94);
-}
-
-.login-card-header {
-  margin-bottom: 1.75rem;
-}
-
+.intro-eyebrow,
 .eyebrow {
-  margin-bottom: 0.5rem;
-  color: #2563eb;
-  font-size: 0.78rem;
+  margin: 0 0 0.45rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.intro-eyebrow {
+  color: #93c5fd;
+}
+
+.intro-title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.06;
+  font-weight: 800;
+}
+
+.intro-copy {
+  margin: 1rem 0 0;
+  max-width: 34rem;
+  color: rgba(226, 232, 240, 0.9);
+  line-height: 1.7;
+}
+
+.intro-highlights {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 2rem;
+}
+
+.highlight-item {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(191, 219, 254, 0.12);
+}
+
+.highlight-item strong {
+  font-size: 0.95rem;
+}
+
+.highlight-item span {
+  color: rgba(226, 232, 240, 0.84);
+  font-size: 0.86rem;
+}
+
+.login-card {
+  padding: 2.5rem 2.2rem;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.eyebrow {
+  color: #0284c7;
 }
 
 .login-card-header h2 {
@@ -319,7 +308,7 @@ export default defineComponent({
 }
 
 .login-alert {
-  margin-bottom: 1.25rem;
+  margin: 1rem 0 1.1rem;
   border-radius: 14px;
 }
 
@@ -349,7 +338,7 @@ export default defineComponent({
 
 .forgot-link {
   color: #2563eb;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
   text-decoration: none;
 }
@@ -374,16 +363,14 @@ export default defineComponent({
   border: none;
   background: transparent;
   color: #2563eb;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 700;
   padding: 0.2rem 0.35rem;
 }
 
 .login-form-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
 }
 
 .login-submit {
@@ -403,39 +390,26 @@ export default defineComponent({
   box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.14);
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 960px) {
   .login-panel {
     grid-template-columns: 1fr;
   }
 
-  .login-aside,
+  .login-intro,
   .login-card {
-    padding: 2rem;
+    padding: 1.8rem;
   }
 }
 
-@media (max-width: 575.98px) {
-  .login-shell {
-    padding: 1rem;
-  }
-
-  .login-panel {
-    border-radius: 22px;
-  }
-
-  .login-aside,
-  .login-card {
-    padding: 1.4rem;
-  }
-
-  .password-label-row,
-  .login-form-footer {
-    align-items: flex-start;
+@media (max-width: 640px) {
+  .password-label-row {
     flex-direction: column;
+    align-items: flex-start;
   }
 
-  .login-title {
-    font-size: 1.9rem;
+  .login-intro,
+  .login-card {
+    padding: 1.35rem;
   }
 }
 </style>

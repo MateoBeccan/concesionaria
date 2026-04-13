@@ -7,6 +7,10 @@
     </div>
 
     <div class="topbar-actions">
+      <router-link v-if="pageContext.secondaryAction" :to="pageContext.secondaryAction.to" class="btn btn-outline btn-sm">
+        {{ pageContext.secondaryAction.label }}
+      </router-link>
+
       <router-link v-if="pageContext.action" :to="pageContext.action.to" class="btn btn-primary btn-sm topbar-primary-action">
         {{ pageContext.action.label }}
       </router-link>
@@ -14,7 +18,7 @@
       <div class="user-chip" :title="username">
         <div class="chip-avatar">{{ userInitials }}</div>
         <div class="chip-copy d-none d-md-flex">
-          <span class="chip-label">Usuario</span>
+          <span class="chip-label">{{ isAdmin ? 'Administrador' : 'Usuario' }}</span>
           <span class="chip-name">{{ username }}</span>
         </div>
       </div>
@@ -38,12 +42,14 @@ interface PageContext {
   title: string;
   subtitle: string;
   action?: TopbarAction;
+  secondaryAction?: TopbarAction;
 }
 
 const store = useStore();
 const route = useRoute();
 
 const username = computed(() => store.account?.login ?? 'Usuario');
+const isAdmin = computed(() => store.account?.authorities?.includes('ROLE_ADMIN') ?? false);
 
 const userInitials = computed(() => {
   const source = username.value.trim();
@@ -64,18 +70,29 @@ const pageContext = computed<PageContext>(() => {
 
   switch (routeName.value) {
     case 'Home':
-      return {
-        eyebrow: 'Panel',
-        title: 'Dashboard',
-        subtitle: 'Resumen rapido del negocio y accesos clave.',
-        action: { label: 'Nueva venta', to: { name: 'VentaEditor' } },
-      };
+      return isAdmin.value
+        ? {
+            eyebrow: 'Administracion',
+            title: 'Dashboard administrativo',
+            subtitle: 'Controla ventas, inventario, catalogo tecnico y configuracion del negocio.',
+            secondaryAction: { label: 'Inventario', to: { name: 'Inventario' } },
+            action: { label: 'Nuevo vehiculo', to: { name: 'VehiculoCreate' } },
+          }
+        : {
+            eyebrow: 'Operacion',
+            title: 'Dashboard operativo',
+            subtitle: 'Prioriza ventas, clientes y unidades disponibles para trabajar mas rapido.',
+            secondaryAction: { label: 'Buscar vehiculo', to: { name: 'VehiculoSearch' } },
+            action: { label: 'Nueva venta', to: { name: 'VentaEditor' } },
+          };
     case 'VentaList':
     case 'Venta':
       return {
         eyebrow: 'Ventas',
-        title: 'Ventas',
-        subtitle: 'Consulta operaciones y continua el seguimiento comercial.',
+        title: isAdmin.value ? 'Historial de ventas' : 'Ventas',
+        subtitle: isAdmin.value
+          ? 'Revisa operaciones, seguimiento comercial y resultados recientes.'
+          : 'Consulta y continua el flujo operativo de ventas.',
         action: { label: 'Nueva venta', to: { name: 'VentaEditor' } },
       };
     case 'VentaEditor':
@@ -83,59 +100,92 @@ const pageContext = computed<PageContext>(() => {
       return {
         eyebrow: 'Ventas',
         title: 'Nueva venta',
-        subtitle: 'Registra la operacion en un flujo unico y guiado.',
+        subtitle: 'Registra la operacion en un flujo unico, rapido y guiado.',
       };
     case 'VentaEditorEdit':
     case 'VentaEdit':
       return {
         eyebrow: 'Ventas',
         title: ventaId ? `Editar venta #${ventaId}` : 'Editar venta',
-        subtitle: 'Ajusta cliente, vehiculos y pagos dentro de la misma operacion.',
+        subtitle: 'Ajusta cliente, unidades y pagos dentro de la misma operacion.',
       };
     case 'VentaView':
       return {
         eyebrow: 'Ventas',
         title: ventaId ? `Venta #${ventaId}` : 'Detalle de venta',
-        subtitle: 'Consulta el estado, los pagos y los comprobantes de la operacion.',
+        subtitle: 'Consulta estado, pagos y datos clave de la operacion.',
         action: ventaId ? { label: 'Editar venta', to: { name: 'VentaEditorEdit', params: { ventaId: String(ventaId) } } } : undefined,
       };
     case 'VehiculoSearch':
       return {
-        eyebrow: 'Catalogo',
+        eyebrow: 'Operacion',
         title: 'Buscar vehiculo',
-        subtitle: 'Encuentra unidades disponibles para una operacion comercial.',
+        subtitle: 'Encuentra unidades disponibles y abre una venta desde el resultado correcto.',
         action: { label: 'Nueva venta', to: { name: 'VentaEditor' } },
       };
     case 'Vehiculo':
       return {
         eyebrow: 'Catalogo',
-        title: 'Vehiculos',
-        subtitle: 'Administra unidades publicadas y disponibles.',
+        title: 'Catalogo de vehiculos',
+        subtitle: 'Administra unidades, catalogo comercial y alta de vehiculos.',
+        action: { label: 'Nuevo vehiculo', to: { name: 'VehiculoCreate' } },
+      };
+    case 'Inventario':
+      return {
+        eyebrow: 'Administracion',
+        title: 'Inventario',
+        subtitle: 'Controla disponibilidad, reservas, vencimientos y consistencia del stock.',
+        action: { label: 'Nuevo registro', to: { name: 'InventarioCreate' } },
       };
     case 'Cliente':
       return {
         eyebrow: 'Clientes',
         title: 'Clientes',
-        subtitle: 'Consulta y mantiene la base de clientes.',
-        action: { label: 'Nueva venta', to: { name: 'VentaEditor' } },
-      };
-    case 'Inventario':
-      return {
-        eyebrow: 'Operaciones',
-        title: 'Inventario',
-        subtitle: 'Controla stock, estado y disponibilidad.',
+        subtitle: 'Consulta y mantiene la base comercial de clientes.',
+        action: { label: 'Nuevo cliente', to: { name: 'ClienteCreate' } },
       };
     case 'Cotizacion':
       return {
-        eyebrow: 'Administracion',
+        eyebrow: 'Configuracion',
         title: 'Cotizaciones',
-        subtitle: 'Revisa los valores vigentes por moneda.',
+        subtitle: 'Gestiona valores vigentes por moneda para operaciones y presupuestos.',
+        action: { label: 'Nueva cotizacion', to: { name: 'CotizacionCreate' } },
+      };
+    case 'VersionCompatibilityAdmin':
+      return {
+        eyebrow: 'Catalogo tecnico',
+        title: 'Compatibilidades',
+        subtitle: 'Relaciona versiones y motores con una vista administrativa orientada a negocio.',
+      };
+    case 'Marca':
+    case 'Modelo':
+    case 'Version':
+    case 'Motor':
+    case 'Combustible':
+    case 'Traccion':
+    case 'TipoCaja':
+    case 'TipoVehiculo':
+      return {
+        eyebrow: 'Catalogo tecnico',
+        title: routeName.value.replace(/([A-Z])/g, ' $1').trim(),
+        subtitle: 'Mantiene la estructura tecnica del catalogo que usa el negocio.',
+      };
+    case 'MetodoPago':
+    case 'Moneda':
+    case 'TipoDocumento':
+    case 'CondicionIva':
+      return {
+        eyebrow: 'Configuracion',
+        title: routeName.value.replace(/([A-Z])/g, ' $1').trim(),
+        subtitle: 'Gestiona parametros y catalogos administrativos del sistema.',
       };
     default:
       return {
         eyebrow: 'Sistema',
-        title: 'Concesionaria',
-        subtitle: 'Operacion comercial y administracion en un solo lugar.',
+        title: isAdmin.value ? 'Panel administrativo' : 'Panel operativo',
+        subtitle: isAdmin.value
+          ? 'Administracion comercial y tecnica en una sola vista.'
+          : 'Operacion comercial simple, guiada y enfocada en ventas.',
       };
   }
 });
@@ -143,14 +193,15 @@ const pageContext = computed<PageContext>(() => {
 
 <style scoped>
 .app-topbar {
-  min-height: 76px;
+  min-height: 84px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 0.9rem 1.25rem;
-  background: #ffffff;
+  padding: 1rem 1.35rem;
+  background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid #e5eaf2;
+  backdrop-filter: blur(10px);
 }
 
 .topbar-copy {
@@ -158,24 +209,24 @@ const pageContext = computed<PageContext>(() => {
 }
 
 .topbar-eyebrow {
-  margin: 0 0 0.15rem;
+  margin: 0 0 0.18rem;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #2563eb;
+  color: #0284c7;
 }
 
 .topbar-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #0f172a;
 }
 
 .topbar-subtitle {
-  margin: 0.15rem 0 0;
-  font-size: 0.84rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.86rem;
   color: #64748b;
 }
 
@@ -187,7 +238,7 @@ const pageContext = computed<PageContext>(() => {
 }
 
 .topbar-primary-action {
-  min-width: 118px;
+  min-width: 132px;
   justify-content: center;
 }
 
@@ -241,6 +292,7 @@ const pageContext = computed<PageContext>(() => {
   .topbar-actions {
     width: 100%;
     justify-content: space-between;
+    flex-wrap: wrap;
   }
 }
 </style>

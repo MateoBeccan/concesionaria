@@ -1,12 +1,12 @@
 <template>
   <div class="public-shell">
-    <div class="public-brand">
-      <div class="brand-icon">🚗</div>
-      <div>
-        <h1 class="brand-title">AutoGestión</h1>
-        <p class="brand-subtitle mb-0">Plataforma de gestión para concesionarias</p>
+    <header class="public-brand">
+      <div class="brand-mark">AG</div>
+      <div class="brand-copy">
+        <h1 class="brand-title">AutoGestion</h1>
+        <p class="brand-subtitle">Sistema de gestion para concesionarias</p>
       </div>
-    </div>
+    </header>
 
     <main class="public-main">
       <slot />
@@ -17,47 +17,68 @@
 <style scoped>
 .public-shell {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f8ff 0%, #edf2f9 100%);
   display: flex;
   flex-direction: column;
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 26%),
+    linear-gradient(180deg, #f4f7fb 0%, #eef3f8 100%);
 }
 
 .public-brand {
-  height: 72px;
-  padding: 0 1.25rem;
+  min-height: 74px;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  border-bottom: 1px solid #e3e9f3;
-  background: #fff;
+  gap: 0.8rem;
+  padding: 0.9rem 1.4rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
-.brand-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.brand-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
   display: grid;
   place-content: center;
-  background: #0d6efd;
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.brand-copy {
+  min-width: 0;
 }
 
 .brand-title {
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #0f172a;
 }
 
 .brand-subtitle {
+  margin: 0.1rem 0 0;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: #64748b;
 }
 
 .public-main {
   flex: 1;
-  display: grid;
-  place-content: center;
-  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+
+@media (max-width: 767.98px) {
+  .public-brand {
+    padding: 0.85rem 1rem;
+  }
+
+  .public-main {
+    padding: 1rem;
+  }
 }
 </style>

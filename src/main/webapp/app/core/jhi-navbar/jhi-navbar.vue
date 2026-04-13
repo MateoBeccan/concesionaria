@@ -47,7 +47,7 @@
           :no-size="true"
           end
           id="entity-menu"
-          v-if="authenticated"
+          v-if="hasAnyAuthority('ROLE_ADMIN') && authenticated"
           active-class="active"
           class="pointer"
           data-cy="entity"
@@ -55,7 +55,7 @@
           <template #button-content>
             <span class="navbar-dropdown-menu">
               <font-awesome-icon icon="th-list" />
-              <span class="no-bold">Entidades</span>
+              <span class="no-bold">Catalogo</span>
             </span>
           </template>
           <entities-menu></entities-menu>

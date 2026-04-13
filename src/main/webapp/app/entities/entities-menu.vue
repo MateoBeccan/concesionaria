@@ -1,98 +1,69 @@
 <template>
   <div>
-    <b-dropdown-item to="/marca">
+    <b-dropdown-item to="/vehiculo" active-class="active">
       <font-awesome-icon icon="asterisk" />
-      <span>Marca</span>
+      <span>Vehiculos</span>
     </b-dropdown-item>
-    <b-dropdown-item to="/modelo">
-      <font-awesome-icon icon="asterisk" />
-      <span>Modelo</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/version">
-      <font-awesome-icon icon="asterisk" />
-      <span>Version</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/motor">
-      <font-awesome-icon icon="asterisk" />
-      <span>Motor</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/combustible">
-      <font-awesome-icon icon="asterisk" />
-      <span>Combustible</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/cliente">
-      <font-awesome-icon icon="asterisk" />
-      <span>Cliente</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/condicion-iva">
-      <font-awesome-icon icon="asterisk" />
-      <span>Condicion Iva</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/estado-venta">
-      <font-awesome-icon icon="asterisk" />
-      <span>Estado Venta</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/venta">
-      <font-awesome-icon icon="asterisk" />
-      <span>Venta</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/detalle-venta">
-      <font-awesome-icon icon="asterisk" />
-      <span>Detalle Venta</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/comprobante">
-      <font-awesome-icon icon="asterisk" />
-      <span>Comprobante</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/tipo-comprobante">
-      <font-awesome-icon icon="asterisk" />
-      <span>Tipo Comprobante</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/pago">
-      <font-awesome-icon icon="asterisk" />
-      <span>Pago</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/metodo-pago">
-      <font-awesome-icon icon="asterisk" />
-      <span>Metodo Pago</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/moneda">
-      <font-awesome-icon icon="asterisk" />
-      <span>Moneda</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/cotizacion">
-      <font-awesome-icon icon="asterisk" />
-      <span>Cotizacion</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/carroceria">
-      <font-awesome-icon icon="asterisk" />
-      <span>Carroceria</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/tipo-caja">
-      <font-awesome-icon icon="asterisk" />
-      <span>Tipo Caja</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/traccion">
-      <font-awesome-icon icon="asterisk" />
-      <span>Traccion</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/tipo-vehiculo">
-      <font-awesome-icon icon="asterisk" />
-      <span>Tipo Vehiculo</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/vehiculo">
-      <font-awesome-icon icon="asterisk" />
-      <span>Vehiculo</span>
-    </b-dropdown-item>
-    <b-dropdown-item to="/inventario">
+    <b-dropdown-item to="/inventario" active-class="active">
       <font-awesome-icon icon="asterisk" />
       <span>Inventario</span>
     </b-dropdown-item>
-    <b-dropdown-item to="/tipo-documento">
+    <b-dropdown-item to="/cotizacion" active-class="active">
       <font-awesome-icon icon="asterisk" />
-      <span>Tipo Documento</span>
+      <span>Cotizaciones</span>
     </b-dropdown-item>
-    <!-- jhipster-needle-add-entity-to-menu - JHipster will add entities to the menu here -->
+    <b-dropdown-item to="/metodo-pago" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Metodos de pago</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/moneda" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Monedas</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/marca" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Marcas</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/modelo" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Modelos</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/version" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Versiones</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/motor" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Motores</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/admin/version-compatibilities" active-class="active">
+      <font-awesome-icon icon="cogs" />
+      <span>Compatibilidades</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-vehiculo" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipos de vehiculo</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/combustible" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Combustibles</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/traccion" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tracciones</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-caja" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipos de caja</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tipo-documento" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tipos de documento</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/condicion-iva" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Condiciones IVA</span>
+    </b-dropdown-item>
   </div>
 </template>
 
