@@ -28,7 +28,6 @@ public class VehiculoDTO implements Serializable {
     @Max(value = 1000000)
     private Integer km;
 
-    @NotNull
     @Pattern(regexp = "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)")
     private String patente;
 

@@ -21,11 +21,16 @@ public interface InventarioMapper extends EntityMapper<InventarioDTO, Inventario
     @Named("vehiculoId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "patente", source = "patente")
+    @Mapping(target = "condicion", source = "condicion")
+    @Mapping(target = "estado", source = "estado")
     VehiculoDTO toDtoVehiculoId(Vehiculo vehiculo);
 
     @Named("clienteId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "nombre", source = "nombre")
+    @Mapping(target = "apellido", source = "apellido")
     ClienteDTO toDtoClienteId(Cliente cliente);
 
     // 🔥 clave

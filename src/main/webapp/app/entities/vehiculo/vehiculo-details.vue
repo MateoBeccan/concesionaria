@@ -12,7 +12,7 @@
       <div class="page-header">
         <div class="d-flex align-items-center gap-3">
           <div>
-            <h1 class="page-title mb-0">{{ vehiculo.patente }}</h1>
+            <h1 class="page-title mb-0">{{ vehiculo.patente || 'Sin patente asignada' }}</h1>
             <div class="d-flex gap-2 mt-1">
               <span class="badge" :class="vehiculo.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
                 {{ vehiculo.estado === 'NUEVO' ? 'Nuevo' : 'Usado' }}
@@ -58,7 +58,7 @@
             <div class="card-body">
               <dl class="detail-list">
                 <dt>Patente</dt>
-                <dd class="fw-semibold">{{ vehiculo.patente }}</dd>
+                <dd class="fw-semibold">{{ vehiculo.patente || 'Pendiente de patentamiento' }}</dd>
 
                 <dt>Marca</dt>
                 <dd>{{ vehiculo.version?.modelo?.marca?.nombre ?? '—' }}</dd>

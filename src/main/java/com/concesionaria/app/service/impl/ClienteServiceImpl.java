@@ -139,6 +139,22 @@ public class ClienteServiceImpl implements ClienteService {
 
         dto.setNroDocumento(documento);
 
+        if (dto.getTipoDocumento() == null || dto.getTipoDocumento().getId() == null) {
+            throw new BadRequestException("El tipo de documento es obligatorio");
+        }
+
+        String codigoTipoDocumento = dto.getTipoDocumento().getCodigo() != null
+            ? dto.getTipoDocumento().getCodigo().trim().toUpperCase()
+            : "";
+
+        if ((codigoTipoDocumento.contains("CUIT") || codigoTipoDocumento.contains("CUIL")) && documento.length() != 11) {
+            throw new BadRequestException("El documento debe tener 11 dígitos para el tipo seleccionado");
+        }
+
+        if (codigoTipoDocumento.contains("DNI") && (documento.length() < 7 || documento.length() > 8)) {
+            throw new BadRequestException("El DNI debe tener entre 7 y 8 dígitos");
+        }
+
         // ======================
         // EMAIL
         // ======================
@@ -158,6 +174,14 @@ public class ClienteServiceImpl implements ClienteService {
             }
 
             dto.setEmail(email);
+        }
+
+        if (dto.getTelefono() != null && !dto.getTelefono().isBlank()) {
+            dto.setTelefono(dto.getTelefono().trim());
+        }
+
+        if (dto.getFechaAlta() == null) {
+            throw new BadRequestException("La fecha de alta es obligatoria");
         }
     }
     @Override

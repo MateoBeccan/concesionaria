@@ -1,60 +1,50 @@
 <template>
-  <div class="container py-4" style="max-width:900px">
-
-    <div v-if="!venta.id" class="text-center py-5">
+  <div class="container py-4" style="max-width: 900px">
+    <div v-if="!venta.id" class="py-5 text-center">
       <div class="spinner-border text-primary" />
     </div>
 
     <template v-else>
-
-      <!-- PAGE HEADER -->
       <div class="page-header">
         <div>
           <h1 class="page-title mb-0">Venta #{{ venta.id }}</h1>
-          <div class="d-flex align-items-center gap-2 mt-1">
+          <div class="mt-1 d-flex align-items-center gap-2">
             <span class="text-muted small">{{ formatFecha(venta.fecha) }}</span>
             <span class="badge" :class="badgeEstado(venta.estadoVenta ?? venta.estado)">
               {{ labelEstado(venta.estadoVenta ?? venta.estado) }}
             </span>
-            <span v-if="venta.moneda" class="badge bg-light text-dark border">
+            <span v-if="venta.moneda" class="badge border bg-light text-dark">
               {{ venta.moneda.simbolo ?? '' }} {{ venta.moneda.codigo }}
             </span>
           </div>
         </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-sm btn-outline-secondary" @click="previousState()">← Volver</button>
-          <router-link :to="{ name: 'PagoCreate', query: { ventaId: venta.id } }" class="btn btn-sm btn-success">
-            + Registrar pago
-          </router-link>
-          <router-link :to="{ name: 'ComprobanteCreate', query: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
-            + Comprobante
-          </router-link>
-          <router-link :to="{ name: 'VentaEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary">
-            ✏️ Editar
-          </router-link>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="btn btn-sm btn-outline-secondary" @click="previousState()">Volver</button>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary"
+            >Editar venta</router-link
+          >
         </div>
       </div>
 
-      <!-- RESUMEN FINANCIERO -->
-      <div class="card mb-3 border-0" style="background:var(--color-primary-light)">
+      <div class="card mb-3 border-0" style="background: var(--color-primary-light)">
         <div class="card-body py-3">
           <div class="row g-3 align-items-center">
             <div class="col-sm-3 text-center">
-              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Total</div>
-              <div class="fw-bold" style="font-size:1.5rem;color:var(--color-primary)">$ {{ formatPrecio(venta.total) }}</div>
+              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Total</div>
+              <div class="fw-bold" style="font-size: 1.5rem; color: var(--color-primary)">$ {{ formatPrecio(venta.total) }}</div>
             </div>
             <div class="col-sm-3 text-center">
-              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Pagado</div>
-              <div class="fw-bold text-success" style="font-size:1.3rem">$ {{ formatPrecio(venta.totalPagado) }}</div>
+              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Pagado</div>
+              <div class="fw-bold text-success" style="font-size: 1.3rem">$ {{ formatPrecio(venta.totalPagado) }}</div>
             </div>
             <div class="col-sm-3 text-center">
-              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Saldo</div>
-              <div class="fw-bold" :class="(venta.saldo ?? 0) > 0 ? 'text-danger' : 'text-success'" style="font-size:1.3rem">
+              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Saldo</div>
+              <div class="fw-bold" :class="(venta.saldo ?? 0) > 0 ? 'text-danger' : 'text-success'" style="font-size: 1.3rem">
                 $ {{ formatPrecio(venta.saldo) }}
               </div>
             </div>
             <div class="col-sm-3 text-center">
-              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing:.05em">Estado</div>
+              <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Estado</div>
               <span class="badge fs-6" :class="badgeEstado(venta.estadoVenta ?? venta.estado)">
                 {{ labelEstado(venta.estadoVenta ?? venta.estado) }}
               </span>
@@ -64,39 +54,37 @@
       </div>
 
       <div class="row g-3 mb-3">
-
-        <!-- CLIENTE -->
         <div class="col-md-6">
           <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2">👤 Cliente</div>
+            <div class="card-header d-flex align-items-center gap-2">Cliente</div>
             <div class="card-body">
               <div v-if="venta.cliente">
-                <p class="fw-semibold mb-2" style="font-size:1rem">
-                  {{ venta.cliente.nombre }} {{ venta.cliente.apellido }}
-                </p>
+                <p class="mb-2 fw-semibold" style="font-size: 1rem">{{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</p>
                 <dl class="detail-list">
                   <dt>Documento</dt>
                   <dd>{{ venta.cliente.nroDocumento ?? '—' }}</dd>
                   <dt>Email</dt>
                   <dd>{{ venta.cliente.email ?? '—' }}</dd>
-                  <dt>Teléfono</dt>
+                  <dt>Telefono</dt>
                   <dd>{{ venta.cliente.telefono ?? '—' }}</dd>
-                  <dt>Condición IVA</dt>
+                  <dt>Condicion IVA</dt>
                   <dd>{{ venta.cliente.condicionIva?.descripcion ?? venta.cliente.condicionIva?.codigo ?? '—' }}</dd>
                 </dl>
-                <router-link :to="{ name: 'ClienteView', params: { clienteId: venta.cliente.id } }" class="btn btn-sm btn-outline-secondary mt-3">
+                <router-link
+                  :to="{ name: 'ClienteView', params: { clienteId: venta.cliente.id } }"
+                  class="btn btn-sm btn-outline-secondary mt-3"
+                >
                   Ver cliente
                 </router-link>
               </div>
-              <p v-else class="text-muted mb-0">Sin cliente asignado</p>
+              <p v-else class="mb-0 text-muted">Sin cliente asignado</p>
             </div>
           </div>
         </div>
 
-        <!-- DETALLE FINANCIERO -->
         <div class="col-md-6">
           <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2">💰 Detalle financiero</div>
+            <div class="card-header d-flex align-items-center gap-2">Detalle financiero</div>
             <div class="card-body">
               <dl class="detail-list">
                 <dt>Importe neto</dt>
@@ -106,8 +94,8 @@
                 <dt>Impuesto</dt>
                 <dd>$ {{ formatPrecio(venta.impuesto) }}</dd>
                 <dt>Total</dt>
-                <dd class="fw-semibold" style="color:var(--color-primary)">$ {{ formatPrecio(venta.total) }}</dd>
-                <dt>Cotización</dt>
+                <dd class="fw-semibold" style="color: var(--color-primary)">$ {{ formatPrecio(venta.total) }}</dd>
+                <dt>Cotizacion</dt>
                 <dd>{{ venta.cotizacion ?? '—' }}</dd>
                 <dt>Moneda</dt>
                 <dd>{{ venta.moneda?.simbolo ?? '' }} {{ venta.moneda?.codigo ?? '—' }}</dd>
@@ -117,29 +105,27 @@
             </div>
           </div>
         </div>
-
       </div>
 
-      <!-- VEHÍCULOS (DetalleVenta) -->
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>🚗 Vehículos de la venta</span>
-          <router-link :to="{ name: 'DetalleVentaCreate' }" class="btn btn-sm btn-outline-primary">
-            + Agregar vehículo
+          <span>Vehiculos de la venta</span>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
+            Gestionar venta
           </router-link>
         </div>
 
         <div v-if="loadingDetalles" class="card-body">
-          <div v-for="i in 2" :key="i" class="placeholder-glow d-flex gap-3 mb-2">
+          <div v-for="i in 2" :key="i" class="placeholder-glow mb-2 d-flex gap-3">
             <span class="placeholder col-2 rounded" /><span class="placeholder col-4 rounded" /><span class="placeholder col-2 rounded" />
           </div>
         </div>
 
-        <div v-else-if="detalles.length === 0" class="card-body text-center py-4">
-          <p class="text-muted mb-2">No hay vehículos asociados a esta venta</p>
-          <router-link :to="{ name: 'DetalleVentaCreate' }" class="btn btn-sm btn-primary">
-            + Agregar vehículo
-          </router-link>
+        <div v-else-if="detalles.length === 0" class="card-body py-4 text-center">
+          <p class="mb-2 text-muted">No hay vehiculos asociados a esta venta</p>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary"
+            >Editar venta</router-link
+          >
         </div>
 
         <div v-else class="table-responsive">
@@ -147,30 +133,33 @@
             <thead>
               <tr>
                 <th>Patente</th>
-                <th>Vehículo</th>
+                <th>Vehiculo</th>
                 <th>Estado</th>
                 <th class="text-end">Precio unitario</th>
                 <th class="text-end">Subtotal</th>
-                <th></th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              <tr v-for="d in detalles" :key="d.id">
-                <td class="fw-semibold">{{ d.vehiculo?.patente ?? '—' }}</td>
+              <tr v-for="detalle in detalles" :key="detalle.id">
+                <td class="fw-semibold">{{ detalle.vehiculo?.patente ?? '—' }}</td>
                 <td>
-                  {{ d.vehiculo?.version?.modelo?.marca?.nombre ?? '' }}
-                  {{ d.vehiculo?.version?.modelo?.nombre ?? '' }}
-                  {{ d.vehiculo?.version?.nombre ?? '' }}
+                  {{ detalle.vehiculo?.version?.modelo?.marca?.nombre ?? '' }}
+                  {{ detalle.vehiculo?.version?.modelo?.nombre ?? '' }}
+                  {{ detalle.vehiculo?.version?.nombre ?? '' }}
                 </td>
                 <td>
-                  <span class="badge" :class="d.vehiculo?.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
-                    {{ d.vehiculo?.estado ?? '—' }}
+                  <span class="badge" :class="detalle.vehiculo?.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
+                    {{ detalle.vehiculo?.estado ?? '—' }}
                   </span>
                 </td>
-                <td class="text-end">$ {{ formatPrecio(d.precioUnitario) }}</td>
-                <td class="text-end fw-semibold" style="color:var(--color-primary)">$ {{ formatPrecio(d.subtotal) }}</td>
+                <td class="text-end">$ {{ formatPrecio(detalle.precioUnitario) }}</td>
+                <td class="text-end fw-semibold" style="color: var(--color-primary)">$ {{ formatPrecio(detalle.subtotal) }}</td>
                 <td class="text-end">
-                  <router-link :to="{ name: 'VehiculoView', params: { vehiculoId: d.vehiculo?.id } }" class="btn btn-sm btn-outline-secondary">
+                  <router-link
+                    :to="{ name: 'VehiculoView', params: { vehiculoId: detalle.vehiculo?.id } }"
+                    class="btn btn-sm btn-outline-secondary"
+                  >
                     Ver
                   </router-link>
                 </td>
@@ -180,26 +169,25 @@
         </div>
       </div>
 
-      <!-- PAGOS -->
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>💳 Pagos</span>
-          <router-link :to="{ name: 'PagoCreate', query: { ventaId: venta.id } }" class="btn btn-sm btn-success">
-            + Registrar pago
-          </router-link>
+          <span>Pagos</span>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-success"
+            >Gestionar pagos</router-link
+          >
         </div>
 
         <div v-if="loadingPagos" class="card-body">
-          <div v-for="i in 2" :key="i" class="placeholder-glow d-flex gap-3 mb-2">
+          <div v-for="i in 2" :key="i" class="placeholder-glow mb-2 d-flex gap-3">
             <span class="placeholder col-2 rounded" /><span class="placeholder col-3 rounded" /><span class="placeholder col-2 rounded" />
           </div>
         </div>
 
-        <div v-else-if="pagos.length === 0" class="card-body text-center py-4">
-          <p class="text-muted mb-2">No hay pagos registrados</p>
-          <router-link :to="{ name: 'PagoCreate', query: { ventaId: venta.id } }" class="btn btn-sm btn-success">
-            + Registrar primer pago
-          </router-link>
+        <div v-else-if="pagos.length === 0" class="card-body py-4 text-center">
+          <p class="mb-2 text-muted">No hay pagos registrados</p>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-success"
+            >Editar venta</router-link
+          >
         </div>
 
         <div v-else class="table-responsive">
@@ -207,23 +195,23 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Método</th>
+                <th>Metodo</th>
                 <th>Moneda</th>
                 <th>Referencia</th>
                 <th class="text-end">Monto</th>
-                <th></th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              <tr v-for="p in pagos" :key="p.id">
-                <td>{{ formatFecha(p.fecha) }}</td>
-                <td>{{ p.metodoPago?.descripcion ?? p.metodoPago?.codigo ?? '—' }}</td>
-                <td>{{ p.moneda?.simbolo ?? '' }} {{ p.moneda?.codigo ?? '—' }}</td>
-                <td class="text-muted small">{{ p.referencia ?? '—' }}</td>
-                <td class="text-end fw-semibold text-success">$ {{ formatPrecio(p.monto) }}</td>
+              <tr v-for="pago in pagos" :key="pago.id">
+                <td>{{ formatFecha(pago.fecha) }}</td>
+                <td>{{ pago.metodoPago?.descripcion ?? pago.metodoPago?.codigo ?? '—' }}</td>
+                <td>{{ pago.moneda?.simbolo ?? '' }} {{ pago.moneda?.codigo ?? '—' }}</td>
+                <td class="text-muted small">{{ pago.referencia ?? '—' }}</td>
+                <td class="text-end fw-semibold text-success">$ {{ formatPrecio(pago.monto) }}</td>
                 <td class="text-end">
-                  <router-link :to="{ name: 'PagoEdit', params: { pagoId: p.id } }" class="btn btn-sm btn-outline-secondary">
-                    Editar
+                  <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-secondary">
+                    Editar venta
                   </router-link>
                 </td>
               </tr>
@@ -232,19 +220,18 @@
               <tr>
                 <td colspan="4" class="fw-semibold text-end">Total pagado:</td>
                 <td class="text-end fw-bold text-success">$ {{ formatPrecio(totalPagado) }}</td>
-                <td></td>
+                <td />
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
 
-      <!-- COMPROBANTES -->
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>🧾 Comprobantes</span>
-          <router-link :to="{ name: 'ComprobanteCreate', query: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
-            + Nuevo comprobante
+          <span>Comprobantes</span>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
+            Editar venta
           </router-link>
         </div>
 
@@ -254,31 +241,34 @@
           </div>
         </div>
 
-        <div v-else-if="comprobantes.length === 0" class="card-body text-center py-3">
-          <p class="text-muted mb-0 small">Sin comprobantes emitidos</p>
+        <div v-else-if="comprobantes.length === 0" class="card-body py-3 text-center">
+          <p class="mb-0 small text-muted">Sin comprobantes emitidos</p>
         </div>
 
         <div v-else class="table-responsive">
           <table class="table mb-0">
             <thead>
               <tr>
-                <th>Número</th>
+                <th>Numero</th>
                 <th>Tipo</th>
-                <th>Fecha emisión</th>
+                <th>Fecha emision</th>
                 <th>Moneda</th>
                 <th class="text-end">Total</th>
-                <th></th>
+                <th />
               </tr>
             </thead>
             <tbody>
-              <tr v-for="c in comprobantes" :key="c.id">
-                <td class="fw-semibold">{{ c.numeroComprobante }}</td>
-                <td>{{ c.tipoComprobante?.codigo ?? '—' }} — {{ c.tipoComprobante?.descripcion ?? '' }}</td>
-                <td>{{ formatFecha(c.fechaEmision) }}</td>
-                <td>{{ c.moneda?.simbolo ?? '' }} {{ c.moneda?.codigo ?? '—' }}</td>
-                <td class="text-end fw-semibold">$ {{ formatPrecio(c.total) }}</td>
+              <tr v-for="comprobante in comprobantes" :key="comprobante.id">
+                <td class="fw-semibold">{{ comprobante.numeroComprobante }}</td>
+                <td>{{ comprobante.tipoComprobante?.codigo ?? '—' }} - {{ comprobante.tipoComprobante?.descripcion ?? '' }}</td>
+                <td>{{ formatFecha(comprobante.fechaEmision) }}</td>
+                <td>{{ comprobante.moneda?.simbolo ?? '' }} {{ comprobante.moneda?.codigo ?? '—' }}</td>
+                <td class="text-end fw-semibold">$ {{ formatPrecio(comprobante.total) }}</td>
                 <td class="text-end">
-                  <router-link :to="{ name: 'ComprobanteView', params: { comprobanteId: c.id } }" class="btn btn-sm btn-outline-secondary">
+                  <router-link
+                    :to="{ name: 'ComprobanteView', params: { comprobanteId: comprobante.id } }"
+                    class="btn btn-sm btn-outline-secondary"
+                  >
                     Ver
                   </router-link>
                 </td>
@@ -288,14 +278,12 @@
         </div>
       </div>
 
-      <!-- OBSERVACIONES -->
-      <div class="card" v-if="venta.observaciones">
+      <div v-if="venta.observaciones" class="card">
         <div class="card-header">Observaciones</div>
         <div class="card-body">
-          <p class="mb-0" style="white-space:pre-wrap">{{ venta.observaciones }}</p>
+          <p class="mb-0" style="white-space: pre-wrap">{{ venta.observaciones }}</p>
         </div>
       </div>
-
     </template>
   </div>
 </template>
@@ -306,21 +294,23 @@
 .detail-list {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: .4rem 1rem;
+  gap: 0.4rem 1rem;
   margin: 0;
 }
+
 .detail-list dt {
-  font-size: .78rem;
+  align-self: center;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-text-muted);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  letter-spacing: .04em;
-  align-self: center;
+  color: var(--color-text-muted);
 }
+
 .detail-list dd {
-  font-size: .88rem;
-  color: var(--color-text);
-  margin: 0;
   align-self: center;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text);
 }
 </style>

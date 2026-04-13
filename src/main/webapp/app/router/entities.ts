@@ -29,10 +29,7 @@ const CondicionIva = () => import('@/entities/condicion-iva/condicion-iva.vue');
 const CondicionIvaUpdate = () => import('@/entities/condicion-iva/condicion-iva-update.vue');
 const CondicionIvaDetails = () => import('@/entities/condicion-iva/condicion-iva-details.vue');
 
-
-
-const Venta = () => import('@/entities/venta/venta.vue');
-const VentaUpdate = () => import('@/entities/venta/venta-update.vue');
+const Venta = () => import('@/entities/venta/venta-list.vue');
 const VentaDetails = () => import('@/entities/venta/venta-details.vue');
 
 const DetalleVenta = () => import('@/entities/detalle-venta/detalle-venta.vue');
@@ -82,7 +79,6 @@ const TipoVehiculoDetails = () => import('@/entities/tipo-vehiculo/tipo-vehiculo
 const Vehiculo = () => import('@/entities/vehiculo/vehiculo.vue');
 const VehiculoUpdate = () => import('@/entities/vehiculo/vehiculo-update.vue');
 const VehiculoDetails = () => import('@/entities/vehiculo/vehiculo-details.vue');
-const VentaWizard = () => import('@/entities/venta/VentaWizard.vue');
 const VentaEditor = () => import('@/entities/venta/VentaEditor.vue');
 
 const Inventario = () => import('@/entities/inventario/inventario.vue');
@@ -276,13 +272,13 @@ export default {
     {
       path: 'venta/new',
       name: 'VentaCreate',
-      component: VentaUpdate,
+      component: VentaEditor,
       meta: { authorities: [Authority.USER] },
     },
     {
       path: 'venta/:ventaId/edit',
       name: 'VentaEdit',
-      component: VentaUpdate,
+      component: VentaEditor,
       meta: { authorities: [Authority.USER] },
     },
     {
@@ -636,13 +632,13 @@ export default {
     {
       path: '/ventas',
       name: 'VentaList',
-      component: () => import('@/entities/venta/venta-list.vue'),
+      component: Venta,
       meta: { authorities: [Authority.USER] },
     },
     {
       path: '/venta/nueva',
       name: 'VentaWizard',
-      component: VentaWizard,
+      redirect: { name: 'VentaEditor' },
       meta: { authorities: [Authority.USER] },
     },
     {
@@ -656,7 +652,7 @@ export default {
       name: 'VentaEditorEdit',
       component: VentaEditor,
       meta: { authorities: [Authority.USER] },
-    }
+    },
     // jhipster-needle-add-entity-to-router - JHipster will add entities to the router here
   ],
 };

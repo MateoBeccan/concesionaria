@@ -32,7 +32,7 @@
       <div style="font-size: 3rem">📋</div>
       <h5 class="mt-3 text-muted">No hay ventas registradas</h5>
       <p class="text-muted small">Comenzá registrando la primera venta.</p>
-      <router-link :to="{ name: 'VentaWizard' }" class="btn btn-primary mt-2"> + Nueva venta </router-link>
+      <router-link :to="{ name: 'VentaEditor' }" class="btn btn-primary mt-2"> + Nueva venta </router-link>
     </div>
 
     <!-- TABLA -->
@@ -65,6 +65,9 @@
               <td class="text-end pe-4">
                 <router-link :to="{ name: 'VentaView', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-secondary">
                   Ver
+                </router-link>
+                <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary ms-2">
+                  Editar
                 </router-link>
               </td>
             </tr>

@@ -83,4 +83,43 @@ export default class VersionService {
         });
     });
   }
+
+  retrieveMotors(versionId: number): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/${versionId}/motors`)
+        .then(res => {
+          resolve(res.data);
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
+  }
+
+  addMotorCompatibility(versionId: number, motorId: number): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/${versionId}/motors/${motorId}`)
+        .then(res => {
+          resolve(res.data);
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
+  }
+
+  removeMotorCompatibility(versionId: number, motorId: number): Promise<any> {
+    return new Promise<any>((resolve, reject) => {
+      axios
+        .delete(`${baseApiUrl}/${versionId}/motors/${motorId}`)
+        .then(res => {
+          resolve(res.data);
+        })
+        .catch(err => {
+          reject(err);
+        });
+    });
+  }
 }

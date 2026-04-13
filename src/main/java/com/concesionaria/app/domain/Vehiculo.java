@@ -42,10 +42,9 @@
         @Column(name = "km", nullable = false)
         private Integer km;
 
-        @NotNull
-        @Pattern(regexp = "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)")
-        @Column(name = "patente", nullable = false)
-        private String patente;
+    @Pattern(regexp = "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)")
+    @Column(name = "patente")
+    private String patente;
 
         @NotNull
         @DecimalMin(value = "0")

@@ -2,6 +2,7 @@ import { type Ref, computed, defineComponent, inject, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useVuelidate } from '@vuelidate/core';
+import { helpers } from '@vuelidate/validators';
 
 import CondicionIvaService from '@/entities/condicion-iva/condicion-iva.service';
 import TipoDocumentoService from '@/entities/tipo-documento/tipo-documento.service';
@@ -12,6 +13,19 @@ import { type ICondicionIva } from '@/shared/model/condicion-iva.model';
 import { type ITipoDocumento } from '@/shared/model/tipo-documento.model';
 
 import ClienteService from './cliente.service';
+
+const DOCUMENTO_REGEX = /^\d{7,11}$/;
+const TELEFONO_REGEX = /^[0-9+\-\s]{6,20}$/;
+const EMAIL_REGEX = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+const toDateOrNull = value => (value ? new Date(value) : null);
+const toIsoOrNull = value => {
+  if (!value) return null;
+  const parsed = new Date(value as any);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+};
+
+const normalizeString = (value?: string | null) => value?.trim() ?? '';
 
 export default defineComponent({
   name: 'ClienteUpdate',
@@ -39,9 +53,9 @@ export default defineComponent({
     const retrieveCliente = async clienteId => {
       try {
         const res = await clienteService().find(clienteId);
-        res.fechaAlta = new Date(res.fechaAlta);
-        res.createdDate = new Date(res.createdDate);
-        res.lastModifiedDate = new Date(res.lastModifiedDate);
+        res.fechaAlta = toDateOrNull(res.fechaAlta);
+        res.createdDate = toDateOrNull(res.createdDate);
+        res.lastModifiedDate = toDateOrNull(res.lastModifiedDate);
         cliente.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -81,10 +95,25 @@ export default defineComponent({
       },
       nroDocumento: {
         required: validations.required('Este campo es obligatorio.'),
+        validFormat: helpers.withMessage(
+          'El documento debe tener entre 7 y 11 dígitos.',
+          value => !value || DOCUMENTO_REGEX.test(String(value).trim()),
+        ),
+        validByTipo: helpers.withMessage('El documento no coincide con el tipo seleccionado.', value => {
+          const documento = String(value ?? '').trim();
+          if (!documento) return true;
+          const codigo = cliente.value.tipoDocumento?.codigo?.toUpperCase() ?? '';
+          if (codigo.includes('CUIT') || codigo.includes('CUIL')) return documento.length === 11;
+          if (codigo.includes('DNI')) return documento.length >= 7 && documento.length <= 8;
+          return documento.length >= 7 && documento.length <= 11;
+        }),
       },
-      telefono: {},
+      telefono: {
+        validFormat: helpers.withMessage('Ingresá un teléfono válido.', value => !value || TELEFONO_REGEX.test(String(value).trim())),
+      },
       email: {
         required: validations.required('Este campo es obligatorio.'),
+        validFormat: helpers.withMessage('Ingresá un email válido.', value => !value || EMAIL_REGEX.test(String(value).trim())),
       },
       direccion: {
         maxLength: validations.maxLength('Este campo no puede superar más de 255 caracteres.', 255),
@@ -107,10 +136,11 @@ export default defineComponent({
       createdDate: {},
       lastModifiedDate: {},
       condicionIva: {},
-      tipoDocumento: {},
+      tipoDocumento: {
+        required: validations.required('Seleccioná un tipo de documento.'),
+      },
     };
     const v$ = useVuelidate(validationRules, cliente as any);
-    v$.value.$validate();
 
     return {
       clienteService,
@@ -125,17 +155,37 @@ export default defineComponent({
       ...useDateFormat({ entityRef: cliente }),
     };
   },
-  created(): void {},
   methods: {
     save(): void {
+      this.v$.$touch();
+      if (this.v$.$invalid) {
+        return;
+      }
+
+      const entity = {
+        ...this.cliente,
+        nombre: normalizeString(this.cliente.nombre),
+        apellido: normalizeString(this.cliente.apellido),
+        nroDocumento: normalizeString(this.cliente.nroDocumento),
+        telefono: normalizeString(this.cliente.telefono) || null,
+        email: normalizeString(this.cliente.email).toLowerCase(),
+        direccion: normalizeString(this.cliente.direccion) || null,
+        ciudad: normalizeString(this.cliente.ciudad) || null,
+        provincia: normalizeString(this.cliente.provincia) || null,
+        pais: normalizeString(this.cliente.pais) || null,
+        fechaAlta: toIsoOrNull(this.cliente.fechaAlta),
+        createdDate: toIsoOrNull(this.cliente.createdDate),
+        lastModifiedDate: toIsoOrNull(this.cliente.lastModifiedDate),
+      };
+
       this.isSaving = true;
-      if (this.cliente.id) {
+      if (entity.id) {
         this.clienteService()
-          .update(this.cliente)
+          .update(entity)
           .then(param => {
             this.isSaving = false;
             this.previousState();
-            this.alertService.showInfo(`A Cliente is updated with identifier ${param.id}`);
+            this.alertService.showInfo(`Cliente actualizado con ID ${param.id}`);
           })
           .catch(error => {
             this.isSaving = false;
@@ -143,11 +193,11 @@ export default defineComponent({
           });
       } else {
         this.clienteService()
-          .create(this.cliente)
+          .create(entity)
           .then(param => {
             this.isSaving = false;
             this.previousState();
-            this.alertService.showSuccess(`A Cliente is created with identifier ${param.id}`);
+            this.alertService.showSuccess(`Cliente creado con ID ${param.id}`);
           })
           .catch(error => {
             this.isSaving = false;

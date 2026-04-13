@@ -1,6 +1,5 @@
 <template>
   <div class="dashboard">
-
     <!-- HEADER -->
     <div class="dashboard-header">
       <div>
@@ -11,7 +10,6 @@
 
     <!-- KPIs -->
     <div class="kpi-grid">
-
       <div class="kpi-card" v-for="kpi in kpiList" :key="kpi.label">
         <div>
           <div class="kpi-label">{{ kpi.label }}</div>
@@ -29,99 +27,68 @@
           {{ kpi.icon }}
         </div>
       </div>
-
     </div>
 
     <!-- MAIN -->
     <div class="dashboard-main">
-
       <!-- ACCIONES -->
       <div class="card">
-
         <div class="card-header">Acciones rápidas</div>
 
         <div class="quick-actions">
+          <router-link :to="{ name: 'VentaEditor' }" class="quick-item"> 💰 Nueva <Venta></Venta> </router-link>
 
-          <router-link :to="{ name: 'VentaWizard' }" class="quick-item">
-            💰 Nueva Venta
-          </router-link>
+          <router-link :to="{ name: 'VehiculoSearch' }" class="quick-item"> 🚗 Buscar Vehículo </router-link>
 
-          <router-link :to="{ name: 'VehiculoSearch' }" class="quick-item">
-            🚗 Buscar Vehículo
-          </router-link>
+          <router-link :to="{ name: 'ClienteCreate' }" class="quick-item"> 👤 Nuevo Cliente </router-link>
 
-          <router-link :to="{ name: 'ClienteCreate' }" class="quick-item">
-            👤 Nuevo Cliente
-          </router-link>
-
-          <router-link :to="{ name: 'VehiculoCreate' }" class="quick-item">
-            ➕ Nuevo Vehículo
-          </router-link>
-
+          <router-link :to="{ name: 'VehiculoCreate' }" class="quick-item"> ➕ Nuevo Vehículo </router-link>
         </div>
       </div>
 
       <!-- VENTAS -->
       <div class="card">
-
         <div class="card-header d-flex justify-between">
           <span>Últimas ventas</span>
 
-          <router-link :to="{ name: 'VentaList' }" class="btn btn-outline btn-sm">
-            Ver todas
-          </router-link>
+          <router-link :to="{ name: 'VentaList' }" class="btn btn-outline btn-sm"> Ver todas </router-link>
         </div>
 
-        <div v-if="loadingVentas" class="empty">
-          Cargando ventas...
-        </div>
+        <div v-if="loadingVentas" class="empty">Cargando ventas...</div>
 
-        <div v-else-if="ultimasVentas.length === 0" class="empty">
-          No hay ventas registradas
-        </div>
+        <div v-else-if="ultimasVentas.length === 0" class="empty">No hay ventas registradas</div>
 
         <table v-else class="table">
-
           <thead>
-          <tr>
-            <th>#</th>
-            <th>Fecha</th>
-            <th>Cliente</th>
-            <th>Total</th>
-            <th>Estado</th>
-          </tr>
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Estado</th>
+            </tr>
           </thead>
 
           <tbody>
-          <tr v-for="v in ultimasVentas" :key="v.id">
+            <tr v-for="v in ultimasVentas" :key="v.id">
+              <td>{{ v.id }}</td>
 
-            <td>{{ v.id }}</td>
+              <td>{{ formatFecha(v.fecha) }}</td>
 
-            <td>{{ formatFecha(v.fecha) }}</td>
+              <td>{{ v.cliente?.nombre }} {{ v.cliente?.apellido }}</td>
 
-            <td>
-              {{ v.cliente?.nombre }} {{ v.cliente?.apellido }}
-            </td>
+              <td class="price">$ {{ formatPrecio(v.total) }}</td>
 
-            <td class="price">
-              $ {{ formatPrecio(v.total) }}
-            </td>
-
-            <td>
+              <td>
                 <span :class="badgeVenta(v.estado)">
                   {{ v.estado ?? '-' }}
                 </span>
-            </td>
-
-          </tr>
+              </td>
+            </tr>
           </tbody>
-
         </table>
-
       </div>
-
     </div>
-
   </div>
 </template>
 
@@ -132,7 +99,7 @@ import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import ClienteService from '@/entities/cliente/cliente.service';
 import InventarioService from '@/entities/inventario/inventario.service';
 import type { IVenta } from '@/shared/model/venta.model';
-import { EstadoVenta } from '@/shared/model/estado-venta.model';
+import type { EstadoVenta } from '@/shared/model/estado-venta.model';
 
 const ventaService = new VentaService();
 const vehiculoService = new VehiculoService();
@@ -183,7 +150,6 @@ async function cargarKpis() {
     kpis.value.vehiculosDisponibles = Number(vehiculos.headers['x-total-count'] ?? 0);
     kpis.value.clientesActivos = Number(clientes.headers['x-total-count'] ?? 0);
     kpis.value.inventarioTotal = Number(inventario.headers['x-total-count'] ?? 0);
-
   } catch {
     console.error('Error cargando KPIs');
   } finally {
@@ -202,7 +168,6 @@ async function cargarUltimasVentas() {
     });
 
     ultimasVentas.value = res.data;
-
   } catch {
     ultimasVentas.value = [];
   } finally {
@@ -241,7 +206,7 @@ function formatPrecio(p?: number | null) {
 
 .actions {
   display: flex;
-  gap: .5rem;
+  gap: 0.5rem;
 }
 
 .kpi-grid {
@@ -278,7 +243,7 @@ function formatPrecio(p?: number | null) {
 
 .quick-item {
   display: block;
-  padding: .6rem;
+  padding: 0.6rem;
   border-bottom: 1px solid #eee;
 }
 
@@ -292,13 +257,21 @@ function formatPrecio(p?: number | null) {
 }
 
 .badge {
-  padding: .3rem .6rem;
+  padding: 0.3rem 0.6rem;
   border-radius: 10px;
 }
 
-.badge.success { background: #22c55e; color: white; }
-.badge.warning { background: #facc15; }
-.badge.danger  { background: #ef4444; color: white; }
+.badge.success {
+  background: #22c55e;
+  color: white;
+}
+.badge.warning {
+  background: #facc15;
+}
+.badge.danger {
+  background: #ef4444;
+  color: white;
+}
 
 .empty {
   padding: 2rem;

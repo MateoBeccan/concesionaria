@@ -25,7 +25,7 @@
           </span>
         </b-nav-item>
         <!-- ACCESOS RÁPIDOS DE NEGOCIO -->
-        <b-nav-item v-if="authenticated" :to="{ name: 'VentaWizard' }">
+        <b-nav-item v-if="authenticated" :to="{ name: 'VentaEditor' }">
           <span>
             <font-awesome-icon icon="plus-circle" />
             <span>Nueva Venta</span>
@@ -91,6 +91,10 @@
           <b-dropdown-item to="/admin/configuration" active-class="active">
             <font-awesome-icon icon="cogs" />
             <span>Configuración</span>
+          </b-dropdown-item>
+          <b-dropdown-item to="/admin/version-compatibilities" active-class="active">
+            <font-awesome-icon icon="cogs" />
+            <span>Compatibilidades</span>
           </b-dropdown-item>
           <b-dropdown-item to="/admin/logs" active-class="active">
             <font-awesome-icon icon="tasks" />

@@ -7,10 +7,12 @@ import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.*;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.VentaDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import org.springframework.data.domain.*;
@@ -51,11 +53,13 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public VentaDTO save(VentaDTO dto) {
+        validarVentaDto(dto);
         return ventaMapper.toDto(ventaRepository.save(ventaMapper.toEntity(dto)));
     }
 
     @Override
     public VentaDTO update(VentaDTO dto) {
+        validarVentaDto(dto);
         return ventaMapper.toDto(ventaRepository.save(ventaMapper.toEntity(dto)));
     }
 
@@ -64,10 +68,40 @@ public class VentaServiceImpl implements VentaService {
         return ventaRepository.findById(dto.getId())
             .map(existing -> {
                 ventaMapper.partialUpdate(existing, dto);
+                validarVentaDto(ventaMapper.toDto(existing));
                 return existing;
             })
             .map(ventaRepository::save)
             .map(ventaMapper::toDto);
+    }
+
+    private void validarVentaDto(VentaDTO dto) {
+        if (dto.getCliente() == null || dto.getCliente().getId() == null) {
+            throw new BadRequestException("El cliente es obligatorio");
+        }
+
+        if (dto.getFecha() == null) {
+            throw new BadRequestException("La fecha de la venta es obligatoria");
+        }
+
+        if (dto.getEstado() == null) {
+            throw new BadRequestException("El estado de la venta es obligatorio");
+        }
+
+        if (dto.getImporteNeto() == null || dto.getImpuesto() == null || dto.getTotal() == null) {
+            throw new BadRequestException("Los importes de la venta son obligatorios");
+        }
+
+        if (dto.getImporteNeto().compareTo(BigDecimal.ZERO) <= 0 || dto.getTotal().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("La venta debe tener un total mayor a 0");
+        }
+
+        BigDecimal totalCalculado = dto.getImporteNeto().add(dto.getImpuesto()).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal totalActual = dto.getTotal().setScale(2, java.math.RoundingMode.HALF_UP);
+
+        if (totalCalculado.compareTo(totalActual) != 0) {
+            throw new BadRequestException("El total debe coincidir con importe neto + impuesto");
+        }
     }
 
     @Override
@@ -110,9 +144,20 @@ public class VentaServiceImpl implements VentaService {
             throw new RuntimeException("Vehiculo ya vendido");
         }
 
+        if (inv.getEstadoInventario() == EstadoInventario.DISPONIBLE && !Boolean.TRUE.equals(inv.getDisponible())) {
+            throw new RuntimeException("El inventario del vehiculo esta inconsistente y no figura disponible para vender");
+        }
+
         if (inv.getEstadoInventario() == EstadoInventario.RESERVADO &&
             (inv.getClienteReserva() == null || !inv.getClienteReserva().getId().equals(clienteId))) {
             throw new RuntimeException("Reservado por otro cliente");
+        }
+
+        if (
+            inv.getEstadoInventario() == EstadoInventario.RESERVADO &&
+            (Boolean.TRUE.equals(inv.getDisponible()) || inv.getFechaReserva() == null || inv.getFechaVencimientoReserva() == null)
+        ) {
+            throw new RuntimeException("La reserva actual del vehiculo esta incompleta y debe corregirse antes de vender");
         }
 
         if (vehiculo.getCondicion() == CondicionVehiculo.VENDIDO) {
@@ -163,6 +208,12 @@ public class VentaServiceImpl implements VentaService {
         inv.setEstadoInventario(EstadoInventario.RESERVADO);
         inv.setDisponible(false);
         inv.setClienteReserva(cliente);
+        if (inv.getFechaReserva() == null) {
+            inv.setFechaReserva(Instant.now());
+        }
+        if (inv.getFechaVencimientoReserva() == null || !inv.getFechaVencimientoReserva().isAfter(inv.getFechaReserva())) {
+            inv.setFechaVencimientoReserva(inv.getFechaReserva().plus(3, ChronoUnit.DAYS));
+        }
         inventarioRepository.save(inv);
 
         //  VEHICULO → RESERVADO
@@ -195,6 +246,9 @@ public class VentaServiceImpl implements VentaService {
         //  INVENTARIO → VENDIDO
         inv.setEstadoInventario(EstadoInventario.VENDIDO);
         inv.setDisponible(false);
+        inv.setClienteReserva(null);
+        inv.setFechaReserva(null);
+        inv.setFechaVencimientoReserva(null);
         inventarioRepository.save(inv);
 
         // VEHICULO → VENDIDO

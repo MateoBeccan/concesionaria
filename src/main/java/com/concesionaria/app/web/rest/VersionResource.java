@@ -2,6 +2,7 @@ package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.VersionRepository;
 import com.concesionaria.app.service.VersionService;
+import com.concesionaria.app.service.dto.MotorDTO;
 import com.concesionaria.app.service.dto.VersionDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -24,22 +25,17 @@ import tech.jhipster.web.util.HeaderUtil;
 import tech.jhipster.web.util.PaginationUtil;
 import tech.jhipster.web.util.ResponseUtil;
 
-/**
- * REST controller for managing {@link com.concesionaria.app.domain.Version}.
- */
 @RestController
 @RequestMapping("/api/versions")
 public class VersionResource {
 
     private static final Logger LOG = LoggerFactory.getLogger(VersionResource.class);
-
     private static final String ENTITY_NAME = "version";
 
     @Value("${jhipster.clientApp.name:concesionaria}")
     private String applicationName;
 
     private final VersionService versionService;
-
     private final VersionRepository versionRepository;
 
     public VersionResource(VersionService versionService, VersionRepository versionRepository) {
@@ -47,13 +43,6 @@ public class VersionResource {
         this.versionRepository = versionRepository;
     }
 
-    /**
-     * {@code POST  /versions} : Create a new version.
-     *
-     * @param versionDTO the versionDTO to create.
-     * @return the {@link ResponseEntity} with status {@code 201 (Created)} and with body the new versionDTO, or with status {@code 400 (Bad Request)} if the version has already an ID.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PostMapping("")
     public ResponseEntity<VersionDTO> createVersion(@Valid @RequestBody VersionDTO versionDTO) throws URISyntaxException {
         LOG.debug("REST request to save Version : {}", versionDTO);
@@ -66,16 +55,6 @@ public class VersionResource {
             .body(versionDTO);
     }
 
-    /**
-     * {@code PUT  /versions/:id} : Updates an existing version.
-     *
-     * @param id the id of the versionDTO to save.
-     * @param versionDTO the versionDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated versionDTO,
-     * or with status {@code 400 (Bad Request)} if the versionDTO is not valid,
-     * or with status {@code 500 (Internal Server Error)} if the versionDTO couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PutMapping("/{id}")
     public ResponseEntity<VersionDTO> updateVersion(
         @PathVariable(value = "id", required = false) final Long id,
@@ -88,7 +67,6 @@ public class VersionResource {
         if (!Objects.equals(id, versionDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!versionRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
@@ -99,17 +77,6 @@ public class VersionResource {
             .body(versionDTO);
     }
 
-    /**
-     * {@code PATCH  /versions/:id} : Partial updates given fields of an existing version, field will ignore if it is null
-     *
-     * @param id the id of the versionDTO to save.
-     * @param versionDTO the versionDTO to update.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the updated versionDTO,
-     * or with status {@code 400 (Bad Request)} if the versionDTO is not valid,
-     * or with status {@code 404 (Not Found)} if the versionDTO is not found,
-     * or with status {@code 500 (Internal Server Error)} if the versionDTO couldn't be updated.
-     * @throws URISyntaxException if the Location URI syntax is incorrect.
-     */
     @PatchMapping(value = "/{id}", consumes = { "application/json", "application/merge-patch+json" })
     public ResponseEntity<VersionDTO> partialUpdateVersion(
         @PathVariable(value = "id", required = false) final Long id,
@@ -122,25 +89,17 @@ public class VersionResource {
         if (!Objects.equals(id, versionDTO.getId())) {
             throw new BadRequestAlertException("Invalid ID", ENTITY_NAME, "idinvalid");
         }
-
         if (!versionRepository.existsById(id)) {
             throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
         }
 
         Optional<VersionDTO> result = versionService.partialUpdate(versionDTO);
-
         return ResponseUtil.wrapOrNotFound(
             result,
             HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, versionDTO.getId().toString())
         );
     }
 
-    /**
-     * {@code GET  /versions} : get all the Versions.
-     *
-     * @param pageable the pagination information.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Versions in body.
-     */
     @GetMapping("")
     public ResponseEntity<List<VersionDTO>> getAllVersions(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
         LOG.debug("REST request to get a page of Versions");
@@ -149,12 +108,6 @@ public class VersionResource {
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }
 
-    /**
-     * {@code GET  /versions/:id} : get the "id" version.
-     *
-     * @param id the id of the versionDTO to retrieve.
-     * @return the {@link ResponseEntity} with status {@code 200 (OK)} and with body the versionDTO, or with status {@code 404 (Not Found)}.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<VersionDTO> getVersion(@PathVariable("id") Long id) {
         LOG.debug("REST request to get Version : {}", id);
@@ -162,12 +115,24 @@ public class VersionResource {
         return ResponseUtil.wrapOrNotFound(versionDTO);
     }
 
-    /**
-     * {@code DELETE  /versions/:id} : delete the "id" version.
-     *
-     * @param id the id of the versionDTO to delete.
-     * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
-     */
+    @GetMapping("/{id}/motors")
+    public ResponseEntity<List<MotorDTO>> getMotorsByVersion(@PathVariable("id") Long id) {
+        LOG.debug("REST request to get Motors for Version : {}", id);
+        return ResponseEntity.ok(versionService.findMotorsByVersionId(id));
+    }
+
+    @PostMapping("/{id}/motors/{motorId}")
+    public ResponseEntity<List<MotorDTO>> addMotorToVersion(@PathVariable("id") Long id, @PathVariable("motorId") Long motorId) {
+        LOG.debug("REST request to add Motor {} to Version {}", motorId, id);
+        return ResponseEntity.ok(versionService.addMotorCompatibility(id, motorId));
+    }
+
+    @DeleteMapping("/{id}/motors/{motorId}")
+    public ResponseEntity<List<MotorDTO>> removeMotorFromVersion(@PathVariable("id") Long id, @PathVariable("motorId") Long motorId) {
+        LOG.debug("REST request to remove Motor {} from Version {}", motorId, id);
+        return ResponseEntity.ok(versionService.removeMotorCompatibility(id, motorId));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVersion(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete Version : {}", id);

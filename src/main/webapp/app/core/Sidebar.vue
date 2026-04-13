@@ -1,32 +1,46 @@
 <template>
   <aside class="app-sidebar">
+
+    <!-- BRAND -->
     <div class="sidebar-brand">
-      <span class="brand-icon">🚗</span>
+      <div class="brand-icon">🚗</div>
       <div>
-        <span class="brand-name">AutoGestión</span>
-        <span class="brand-sub">Sistema de Concesionaria</span>
+        <div class="brand-name">AutoGestión</div>
+        <div class="brand-sub">Sistema de Concesionaria</div>
       </div>
     </div>
 
+    <!-- NAV -->
     <nav class="sidebar-nav">
       <template v-for="section in visibleSections" :key="section.title">
         <div class="sidebar-section">{{ section.title }}</div>
-npm
-        <router-link v-for="item in section.items" :key="item.name" class="sidebar-item" :to="{ name: item.name }">
+
+        <router-link
+          v-for="item in section.items"
+          :key="item.name"
+          class="sidebar-item"
+          :to="{ name: item.name }"
+        >
           <span class="sidebar-icon">{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <span class="sidebar-label">{{ item.label }}</span>
         </router-link>
       </template>
     </nav>
 
+    <!-- FOOTER -->
     <div class="sidebar-footer">
       <div class="user-avatar">{{ userInitials }}</div>
+
       <div class="user-meta">
         <div class="user-name">{{ username ?? 'Usuario' }}</div>
         <div class="user-status">{{ roleLabel }}</div>
       </div>
-      <button class="logout-btn" @click="logout" title="Cerrar sesión">⏻</button>
+
+      <button class="logout-btn" @click="logout" title="Cerrar sesión">
+        ⏻
+      </button>
     </div>
+
   </aside>
 </template>
 
@@ -50,13 +64,15 @@ interface SidebarSection {
 const SIDEBAR_SECTIONS: SidebarSection[] = [
   {
     title: 'Principal',
-    items: [{ name: 'Home', label: 'Dashboard', icon: '⊞' }],
+    items: [
+      { name: 'Home', label: 'Dashboard', icon: '📊' },
+    ],
   },
   {
     title: 'Operaciones',
     items: [
       { name: 'VehiculoSearch', label: 'Buscar Vehículo', icon: '🔍' },
-      { name: 'VentaWizard', label: 'Nueva venta', icon: '💰' },
+      { name: 'VentaEditor', label: 'Nueva Venta', icon: '💰' },
       { name: 'VentaList', label: 'Ventas', icon: '📄' },
     ],
   },
@@ -64,7 +80,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     title: 'Clientes',
     items: [
       { name: 'Cliente', label: 'Clientes', icon: '👤' },
-      { name: 'ClienteCreate', label: 'Nuevo Cliente', icon: '＋' },
+      { name: 'ClienteCreate', label: 'Nuevo Cliente', icon: '➕' },
     ],
   },
   {
@@ -73,6 +89,7 @@ const SIDEBAR_SECTIONS: SidebarSection[] = [
     items: [
       { name: 'Vehiculo', label: 'Vehículos', icon: '🚙' },
       { name: 'Inventario', label: 'Inventario', icon: '📦' },
+      { name: 'Cotizacion', label: 'Cotizaciones', icon: '💱' },
     ],
   },
 ];
@@ -82,9 +99,14 @@ const router = useRouter();
 
 const username = computed(() => store.account?.login);
 const authorities = computed(() => store.account?.authorities ?? []);
-const isAdmin = computed(() => authorities.value.includes('ROLE_ADMIN'));
 
-const roleLabel = computed(() => (isAdmin.value ? 'Administrador' : 'Usuario'));
+const isAdmin = computed(() =>
+  authorities.value.includes('ROLE_ADMIN')
+);
+
+const roleLabel = computed(() =>
+  isAdmin.value ? 'Administrador' : 'Usuario'
+);
 
 const userInitials = computed(() => {
   const u = store.account?.login ?? '';
@@ -94,7 +116,9 @@ const userInitials = computed(() => {
 const visibleSections = computed(() =>
   SIDEBAR_SECTIONS.filter(section => {
     if (!section.roles?.length) return true;
-    return section.roles.some(role => authorities.value.includes(role));
+    return section.roles.some(role =>
+      authorities.value.includes(role)
+    );
   }),
 );
 
@@ -108,99 +132,105 @@ async function logout() {
 
 <style scoped>
 .app-sidebar {
-  width: 250px;
+  width: 260px;
   min-height: 100vh;
   background: #0f172a;
   color: #e2e8f0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  border-right: 1px solid rgba(148, 163, 184, 0.15);
 }
 
+/* BRAND */
 .sidebar-brand {
-  min-height: 72px;
+  height: 70px;
   display: flex;
   align-items: center;
   gap: 0.7rem;
-  padding: 0.9rem 1rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  padding: 0 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .brand-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: grid;
   place-content: center;
   background: #2563eb;
+  font-size: 1.1rem;
 }
 
 .brand-name {
-  display: block;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
 }
 
 .brand-sub {
-  display: block;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #94a3b8;
 }
 
+/* NAV */
 .sidebar-nav {
-  padding: 0.9rem 0.55rem;
+  padding: 0.8rem 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
 }
 
 .sidebar-section {
-  margin: 0.65rem 0.55rem 0.3rem;
-  font-size: 0.68rem;
+  margin: 0.7rem 0.6rem 0.3rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
   color: #94a3b8;
+  letter-spacing: 0.05em;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0.65rem;
   border-radius: 10px;
-  padding: 0.5rem 0.6rem;
   color: #e2e8f0;
   text-decoration: none;
   font-size: 0.88rem;
+  transition: all 0.2s ease;
 }
 
 .sidebar-item:hover {
-  background: rgba(148, 163, 184, 0.18);
+  background: rgba(148, 163, 184, 0.12);
 }
 
 .sidebar-item.router-link-active {
-  background: rgba(37, 99, 235, 0.3);
+  background: rgba(37, 99, 235, 0.35);
   color: #fff;
 }
 
+.sidebar-icon {
+  width: 18px;
+  text-align: center;
+}
+
+/* FOOTER */
 .sidebar-footer {
   margin-top: auto;
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
-  padding: 0.85rem 0.8rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 0.8rem;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #1d4ed8;
-  color: #fff;
   display: grid;
   place-content: center;
-  font-size: 0.75rem;
   font-weight: 700;
+  font-size: 0.75rem;
 }
 
 .user-meta {
@@ -222,10 +252,9 @@ async function logout() {
 
 .logout-btn {
   margin-left: auto;
-  border: none;
   background: transparent;
+  border: none;
   color: #94a3b8;
-  font-size: 0.9rem;
   cursor: pointer;
 }
 

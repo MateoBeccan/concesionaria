@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
@@ -21,11 +21,54 @@ export default defineComponent({
     const totalItems = ref(0);
 
     const vehiculos: Ref<IVehiculo[]> = ref([]);
-
     const isFetching = ref(false);
+
+    const search = ref('');
+    const filtroEstado = ref('');
+    const filtroCondicion = ref('');
+    const filtroTipo = ref('');
+
+    const tipoVehiculoOptions = computed(() => {
+      const tipos = new Set(
+        (vehiculos.value || [])
+          .map(vehiculo => vehiculo.tipoVehiculo?.nombre)
+          .filter((value): value is string => !!value),
+      );
+
+      return [...tipos].sort((a, b) => a.localeCompare(b));
+    });
+
+    const filteredVehiculos = computed(() => {
+      return (vehiculos.value || []).filter(vehiculo => {
+        const texto = [
+          vehiculo.patente ?? '',
+          vehiculo.version?.nombre ?? '',
+          vehiculo.version?.modelo?.nombre ?? '',
+          vehiculo.version?.modelo?.marca?.nombre ?? '',
+          vehiculo.motor?.nombre ?? '',
+          vehiculo.tipoVehiculo?.nombre ?? '',
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        const matchSearch = !search.value || texto.includes(search.value.toLowerCase());
+        const matchEstado = !filtroEstado.value || vehiculo.estado === filtroEstado.value;
+        const matchCondicion = !filtroCondicion.value || vehiculo.condicion === filtroCondicion.value;
+        const matchTipo = !filtroTipo.value || vehiculo.tipoVehiculo?.nombre === filtroTipo.value;
+
+        return matchSearch && matchEstado && matchCondicion && matchTipo;
+      });
+    });
 
     const clear = () => {
       page.value = 1;
+    };
+
+    const resetFiltros = () => {
+      search.value = '';
+      filtroEstado.value = '';
+      filtroCondicion.value = '';
+      filtroTipo.value = '';
     };
 
     const sort = (): Array<any> => {
@@ -78,9 +121,7 @@ export default defineComponent({
           await vehiculoService().delete(removeId.value);
         }
 
-        const message = `A Vehiculo is deleted with identifier ${removeId.value}`;
-        alertService.showInfo(message, { variant: 'danger' });
-
+        alertService.showInfo(`Vehiculo eliminado con ID ${removeId.value}`, { variant: 'danger' });
         removeId.value = null;
         retrieveVehiculos();
         closeDialog();
@@ -98,24 +139,43 @@ export default defineComponent({
       propOrder.value = newOrder;
     };
 
-    // Whenever order changes, reset the pagination
+    const formatPrecio = (value?: number | null) =>
+      typeof value === 'number' ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value) : '-';
+
+    const badgeEstado = (estado?: string | null) => {
+      if (estado === 'NUEVO') return 'bg-success';
+      if (estado === 'USADO') return 'bg-secondary';
+      return 'bg-light text-dark border';
+    };
+
+    const badgeCondicion = (condicion?: string | null) => {
+      if (condicion === 'EN_VENTA') return 'bg-primary';
+      if (condicion === 'RESERVADO') return 'bg-warning text-dark';
+      if (condicion === 'VENDIDO') return 'bg-danger';
+      return 'bg-light text-dark border';
+    };
+
     watch([propOrder, reverse], async () => {
       if (page.value === 1) {
-        // first page, retrieve new data
         await retrieveVehiculos();
       } else {
-        // reset the pagination
         clear();
       }
     });
 
-    // Whenever page changes, switch to the new page.
     watch(page, async () => {
       await retrieveVehiculos();
     });
 
     return {
       vehiculos,
+      filteredVehiculos,
+      search,
+      filtroEstado,
+      filtroCondicion,
+      filtroTipo,
+      tipoVehiculoOptions,
+      resetFiltros,
       handleSyncList,
       isFetching,
       retrieveVehiculos,
@@ -133,6 +193,9 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      formatPrecio,
+      badgeEstado,
+      badgeCondicion,
     };
   },
 });

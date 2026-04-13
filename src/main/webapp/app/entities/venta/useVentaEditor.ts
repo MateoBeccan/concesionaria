@@ -1,22 +1,21 @@
-import { ref, computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import axios from 'axios';
-import type { IVenta } from '@/shared/model/venta.model';
-import type { IDetalleVenta } from '@/shared/model/detalle-venta.model';
-import type { IPago } from '@/shared/model/pago.model';
-import type { IComprobante } from '@/shared/model/comprobante.model';
-import type { IVehiculo } from '@/shared/model/vehiculo.model';
-import type { ICliente } from '@/shared/model/cliente.model';
-import type { IMoneda } from '@/shared/model/moneda.model';
-import type { ICotizacion } from '@/shared/model/cotizacion.model';
-import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
-import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
-import { EstadoVenta } from '@/shared/model/estado-venta.model';
 
-// ─── Tipos internos ────────────────────────────────────────────────────────────
+import type { ICliente } from '@/shared/model/cliente.model';
+import type { IComprobante } from '@/shared/model/comprobante.model';
+import type { ICotizacion } from '@/shared/model/cotizacion.model';
+import type { IDetalleVenta } from '@/shared/model/detalle-venta.model';
+import { EstadoVenta } from '@/shared/model/estado-venta.model';
+import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
+import type { IMoneda } from '@/shared/model/moneda.model';
+import type { IPago } from '@/shared/model/pago.model';
+import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
+import type { IVehiculo } from '@/shared/model/vehiculo.model';
+import type { IVenta } from '@/shared/model/venta.model';
 
 export interface DetalleLocal {
-  _key: string;           // clave temporal para v-for antes de persistir
-  id?: number;            // id real si ya fue guardado
+  _key: string;
+  id?: number;
   vehiculo: IVehiculo;
   precioUnitario: number;
   cantidad: number;
@@ -35,11 +34,9 @@ export interface PagoLocal {
   guardado: boolean;
 }
 
-// ─── Composable ────────────────────────────────────────────────────────────────
+const EPSILON = 0.0001;
 
 export function useVentaEditor() {
-
-  // Estado principal de la venta
   const venta = ref<Partial<IVenta>>({
     fecha: new Date(),
     estado: EstadoVenta.PENDIENTE,
@@ -52,63 +49,69 @@ export function useVentaEditor() {
     saldo: 0,
   });
 
-  const detalles  = ref<DetalleLocal[]>([]);
-  const pagos     = ref<PagoLocal[]>([]);
+  const detalles = ref<DetalleLocal[]>([]);
+  const pagos = ref<PagoLocal[]>([]);
   const guardando = ref(false);
-  const error     = ref<string | null>(null);
+  const error = ref<string | null>(null);
 
-  // Catálogos
-  const clientes         = ref<ICliente[]>([]);
-  const monedas          = ref<IMoneda[]>([]);
-  const metodoPagos      = ref<IMetodoPago[]>([]);
+  const clientes = ref<ICliente[]>([]);
+  const monedas = ref<IMoneda[]>([]);
+  const metodoPagos = ref<IMetodoPago[]>([]);
   const tipoComprobantes = ref<ITipoComprobante[]>([]);
-  const cotizacionActiva  = ref<ICotizacion | null>(null);
+  const cotizacionActiva = ref<ICotizacion | null>(null);
 
-  // ─── Cálculos reactivos ──────────────────────────────────────────────────────
+  const sumaSubtotales = computed(() => detalles.value.reduce((acc, detalle) => acc + detalle.subtotal, 0));
+  const sumaPagos = computed(() => pagos.value.reduce((acc, pago) => acc + pago.monto, 0));
+  const estadoCalculado = computed(() => {
+    if (detalles.value.length === 0) {
+      return EstadoVenta.PENDIENTE;
+    }
 
-  const sumaSubtotales = computed(() =>
-    detalles.value.reduce((acc, d) => acc + d.subtotal, 0),
-  );
+    if (Number(venta.value.saldo ?? 0) <= EPSILON) {
+      return EstadoVenta.PAGADA;
+    }
 
-  const sumaPagos = computed(() =>
-    pagos.value.reduce((acc, p) => acc + p.monto, 0),
-  );
+    if (sumaPagos.value > 0) {
+      return EstadoVenta.RESERVADA;
+    }
 
-  // Recalcular venta cuando cambian detalles o % impuesto
+    return EstadoVenta.PENDIENTE;
+  });
+
   watch([sumaSubtotales, () => venta.value.porcentajeImpuesto], () => {
     const neto = sumaSubtotales.value;
-    const pct  = Number(venta.value.porcentajeImpuesto ?? 0) / 100;
-    const imp  = neto * pct;
+    const porcentaje = Number(venta.value.porcentajeImpuesto ?? 0) / 100;
+    const impuesto = neto * porcentaje;
+
     venta.value.importeNeto = neto;
-    venta.value.impuesto    = imp;
-    venta.value.total       = neto + imp;
+    venta.value.impuesto = impuesto;
+    venta.value.total = neto + impuesto;
     recalcularSaldo();
   });
 
-  // Recalcular saldo cuando cambian pagos
   watch(sumaPagos, () => recalcularSaldo());
+
+  watch(
+    () => venta.value.moneda,
+    moneda => {
+      if (moneda?.id) {
+        cargarCotizacionActiva(moneda.id);
+      }
+    },
+  );
 
   function recalcularSaldo() {
     venta.value.totalPagado = sumaPagos.value;
-    venta.value.saldo = Math.max(0, (venta.value.total ?? 0) - sumaPagos.value);
-
-
-    if (venta.value.saldo === 0 && detalles.value.length > 0) {
-      venta.value.estado = EstadoVenta.PAGADA;
-    } else if (sumaPagos.value > 0) {
-      venta.value.estado = EstadoVenta.RESERVADA;
-    } else {
-      venta.value.estado = EstadoVenta.PENDIENTE;
-    }
+    venta.value.saldo = Math.max(0, Number(venta.value.total ?? 0) - sumaPagos.value);
+    venta.value.estado = estadoCalculado.value;
   }
-
-  // ─── Cotización ──────────────────────────────────────────────────────────────
 
   async function cargarCotizacionActiva(monedaId: number) {
     try {
       const res = await axios.get('api/cotizacions', {
         params: { 'monedaId.equals': monedaId, 'activo.equals': true, page: 0, size: 1, sort: 'fecha,desc' },
       });
+
       cotizacionActiva.value = res.data?.[0] ?? null;
       if (cotizacionActiva.value) {
         venta.value.cotizacion = cotizacionActiva.value.valorVenta;
@@ -118,73 +121,173 @@ export function useVentaEditor() {
     }
   }
 
-  watch(() => venta.value.moneda, (m) => {
-    if (m?.id) cargarCotizacionActiva(m.id);
-  });
-
-  // ─── Detalles (vehículos) ────────────────────────────────────────────────────
-
   function agregarVehiculo(vehiculo: IVehiculo) {
-    // Verificar que no esté ya en la lista
-    if (detalles.value.some(d => d.vehiculo.id === vehiculo.id)) {
-      error.value = `El vehículo ${vehiculo.patente} ya está en la venta`;
+    if (detalles.value.some(detalle => detalle.vehiculo.id === vehiculo.id)) {
+      error.value = `El vehiculo ${vehiculo.patente} ya esta agregado en la venta`;
       return;
     }
+
     if (vehiculo.condicion === 'VENDIDO') {
-      error.value = `El vehículo ${vehiculo.patente} ya fue vendido`;
+      error.value = `El vehiculo ${vehiculo.patente} ya fue vendido`;
       return;
     }
-    error.value = null;
+
     const precio = Number(vehiculo.precio ?? 0);
+    if (!Number.isFinite(precio) || precio <= 0) {
+      error.value = `El vehiculo ${vehiculo.patente} no tiene un precio valido`;
+      return;
+    }
+
+    error.value = null;
     detalles.value.push({
-      _key:           `tmp-${Date.now()}-${vehiculo.id}`,
+      _key: `tmp-${Date.now()}-${vehiculo.id}`,
       vehiculo,
       precioUnitario: precio,
-      cantidad:       1,
-      subtotal:       precio,
-      guardado:       false,
+      cantidad: 1,
+      subtotal: precio,
+      guardado: false,
     });
   }
 
   function actualizarPrecioDetalle(key: string, nuevoPrecio: number) {
-    const d = detalles.value.find(x => x._key === key);
-    if (d) {
-      d.precioUnitario = nuevoPrecio;
-      d.subtotal       = nuevoPrecio * d.cantidad;
-      d.guardado       = false;
+    const detalle = detalles.value.find(item => item._key === key);
+    if (!detalle) return;
+
+    if (!Number.isFinite(nuevoPrecio) || nuevoPrecio <= 0) {
+      error.value = 'El precio del vehiculo debe ser mayor a 0';
+      return;
     }
+
+    detalle.precioUnitario = nuevoPrecio;
+    detalle.subtotal = nuevoPrecio * detalle.cantidad;
+    detalle.guardado = false;
+    error.value = null;
   }
 
   function quitarDetalle(key: string) {
-    detalles.value = detalles.value.filter(d => d._key !== key);
+    detalles.value = detalles.value.filter(detalle => detalle._key !== key);
+    error.value = null;
   }
 
-  // ─── Pagos ───────────────────────────────────────────────────────────────────
-
   function agregarPago(monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia = '') {
-    if (monto <= 0) { error.value = 'El monto debe ser mayor que 0'; return; }
+    const montoNormalizado = Number(monto ?? 0);
+    const saldoActual = Number(venta.value.saldo ?? 0);
+    const referenciaNormalizada = referencia.trim();
+
+    if (!Number.isFinite(montoNormalizado) || montoNormalizado <= 0) {
+      error.value = 'El monto debe ser mayor que 0';
+      return;
+    }
+
+    if (saldoActual <= EPSILON) {
+      error.value = 'No hay saldo pendiente para registrar pagos';
+      return;
+    }
+
+    if (montoNormalizado - saldoActual > EPSILON) {
+      error.value = 'El pago no puede superar el saldo pendiente';
+      return;
+    }
+
+    if (metodoPago?.requiereReferencia && !referenciaNormalizada) {
+      error.value = `La referencia es obligatoria para ${metodoPago.descripcion ?? metodoPago.codigo ?? 'el metodo de pago seleccionado'}`;
+      return;
+    }
+
     error.value = null;
     pagos.value.push({
-      _key:       `tmp-pago-${Date.now()}`,
-      monto,
-      fecha:      new Date(),
-      referencia,
+      _key: `tmp-pago-${Date.now()}`,
+      monto: montoNormalizado,
+      fecha: new Date(),
+      referencia: referenciaNormalizada,
       metodoPago,
       moneda,
-      guardado:   false,
+      guardado: false,
     });
   }
 
   function quitarPago(key: string) {
-    pagos.value = pagos.value.filter(p => p._key !== key);
+    pagos.value = pagos.value.filter(pago => pago._key !== key);
+    error.value = null;
   }
 
-  // ─── Persistencia ────────────────────────────────────────────────────────────
+  function validarVentaAntesDeGuardar() {
+    if (!venta.value.cliente?.id) {
+      throw new Error('Debe seleccionar un cliente');
+    }
+
+    if (!venta.value.fecha || Number.isNaN(new Date(venta.value.fecha as Date).getTime())) {
+      throw new Error('La fecha de la venta es obligatoria');
+    }
+
+    if (detalles.value.length === 0) {
+      throw new Error('Debe agregar al menos un vehiculo');
+    }
+
+    if (detalles.value.some(detalle => !detalle.vehiculo?.id)) {
+      throw new Error('Todos los detalles deben tener un vehiculo asociado');
+    }
+
+    if (detalles.value.some((detalle, index) => detalles.value.findIndex(item => item.vehiculo.id === detalle.vehiculo.id) !== index)) {
+      throw new Error('No se puede registrar el mismo vehiculo mas de una vez');
+    }
+
+    if (detalles.value.some(detalle => detalle.vehiculo.condicion === 'VENDIDO')) {
+      throw new Error('No se puede confirmar una venta con vehiculos ya vendidos');
+    }
+
+    if (
+      detalles.value.some(
+        detalle =>
+          !Number.isFinite(Number(detalle.precioUnitario)) ||
+          !Number.isFinite(Number(detalle.subtotal)) ||
+          Number(detalle.precioUnitario) <= 0 ||
+          Number(detalle.subtotal) <= 0,
+      )
+    ) {
+      throw new Error('Todos los detalles deben tener importes validos');
+    }
+
+    const importeNeto = Number(venta.value.importeNeto ?? 0);
+    const impuesto = Number(venta.value.impuesto ?? 0);
+    const total = Number(venta.value.total ?? 0);
+
+    if (importeNeto <= 0 || total <= 0) {
+      throw new Error('La venta debe tener un total mayor a 0');
+    }
+
+    const totalCalculado = Number((importeNeto + impuesto).toFixed(2));
+    const totalActual = Number(total.toFixed(2));
+    if (totalCalculado !== totalActual) {
+      throw new Error('El total debe coincidir con importe neto + impuesto');
+    }
+
+    for (const pago of pagos.value) {
+      if (!Number.isFinite(Number(pago.monto)) || Number(pago.monto) <= 0) {
+        throw new Error('Todos los pagos deben tener un monto mayor a 0');
+      }
+
+      if (pago.metodoPago?.requiereReferencia && !pago.referencia.trim()) {
+        throw new Error(
+          `La referencia es obligatoria para ${pago.metodoPago.descripcion ?? pago.metodoPago.codigo ?? 'el metodo de pago seleccionado'}`,
+        );
+      }
+    }
+
+    if (sumaPagos.value - total > EPSILON) {
+      throw new Error('Los pagos no pueden superar el total de la venta');
+    }
+
+    venta.value.estado = estadoCalculado.value;
+  }
 
   async function guardarVenta(): Promise<IVenta> {
+    validarVentaAntesDeGuardar();
+
     const payload = {
+      id: venta.value.id,
       fecha: venta.value.fecha ?? new Date(),
-      estado: venta.value.estado ?? EstadoVenta.PENDIENTE,
+      estado: estadoCalculado.value,
       cotizacion: venta.value.cotizacion,
       porcentajeImpuesto: venta.value.porcentajeImpuesto,
       importeNeto: venta.value.importeNeto,
@@ -192,52 +295,54 @@ export function useVentaEditor() {
       total: venta.value.total,
       totalPagado: venta.value.totalPagado,
       saldo: venta.value.saldo,
-
-
+      observaciones: venta.value.observaciones,
       cliente: venta.value.cliente ? { id: venta.value.cliente.id } : null,
       moneda: venta.value.moneda ? { id: venta.value.moneda.id } : null,
     };
+
     const res = venta.value.id
       ? await axios.put<IVenta>(`api/ventas/${venta.value.id}`, payload)
       : await axios.post<IVenta>('api/ventas', payload);
-    venta.value = { ...venta.value, ...res.data };
+
+    venta.value = { ...venta.value, ...res.data, estado: estadoCalculado.value };
     return res.data;
   }
 
   async function guardarDetalles(ventaId: number) {
-    for (const d of detalles.value.filter(x => !x.guardado)) {
+    for (const detalle of detalles.value.filter(item => !item.guardado)) {
       const payload = {
-        id:             d.id,
-        precioUnitario: d.precioUnitario,
-        cantidad:       d.cantidad,
-        subtotal:       d.subtotal,
-        venta:          { id: ventaId },
-        vehiculo:       { id: d.vehiculo.id },
+        id: detalle.id,
+        precioUnitario: detalle.precioUnitario,
+        cantidad: detalle.cantidad,
+        subtotal: detalle.subtotal,
+        venta: { id: ventaId },
+        vehiculo: { id: detalle.vehiculo.id },
       };
-      const res = d.id
-        ? await axios.put(`api/detalle-ventas/${d.id}`, payload)
+
+      const res = detalle.id
+        ? await axios.put(`api/detalle-ventas/${detalle.id}`, payload)
         : await axios.post('api/detalle-ventas', payload);
-      d.id      = res.data.id;
-      d.guardado = true;
+
+      detalle.id = res.data.id;
+      detalle.guardado = true;
     }
   }
 
   async function guardarPagos(ventaId: number) {
-    for (const p of pagos.value.filter(x => !x.guardado)) {
+    for (const pago of pagos.value.filter(item => !item.guardado)) {
       const payload = {
-        id:         p.id,
-        monto:      p.monto,
-        fecha:      p.fecha,
-        referencia: p.referencia || null,
-        venta:      { id: ventaId },
-        metodoPago: p.metodoPago ? { id: p.metodoPago.id } : null,
-        moneda:     p.moneda     ? { id: p.moneda.id }     : null,
+        id: pago.id,
+        monto: pago.monto,
+        fecha: pago.fecha,
+        referencia: pago.referencia || null,
+        venta: { id: ventaId },
+        metodoPago: pago.metodoPago ? { id: pago.metodoPago.id } : null,
+        moneda: pago.moneda ? { id: pago.moneda.id } : null,
       };
-      const res = p.id
-        ? await axios.put(`api/pagos/${p.id}`, payload)
-        : await axios.post('api/pagos', payload);
-      p.id      = res.data.id;
-      p.guardado = true;
+
+      const res = pago.id ? await axios.put(`api/pagos/${pago.id}`, payload) : await axios.post(`api/pagos`, payload);
+      pago.id = res.data.id;
+      pago.guardado = true;
     }
   }
 
@@ -245,28 +350,25 @@ export function useVentaEditor() {
     const numero = `0001-${String(ventaId).padStart(8, '0')}`;
     const payload: Partial<IComprobante> = {
       numeroComprobante: numero,
-      fechaEmision:      new Date(),
-      importeNeto:       venta.value.importeNeto,
-      impuesto:          venta.value.impuesto,
-      total:             venta.value.total,
-      venta:             { id: ventaId } as any,
-      tipoComprobante:   { id: tipoComprobante.id } as any,
-      moneda:            moneda ? { id: moneda.id } as any : null,
+      fechaEmision: new Date(),
+      importeNeto: venta.value.importeNeto,
+      impuesto: venta.value.impuesto,
+      total: venta.value.total,
+      venta: { id: ventaId } as IComprobante['venta'],
+      tipoComprobante: { id: tipoComprobante.id } as IComprobante['tipoComprobante'],
+      moneda: moneda ? ({ id: moneda.id } as IComprobante['moneda']) : null,
     };
+
     const res = await axios.post<IComprobante>('api/comprobantes', payload);
     return res.data;
   }
 
-  // ─── Flujo completo ──────────────────────────────────────────────────────────
-
   async function confirmar(tipoComprobante?: ITipoComprobante): Promise<{ venta: IVenta; comprobante?: IComprobante }> {
-    if (detalles.value.length === 0) throw new Error('Debe agregar al menos un vehículo');
-    if (!venta.value.cliente?.id)    throw new Error('Debe seleccionar un cliente');
-
     guardando.value = true;
-    error.value     = null;
+    error.value = null;
 
     try {
+      validarVentaAntesDeGuardar();
       const ventaGuardada = await guardarVenta();
       await guardarDetalles(ventaGuardada.id!);
       await guardarPagos(ventaGuardada.id!);
@@ -282,8 +384,6 @@ export function useVentaEditor() {
     }
   }
 
-  // ─── Cargar venta existente ──────────────────────────────────────────────────
-
   async function cargarVenta(ventaId: number) {
     const [ventaRes, detallesRes, pagosRes] = await Promise.all([
       axios.get<IVenta>(`api/ventas/${ventaId}`),
@@ -293,47 +393,55 @@ export function useVentaEditor() {
 
     venta.value = ventaRes.data;
 
-    detalles.value = (detallesRes.data as IDetalleVenta[]).map(d => ({
-      _key:           `loaded-${d.id}`,
-      id:             d.id,
-      vehiculo:       d.vehiculo!,
-      precioUnitario: Number(d.precioUnitario),
-      cantidad:       d.cantidad ?? 1,
-      subtotal:       Number(d.subtotal),
-      guardado:       true,
+    detalles.value = (detallesRes.data as IDetalleVenta[]).map(detalle => ({
+      _key: `loaded-${detalle.id}`,
+      id: detalle.id,
+      vehiculo: detalle.vehiculo!,
+      precioUnitario: Number(detalle.precioUnitario),
+      cantidad: detalle.cantidad ?? 1,
+      subtotal: Number(detalle.subtotal),
+      guardado: true,
     }));
 
-    pagos.value = (pagosRes.data as IPago[]).map(p => ({
-      _key:       `loaded-${p.id}`,
-      id:         p.id,
-      monto:      Number(p.monto),
-      fecha:      new Date(p.fecha!),
-      referencia: p.referencia ?? '',
-      metodoPago: p.metodoPago ?? null,
-      moneda:     p.moneda ?? null,
-      guardado:   true,
+    pagos.value = (pagosRes.data as IPago[]).map(pago => ({
+      _key: `loaded-${pago.id}`,
+      id: pago.id,
+      monto: Number(pago.monto),
+      fecha: new Date(pago.fecha!),
+      referencia: pago.referencia ?? '',
+      metodoPago: pago.metodoPago ?? null,
+      moneda: pago.moneda ?? null,
+      guardado: true,
     }));
+
+    recalcularSaldo();
   }
 
-  // ─── Helpers de formato ──────────────────────────────────────────────────────
-
-  const fmt = (n?: number | null) =>
-    Number(n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (n?: number | null) => Number(n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return {
-    // Estado
-    venta, detalles, pagos, guardando, error,
-    // Catálogos
-    clientes, monedas, metodoPagos, tipoComprobantes, cotizacionActiva,
-    // Computed
-    sumaSubtotales, sumaPagos,
-    // Acciones detalles
-    agregarVehiculo, actualizarPrecioDetalle, quitarDetalle,
-    // Acciones pagos
-    agregarPago, quitarPago,
-    // Flujo
-    confirmar, cargarVenta, cargarCotizacionActiva,
-    // Utils
+    venta,
+    detalles,
+    pagos,
+    guardando,
+    error,
+    clientes,
+    monedas,
+    metodoPagos,
+    tipoComprobantes,
+    cotizacionActiva,
+    estadoCalculado,
+    sumaSubtotales,
+    sumaPagos,
+    agregarVehiculo,
+    actualizarPrecioDetalle,
+    quitarDetalle,
+    agregarPago,
+    quitarPago,
+    confirmar,
+    cargarVenta,
+    cargarCotizacionActiva,
+    validarVentaAntesDeGuardar,
     fmt,
   };
 }

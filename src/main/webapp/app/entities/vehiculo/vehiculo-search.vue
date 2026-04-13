@@ -1,6 +1,5 @@
 <template>
-  <div class="container py-4" style="max-width:680px">
-
+  <div class="container py-4" style="max-width: 680px">
     <h4 class="fw-semibold mb-1">Buscar vehículo</h4>
     <p class="text-muted small mb-4">Ingresá la patente para buscar o registrar un vehículo.</p>
 
@@ -15,15 +14,12 @@
           @clear="limpiar"
         />
       </div>
-      <button class="btn btn-primary" @click="buscar" :disabled="loading || !patente">
-        Buscar
-      </button>
+      <button class="btn btn-primary" @click="buscar" :disabled="loading || !patente">Buscar</button>
     </div>
 
     <!-- VEHÍCULO ENCONTRADO -->
     <div v-if="vehiculo && modo === 'EXISTENTE'" class="card border-0 shadow-sm">
       <div class="card-body p-4">
-
         <div class="d-flex justify-content-between align-items-start mb-3">
           <h3 class="fw-bold mb-0">{{ vehiculo.patente }}</h3>
           <div class="d-flex gap-2">
@@ -53,17 +49,10 @@
         </div>
 
         <div class="d-flex gap-2 mt-4 flex-wrap">
-          <button v-if="vehiculo.condicion !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">
-            💰 Vender
-          </button>
-          <button v-if="vehiculo.condicion === 'EN_VENTA'" class="btn btn-warning" @click="reservar">
-            🟡 Reservar
-          </button>
-          <button class="btn btn-outline-primary" @click="editar">
-            ✏️ Editar
-          </button>
+          <button v-if="vehiculo.condicion !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">💰 Vender</button>
+          <button v-if="vehiculo.condicion === 'EN_VENTA'" class="btn btn-warning" @click="reservar">🟡 Reservar</button>
+          <button class="btn btn-outline-primary" @click="editar">✏️ Editar</button>
         </div>
-
       </div>
     </div>
 
@@ -73,20 +62,13 @@
         <strong>Vehículo no encontrado</strong>
         <p class="mb-0 small">No existe ningún vehículo con patente "{{ patente }}"</p>
       </div>
-      <button class="btn btn-success btn-sm" @click="modo = 'CREAR'">
-        + Registrar vehículo
-      </button>
+      <button class="btn btn-success btn-sm" @click="modo = 'CREAR'">+ Registrar vehículo</button>
     </div>
 
     <!-- CREAR -->
     <div v-if="modo === 'CREAR'">
-      <VehiculoQuickCreate
-        :patente-inicial="patente"
-        @guardado="onVehiculoCreado"
-        @cerrar="modo = 'BUSCAR'"
-      />
+      <VehiculoQuickCreate :patente-inicial="patente" @guardado="onVehiculoCreado" @cerrar="modo = 'BUSCAR'" />
     </div>
-
   </div>
 </template>
 
@@ -106,8 +88,12 @@ const { vehiculo, loading, error, notFound, buscarPorPatente, setVehiculo, limpi
 const patente = ref('');
 const modo = ref<'BUSCAR' | 'EXISTENTE' | 'NO_ENCONTRADO' | 'CREAR'>('BUSCAR');
 
-watch(vehiculo, v => { if (v) modo.value = 'EXISTENTE'; });
-watch(notFound, v => { if (v) modo.value = 'NO_ENCONTRADO'; });
+watch(vehiculo, v => {
+  if (v) modo.value = 'EXISTENTE';
+});
+watch(notFound, v => {
+  if (v) modo.value = 'NO_ENCONTRADO';
+});
 
 async function buscar() {
   await buscarPorPatente(patente.value);
@@ -129,8 +115,8 @@ function irAVenta() {
   if (!vehiculo.value?.id) return;
 
   router.push({
-    name: 'VentaWizard',
-    query: { vehiculoId: vehiculo.value.id }
+    name: 'VentaEditor',
+    query: { vehiculoId: vehiculo.value.id },
   });
 }
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
@@ -145,7 +131,6 @@ async function reservar() {
     alertService.showError('ID de cliente inválido');
     return;
   }
-
 
   try {
     await vehiculoService.reservar(vehiculo.value.id, Number(clienteId));

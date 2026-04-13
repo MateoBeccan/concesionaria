@@ -1,176 +1,390 @@
-import { type Ref, computed, defineComponent, inject, ref } from 'vue';
+import { computed, defineComponent, inject, ref, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+
+import { helpers } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
 
-import MotorService from '@/entities/motor/motor.service';
-import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
-import VersionService from '@/entities/version/version.service';
+import InventarioService from '@/entities/inventario/inventario.service';
 import MarcaService from '@/entities/marca/marca.service';
 import ModeloService from '@/entities/modelo/modelo.service';
-
+import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
+import VersionService from '@/entities/version/version.service';
 import { useAlertService } from '@/shared/alert/alert.service';
-import { useValidation } from '@/shared/composables';
-import { useDateFormat } from '@/shared/composables';
+import { useDateFormat, useValidation } from '@/shared/composables';
+import type { IInventario } from '@/shared/model/inventario.model';
+import type { IMotor } from '@/shared/model/motor.model';
+import type { ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
+import { CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
+import { EstadoInventario } from '@/shared/model/enumerations/estado-inventario.model';
 import { EstadoVehiculo } from '@/shared/model/enumerations/estado-vehiculo.model';
-
-import { type IMotor } from '@/shared/model/motor.model';
-import { type ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
-import { type IVehiculo, Vehiculo } from '@/shared/model/vehiculo.model';
-import { type IVersion } from '@/shared/model/version.model';
+import type { IVehiculo } from '@/shared/model/vehiculo.model';
+import { Vehiculo } from '@/shared/model/vehiculo.model';
+import type { IVersion } from '@/shared/model/version.model';
 
 import VehiculoService from './vehiculo.service';
+import { useVehiculoForm } from './useVehiculoForm';
+
+const PATENTE_REGEX = /^(?:[A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
+
+function normalizarPatente(value?: string | null): string | null {
+  const patente = (value ?? '').trim().toUpperCase();
+  return patente.length > 0 ? patente : null;
+}
+
+function patenteEsObligatoria(estado?: keyof typeof EstadoVehiculo | null): boolean {
+  return estado === EstadoVehiculo.USADO;
+}
+
+function mapearCondicionAInventario(condicion?: keyof typeof CondicionVehiculo | null) {
+  if (condicion === CondicionVehiculo.RESERVADO) {
+    return { estadoInventario: EstadoInventario.RESERVADO, disponible: false };
+  }
+
+  if (condicion === CondicionVehiculo.VENDIDO) {
+    return { estadoInventario: EstadoInventario.VENDIDO, disponible: false };
+  }
+
+  return { estadoInventario: EstadoInventario.DISPONIBLE, disponible: true };
+}
 
 export default defineComponent({
   name: 'VehiculoUpdate',
 
   setup() {
-    // SERVICES
     const vehiculoService = inject('vehiculoService', () => new VehiculoService());
-    const alertService = inject('alertService', () => useAlertService(), true);
-
-    const versionService = inject('versionService', () => new VersionService());
-    const motorService = inject('motorService', () => new MotorService());
-    const tipoVehiculoService = inject('tipoVehiculoService', () => new TipoVehiculoService());
+    const inventarioService = inject('inventarioService', () => new InventarioService());
     const marcaService = inject('marcaService', () => new MarcaService());
     const modeloService = inject('modeloService', () => new ModeloService());
-
-    // STATE
-    const vehiculo: Ref<IVehiculo> = ref({
-      ...new Vehiculo(),
-      condicion: 'EN_VENTA',
-    });
-
-    const versions: Ref<IVersion[]> = ref([]);
-    const motors: Ref<IMotor[]> = ref([]);
-    const tipoVehiculos: Ref<ITipoVehiculo[]> = ref([]);
-
-    const marcas = ref<any[]>([]);
-    const modelos = ref<any[]>([]);
-
-    const selectedMarca = ref<any>(null);
-    const selectedModelo = ref<any>(null);
-
-    const estadoVehiculoValues: Ref<string[]> = ref(Object.keys(EstadoVehiculo));
-    const isSaving = ref(false);
+    const versionService = inject('versionService', () => new VersionService());
+    const tipoVehiculoService = inject('tipoVehiculoService', () => new TipoVehiculoService());
+    const alertService = inject('alertService', () => useAlertService(), true);
 
     const route = useRoute();
     const router = useRouter();
     const previousState = () => router.go(-1);
 
-    // COMPUTED
-    const modelosFiltrados = computed(() =>
-      modelos.value.filter(m => m.marca?.id === selectedMarca.value?.id)
-    );
+    const vehiculo: Ref<IVehiculo> = ref({
+      ...new Vehiculo(),
+      condicion: CondicionVehiculo.EN_VENTA,
+      km: 0,
+    });
 
-    const versionesFiltradas = computed(() =>
-      versions.value.filter(v => v.modelo?.id === selectedModelo.value?.id)
-    );
+    const inventarioAsociado = ref<IInventario | null>(null);
+    const patenteDuplicada = ref('');
+    const chequeandoPatente = ref(false);
+    const isSaving = ref(false);
 
-    // EVENTS
-    function onMarcaChange() {
-      selectedModelo.value = null;
-      vehiculo.value.version = null;
-    }
+    const estadoVehiculoValues: Ref<string[]> = ref(Object.values(EstadoVehiculo));
 
-    function onModeloChange() {
-      vehiculo.value.version = null;
+    const formCatalog = useVehiculoForm({
+      marcaService: marcaService(),
+      modeloService: modeloService(),
+      versionService: versionService(),
+      tipoVehiculoService: tipoVehiculoService(),
+      onError: (error: any) => alertService.showHttpError(error.response),
+    });
 
-      // auto tipo vehículo
-      if (selectedModelo.value?.carroceria) {
-        const nombre = selectedModelo.value.carroceria.nombre;
+    const {
+      marcas,
+      modelos,
+      versions,
+      tipoVehiculos,
+      selectedMarca,
+      selectedModelo,
+      modelosFiltrados,
+      versionesFiltradas,
+      motoresCompatibles,
+      loadingMotores,
+      motorHint,
+      cargarCatalogos,
+      onMarcaChange,
+      onModeloChange,
+      onVersionChange,
+      isMotorCompatible,
+    } = formCatalog;
 
-        if (nombre.includes('Pickup')) {
-          vehiculo.value.tipoVehiculo = tipoVehiculos.value.find(t => t.nombre === 'Camioneta');
-        } else if (nombre.includes('SUV') || nombre.includes('Crossover')) {
-          vehiculo.value.tipoVehiculo = tipoVehiculos.value.find(t => t.nombre === 'SUV');
-        } else {
-          vehiculo.value.tipoVehiculo = tipoVehiculos.value.find(t => t.nombre === 'Auto');
-        }
+    const condicionComercialLabel = computed(() => {
+      const labels: Record<string, string> = {
+        [CondicionVehiculo.EN_VENTA]: 'Disponible para vender',
+        [CondicionVehiculo.RESERVADO]: 'Reservado',
+        [CondicionVehiculo.VENDIDO]: 'Vendido',
+      };
+
+      return labels[vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA] ?? 'Sin definir';
+    });
+
+    const condicionComercialBadge = computed(() => {
+      const badges: Record<string, string> = {
+        [CondicionVehiculo.EN_VENTA]: 'bg-primary',
+        [CondicionVehiculo.RESERVADO]: 'bg-warning text-dark',
+        [CondicionVehiculo.VENDIDO]: 'bg-danger',
+      };
+
+      return badges[vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA] ?? 'bg-light text-dark border';
+    });
+
+    const inventarioWarning = computed(() => {
+      if (!inventarioAsociado.value) return '';
+
+      const esperado = mapearCondicionAInventario(vehiculo.value.condicion);
+      if (
+        inventarioAsociado.value.estadoInventario !== esperado.estadoInventario ||
+        inventarioAsociado.value.disponible !== esperado.disponible
+      ) {
+        return 'La condicion comercial del vehiculo no coincide con el estado actual del inventario. Revisalo antes de operar.';
       }
-    }
 
-    // LOAD DATA
-    const initRelationships = async () => {
-      const [v, m, t] = await Promise.all([
-        versionService().retrieve(),
-        motorService().retrieve(),
-        tipoVehiculoService().retrieve(),
-      ]);
+      return '';
+    });
 
-      versions.value = v.data;
-      motors.value = m.data;
-      tipoVehiculos.value = t.data;
-    };
-
-    const initExtraData = async () => {
-      const [marcasRes, modelosRes] = await Promise.all([
-        marcaService().retrieve(),
-        modeloService().retrieve(),
-      ]);
-
-      marcas.value = marcasRes.data;
-      modelos.value = modelosRes.data;
-    };
-
-    const retrieveVehiculo = async (vehiculoId: any) => {
-      try {
-        vehiculo.value = await vehiculoService().find(vehiculoId);
-      } catch (error: any) {
-        alertService.showHttpError(error.response);
+    const motorValidationMessage = computed(() => {
+      if (!vehiculo.value.version) {
+        return '';
       }
-    };
 
-    if (route.params?.vehiculoId) {
-      retrieveVehiculo(route.params.vehiculoId);
-    }
+      if (loadingMotores.value) {
+        return '';
+      }
 
-    initRelationships();
-    initExtraData();
+      if (motoresCompatibles.value.length === 0) {
+        return 'La version seleccionada no tiene motores configurados.';
+      }
 
-    // 🔥 VALIDATION
-    const validations = useValidation();
+      if (!vehiculo.value.motor) {
+        return '';
+      }
 
+      if (!isMotorCompatible(vehiculo.value.motor.id)) {
+        return 'El motor seleccionado no corresponde a la version elegida.';
+      }
+
+      return '';
+    });
+
+    const canSaveVehiculo = computed(() => {
+      if (!vehiculo.value.version) {
+        return true;
+      }
+
+      if (loadingMotores.value || motoresCompatibles.value.length === 0) {
+        return false;
+      }
+
+      return !!vehiculo.value.motor?.id && isMotorCompatible(vehiculo.value.motor.id);
+    });
+
+    const patenteRequerida = computed(() => patenteEsObligatoria(vehiculo.value.estado));
+
+    const patenteHint = computed(() => {
+      if (patenteRequerida.value) {
+        return 'Para unidades usadas la patente es obligatoria.';
+      }
+
+      return 'La patente puede cargarse más adelante.';
+    });
+
+    const validation = useValidation();
     const validationRules = {
-      estado: { required: validations.required('El estado es obligatorio.') },
-      fechaFabricacion: { required: validations.required('La fecha es obligatoria.') },
-      km: {
-        required: validations.required('KM requerido'),
-        integer: validations.integer('Debe ser entero'),
-        min: validations.minValue('Min 0', 0),
+      patente: {
+        requiredWhenUsed: helpers.withMessage('La patente es obligatoria para vehiculos usados.', value => {
+          if (!patenteRequerida.value) {
+            return true;
+          }
+
+          return !!normalizarPatente(value);
+        }),
+        validFormat: helpers.withMessage('Usa formato ABC123 o AB123CD.', value => {
+          const patente = normalizarPatente(value);
+          return patente ? PATENTE_REGEX.test(patente) : !patenteRequerida.value;
+        }),
       },
-      patente: { required: validations.required('Patente obligatoria') },
+      estado: {
+        required: validation.required('Selecciona el estado fisico del vehiculo.'),
+      },
+      fechaFabricacion: {
+        required: validation.required('La fecha de fabricacion es obligatoria.'),
+        notFuture: helpers.withMessage('La fecha de fabricacion no puede ser futura.', value => {
+          if (!value) return false;
+          const fecha = new Date(value as string);
+          if (Number.isNaN(fecha.getTime())) return false;
+
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+          fecha.setHours(0, 0, 0, 0);
+          return fecha <= hoy;
+        }),
+      },
       precio: {
-        required: validations.required('Precio obligatorio'),
-        min: validations.minValue('Debe ser mayor a 0', 0),
+        required: validation.required('El precio es obligatorio.'),
+        min: validation.minValue('El precio debe ser mayor a 0.', 0.01),
+      },
+      km: {
+        required: validation.required('Los kilometros son obligatorios.'),
+        integer: validation.integer('Los kilometros deben ser enteros.'),
+        min: validation.minValue('Los kilometros no pueden ser negativos.', 0),
+      },
+      version: {
+        required: validation.required('Selecciona una version para el vehiculo.'),
+      },
+      motor: {
+        required: helpers.withMessage('Selecciona un motor compatible para continuar.', () => {
+          if (!vehiculo.value.version) {
+            return true;
+          }
+
+          if (loadingMotores.value || motoresCompatibles.value.length === 0) {
+            return false;
+          }
+
+          return !!vehiculo.value.motor;
+        }),
+        compatible: helpers.withMessage('El motor seleccionado no corresponde a la version elegida.', () => {
+          if (!vehiculo.value.version || !vehiculo.value.motor) {
+            return true;
+          }
+
+          return isMotorCompatible(vehiculo.value.motor.id);
+        }),
+      },
+      tipoVehiculo: {
+        required: validation.required('Selecciona el tipo de vehiculo.'),
       },
     };
 
     const v$ = useVuelidate(validationRules, vehiculo as any);
 
-    // 🔥 RETURN
+    async function cargarInventarioAsociado(vehiculoId: number) {
+      try {
+        const res = await inventarioService().retrieve({ page: 0, size: 200, sort: ['fechaIngreso,desc'] });
+        inventarioAsociado.value = (res.data as IInventario[]).find(item => item.vehiculo?.id === vehiculoId) ?? null;
+      } catch {
+        inventarioAsociado.value = null;
+      }
+    }
+
+    async function retrieveVehiculo(vehiculoId: number) {
+      try {
+        vehiculo.value = await vehiculoService().find(vehiculoId);
+        vehiculo.value.patente = normalizarPatente(vehiculo.value.patente) ?? '';
+        await onVersionChange(vehiculo.value, true);
+        await cargarInventarioAsociado(vehiculoId);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    }
+
+    async function handleMarcaChange() {
+      onMarcaChange(vehiculo.value);
+      await v$.value.version.$reset();
+      await v$.value.motor.$reset();
+    }
+
+    async function handleModeloChange() {
+      onModeloChange(vehiculo.value);
+      await v$.value.version.$reset();
+      await v$.value.motor.$reset();
+    }
+
+    async function handleVersionChange() {
+      await onVersionChange(vehiculo.value);
+      v$.value.motor.$touch();
+    }
+
+    async function validarPatenteUnica() {
+      patenteDuplicada.value = '';
+
+      const patenteNormalizada = normalizarPatente(vehiculo.value.patente);
+      vehiculo.value.patente = patenteNormalizada ?? '';
+
+      if (!patenteNormalizada) {
+        return !patenteRequerida.value;
+      }
+
+      if (!PATENTE_REGEX.test(patenteNormalizada)) {
+        return false;
+      }
+
+      chequeandoPatente.value = true;
+      try {
+        const existente = await vehiculoService().findByPatente(patenteNormalizada);
+        if (!vehiculo.value.id || existente.id !== vehiculo.value.id) {
+          patenteDuplicada.value = `La patente ${patenteNormalizada} ya esta registrada.`;
+          return false;
+        }
+
+        return true;
+      } catch (error: any) {
+        if (error.response?.status === 404) {
+          return true;
+        }
+
+        alertService.showHttpError(error.response);
+        return false;
+      } finally {
+        chequeandoPatente.value = false;
+      }
+    }
+
+    function buildPayload(): IVehiculo {
+      return {
+        id: vehiculo.value.id,
+        patente: normalizarPatente(vehiculo.value.patente) ?? undefined,
+        estado: vehiculo.value.estado,
+        condicion: vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA,
+        fechaFabricacion: vehiculo.value.fechaFabricacion,
+        km: vehiculo.value.km,
+        precio: vehiculo.value.precio,
+        version: vehiculo.value.version ? ({ id: vehiculo.value.version.id } as IVersion) : null,
+        motor: vehiculo.value.motor ? ({ id: vehiculo.value.motor.id } as IMotor) : null,
+        tipoVehiculo: vehiculo.value.tipoVehiculo ? ({ id: vehiculo.value.tipoVehiculo.id } as ITipoVehiculo) : null,
+      };
+    }
+
+    async function initializeForm() {
+      await cargarCatalogos();
+
+      if (route.params?.vehiculoId) {
+        await retrieveVehiculo(Number(route.params.vehiculoId));
+        return;
+      }
+
+      await onVersionChange(vehiculo.value, true);
+    }
+
+    initializeForm();
+
     return {
-      vehiculo,
       vehiculoService,
       alertService,
+      vehiculo,
+      inventarioAsociado,
+      inventarioWarning,
       previousState,
-      estadoVehiculoValues,
-      isSaving,
-
-      versions,
-      motors,
-      tipoVehiculos,
-
       marcas,
-      modelos,
+      tipoVehiculos,
       selectedMarca,
       selectedModelo,
       modelosFiltrados,
       versionesFiltradas,
-
-      onMarcaChange,
-      onModeloChange,
-
+      motoresCompatibles,
+      loadingMotores,
+      motorHint,
+      estadoVehiculoValues,
+      condicionComercialLabel,
+      condicionComercialBadge,
+      patenteDuplicada,
+      chequeandoPatente,
+      isSaving,
       v$,
+      motorValidationMessage,
+      canSaveVehiculo,
+      patenteRequerida,
+      patenteHint,
+      handleMarcaChange,
+      handleModeloChange,
+      handleVersionChange,
+      validarPatenteUnica,
+      buildPayload,
       ...useDateFormat({ entityRef: vehiculo }),
     };
   },
@@ -178,28 +392,19 @@ export default defineComponent({
   methods: {
     async save(): Promise<void> {
       this.v$.$touch();
-      if (this.v$.$invalid) return;
+      if (this.v$.$invalid || !this.canSaveVehiculo) return;
+
+      const patenteDisponible = await this.validarPatenteUnica();
+      if (!patenteDisponible) return;
 
       this.isSaving = true;
 
       try {
-        const payload = {
-          ...this.vehiculo,
-          version: this.vehiculo.version ? { id: this.vehiculo.version.id } : null,
-          motor: this.vehiculo.motor ? { id: this.vehiculo.motor.id } : null,
-          tipoVehiculo: this.vehiculo.tipoVehiculo ? { id: this.vehiculo.tipoVehiculo.id } : null,
-          condicion: this.vehiculo.condicion || 'EN_VENTA',
-        };
+        const payload = this.buildPayload();
+        const result = this.vehiculo.id ? await this.vehiculoService().update(payload) : await this.vehiculoService().create(payload);
+        const identificador = result.patente || 'sin patente asignada';
 
-        const result = this.vehiculo.id
-          ? await this.vehiculoService().update(payload)
-          : await this.vehiculoService().create(payload);
-
-        this.alertService.showSuccess(
-          this.vehiculo.id
-            ? `Vehículo ${result.patente} actualizado`
-            : `Vehículo ${result.patente} creado`
-        );
+        this.alertService.showSuccess(this.vehiculo.id ? `Vehiculo ${identificador} actualizado.` : `Vehiculo ${identificador} creado.`);
 
         this.previousState();
       } catch (error: any) {

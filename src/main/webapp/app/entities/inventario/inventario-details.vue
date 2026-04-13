@@ -1,100 +1,140 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <div v-if="inventario">
-        <h2 class="jh-entity-heading" data-cy="inventarioDetailsHeading"><span>InventarioInventario</span> {{ inventario.id }}</h2>
-        <dl class="row-md jh-entity-details">
-          <dt>
-            <span>Fecha Ingreso</span>
-          </dt>
-          <dd>
-            <span v-if="inventario.fechaIngreso">{{ formatDateLong(inventario.fechaIngreso) }}</span>
-          </dd>
-          <dt>
-            <span>Ubicacion</span>
-          </dt>
-          <dd>
-            <span>{{ inventario.ubicacion }}</span>
-          </dd>
-          <dt>
-            <span>Estado Inventario</span>
-          </dt>
-          <dd>
-            <span>{{ inventario.estadoInventario }}</span>
-          </dd>
-          <dt>
-            <span>Observaciones</span>
-          </dt>
-          <dd>
-            <span>{{ inventario.observaciones }}</span>
-          </dd>
-          <dt>
-            <span>Disponible</span>
-          </dt>
-          <dd>
-            <span>{{ inventario.disponible }}</span>
-          </dd>
-          <dt>
-            <span>Created Date</span>
-          </dt>
-          <dd>
-            <span v-if="inventario.createdDate">{{ formatDateLong(inventario.createdDate) }}</span>
-          </dd>
-          <dt>
-            <span>Last Modified Date</span>
-          </dt>
-          <dd>
-            <span v-if="inventario.lastModifiedDate">{{ formatDateLong(inventario.lastModifiedDate) }}</span>
-          </dd>
-          <dt>
-            <span>Fecha Reserva</span>
-          </dt>
-          <dd>
-            <span v-if="inventario.fechaReserva">{{ formatDateLong(inventario.fechaReserva) }}</span>
-          </dd>
-          <dt>
-            <span>Fecha Vencimiento Reserva</span>
-          </dt>
-          <dd>
-            <span v-if="inventario.fechaVencimientoReserva">{{ formatDateLong(inventario.fechaVencimientoReserva) }}</span>
-          </dd>
-          <dt>
-            <span>Vehiculo</span>
-          </dt>
-          <dd>
-            <div v-if="inventario.vehiculo">
-              <router-link :to="{ name: 'VehiculoView', params: { vehiculoId: inventario.vehiculo.id } }">{{
-                inventario.vehiculo.id
-              }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Cliente Reserva</span>
-          </dt>
-          <dd>
-            <div v-if="inventario.clienteReserva">
-              <router-link :to="{ name: 'ClienteView', params: { clienteId: inventario.clienteReserva.id } }">{{
-                inventario.clienteReserva.id
-              }}</router-link>
-            </div>
-          </dd>
-        </dl>
-        <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
-          <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>
-        </button>
-        <router-link
-          v-if="inventario.id"
-          :to="{ name: 'InventarioEdit', params: { inventarioId: inventario.id } }"
-          custom
-          v-slot="{ navigate }"
-        >
-          <button @click="navigate" class="btn btn-primary">
-            <font-awesome-icon icon="pencil-alt"></font-awesome-icon>&nbsp;<span>Editar</span>
-          </button>
-        </router-link>
-      </div>
+  <div class="container py-4" style="max-width: 860px">
+    <div v-if="!inventario.id" class="text-center py-5">
+      <div class="spinner-border text-primary" />
     </div>
+
+    <template v-else>
+      <div class="page-header">
+        <div>
+          <h1 class="page-title mb-0">{{ inventario.vehiculo?.patente || `Inventario ${inventario.id}` }}</h1>
+          <p class="page-subtitle">Estado real de disponibilidad, reservas y coherencia comercial de la unidad.</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" @click="previousState()">Volver</button>
+          <router-link :to="{ name: 'InventarioEdit', params: { inventarioId: inventario.id } }" class="btn btn-sm btn-primary">
+            Editar
+          </router-link>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="card border-0" style="background: var(--color-primary-light)">
+            <div class="card-body py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+              <div>
+                <div class="text-muted small text-uppercase fw-semibold">Estado operativo</div>
+                <div class="fw-bold fs-5">{{ inventario.estadoInventario }}</div>
+              </div>
+              <div class="d-flex gap-2">
+                <span class="badge" :class="inventario.disponible ? 'bg-success' : 'bg-secondary'">
+                  {{ inventario.disponible ? 'Disponible' : 'No disponible' }}
+                </span>
+                <span class="badge bg-dark">{{ inventario.vehiculo?.condicion ?? 'Sin condición' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="incoherencias.length" class="col-12">
+          <div class="alert alert-danger mb-0">
+            <div class="fw-semibold mb-1">Se detectaron incoherencias</div>
+            <div v-for="item in incoherencias" :key="item">{{ item }}</div>
+          </div>
+        </div>
+
+        <div v-else-if="reservaVencida" class="col-12">
+          <div class="alert alert-warning mb-0">
+            La reserva está vencida. Revisá si corresponde liberarla o renovarla.
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header">Unidad asociada</div>
+            <div class="card-body">
+              <dl class="detail-list">
+                <dt>Vehículo</dt>
+                <dd>
+                  <router-link v-if="inventario.vehiculo?.id" :to="{ name: 'VehiculoView', params: { vehiculoId: inventario.vehiculo.id } }">
+                    {{ inventario.vehiculo?.patente || `Vehículo ${inventario.vehiculo?.id}` }}
+                  </router-link>
+                </dd>
+
+                <dt>Condición comercial</dt>
+                <dd>{{ inventario.vehiculo?.condicion ?? 'Sin dato' }}</dd>
+
+                <dt>Fecha de ingreso</dt>
+                <dd>{{ inventario.fechaIngreso ? formatDateLong(inventario.fechaIngreso) : 'Sin dato' }}</dd>
+
+                <dt>Ubicación</dt>
+                <dd>{{ inventario.ubicacion || 'Sin definir' }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header">Reserva actual</div>
+            <div class="card-body">
+              <dl class="detail-list">
+                <dt>Cliente</dt>
+                <dd>
+                  <router-link
+                    v-if="inventario.clienteReserva?.id"
+                    :to="{ name: 'ClienteView', params: { clienteId: inventario.clienteReserva.id } }"
+                  >
+                    {{ `${inventario.clienteReserva?.apellido ?? ''}, ${inventario.clienteReserva?.nombre ?? ''}`.replace(/^, |, $/g, '') }}
+                  </router-link>
+                  <span v-else>Sin reserva</span>
+                </dd>
+
+                <dt>Desde</dt>
+                <dd>{{ inventario.fechaReserva ? formatDateLong(inventario.fechaReserva) : 'Sin dato' }}</dd>
+
+                <dt>Vence</dt>
+                <dd>{{ inventario.fechaVencimientoReserva ? formatDateLong(inventario.fechaVencimientoReserva) : 'Sin dato' }}</dd>
+
+                <dt>Estado</dt>
+                <dd>{{ reservaVencida ? 'Vencida' : inventario.estadoInventario === 'RESERVADO' ? 'Activa' : 'Sin reserva' }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">Observaciones</div>
+            <div class="card-body">
+              {{ inventario.observaciones || 'Sin observaciones registradas.' }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts" src="./inventario-details.component.ts"></script>
+
+<style scoped>
+.detail-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+
+.detail-list dt {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.detail-list dd {
+  margin: 0;
+}
+</style>
