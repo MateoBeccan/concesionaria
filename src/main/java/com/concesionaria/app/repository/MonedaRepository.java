@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface MonedaRepository extends JpaRepository<Moneda, Long> {}
+public interface MonedaRepository extends JpaRepository<Moneda, Long> {
+    java.util.Optional<Moneda> findByCodigoIgnoreCase(String codigo);
+}

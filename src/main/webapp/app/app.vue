@@ -1,5 +1,5 @@
 <template>
-  <BToastOrchestrator />
+  <BOrchestrator />
 
   <!-- Layout autenticado -->
   <AppLayout v-if="useAuthenticatedLayout">

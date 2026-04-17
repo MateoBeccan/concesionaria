@@ -58,6 +58,8 @@
   <include file="config/liquibase/changelog/20260412143000_add_version_motor_table.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260412150000_seed_version_motor_template.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260412170000_update_vehiculo_patente_nullable.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260415160000_domain_consistency_cleanup.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260417110000_add_audit_user_columns.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <include file="config/liquibase/changelog/20260320182405_added_entity_constraints_Modelo.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260320230055_added_entity_constraints_Version.xml" relativeToChangelogFile="false"/>

@@ -16,10 +16,69 @@
     </section>
 
     <section class="kpi-grid">
-      <article v-for="kpi in kpiCards" :key="kpi.label" class="kpi-card">
-        <div class="kpi-label">{{ kpi.label }}</div>
+      <article v-for="kpi in kpiCards" :key="kpi.label" class="kpi-card" :class="`tone-${kpi.tone}`">
+        <div class="kpi-header">
+          <div class="kpi-label">{{ kpi.label }}</div>
+          <div class="kpi-badge">{{ kpi.badge }}</div>
+        </div>
         <div class="kpi-value">{{ loading ? '...' : kpi.value }}</div>
         <div class="kpi-sub">{{ kpi.sub }}</div>
+      </article>
+    </section>
+
+    <section class="content-grid summary-grid">
+      <article class="card overview-card">
+        <div class="card-header">
+          <div>
+            <p class="card-eyebrow">{{ isAdmin ? 'Resumen ejecutivo' : 'Resumen operativo' }}</p>
+            <h2 class="card-title">{{ isAdmin ? 'Estado del negocio hoy' : 'Foco del dia' }}</h2>
+          </div>
+        </div>
+
+        <div v-if="loading" class="empty-state">Preparando resumen...</div>
+
+        <div v-else class="overview-layout">
+          <div class="overview-main">
+            <span class="overview-label">{{ isAdmin ? 'Resultado visible' : 'Operaciones cerradas hoy' }}</span>
+            <strong class="overview-value">{{ isAdmin ? formatCurrency(kpiData.totalIngresos) : String(kpiData.salesToday) }}</strong>
+            <p class="overview-copy">
+              {{
+                isAdmin
+                  ? `${kpiData.totalVentas} ventas registradas y ${kpiData.soldInventory} unidades ya comercializadas.`
+                  : `${kpiData.pendingSales} ventas pendientes y ${kpiData.availableInventory} unidades listas para ofrecer.`
+              }}
+            </p>
+          </div>
+
+          <div class="overview-points">
+            <div v-for="point in overviewPoints" :key="point.label" class="overview-point">
+              <span>{{ point.label }}</span>
+              <strong>{{ point.value }}</strong>
+              <small>{{ point.copy }}</small>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="card pulse-card">
+        <div class="card-header">
+          <div>
+            <p class="card-eyebrow">{{ isAdmin ? 'Control' : 'Seguimiento' }}</p>
+            <h2 class="card-title">{{ isAdmin ? 'Pulso operativo' : 'Seguimiento del flujo' }}</h2>
+          </div>
+        </div>
+
+        <div v-if="loading" class="empty-state">Cargando indicadores...</div>
+
+        <div v-else class="pulse-list">
+          <div v-for="metric in pulseMetrics" :key="metric.label" class="pulse-item">
+            <div class="pulse-copy">
+              <span class="pulse-label">{{ metric.label }}</span>
+              <small class="pulse-sub">{{ metric.copy }}</small>
+            </div>
+            <strong class="pulse-value">{{ metric.value }}</strong>
+          </div>
+        </div>
       </article>
     </section>
 
@@ -61,6 +120,10 @@
           <div class="status-item">
             <span>Inventario sin ubicacion</span>
             <strong>{{ adminAlerts.withoutLocation }}</strong>
+          </div>
+          <div class="status-item">
+            <span>Ventas pendientes</span>
+            <strong>{{ kpiData.pendingSales }}</strong>
           </div>
           <div class="status-item">
             <span>Cotizacion activa</span>
@@ -185,6 +248,14 @@ interface QuickAction {
   icon: string;
 }
 
+interface KpiCard {
+  label: string;
+  value: string;
+  sub: string;
+  tone: 'finance' | 'inventory' | 'warning' | 'success';
+  badge: string;
+}
+
 const ventaService = new VentaService();
 const vehiculoService = new VehiculoService();
 const clienteService = new ClienteService();
@@ -202,6 +273,9 @@ const kpiData = ref({
   totalVentas: 0,
   totalIngresos: 0,
   salesToday: 0,
+  pendingSales: 0,
+  reservedSales: 0,
+  paidSales: 0,
   availableInventory: 0,
   reservedInventory: 0,
   soldInventory: 0,
@@ -219,19 +293,49 @@ const fechaHoy = new Date().toLocaleDateString('es-AR', {
   year: 'numeric',
 });
 
-const kpiCards = computed(() =>
+const kpiCards = computed<KpiCard[]>(() =>
   isAdmin.value
     ? [
-        { label: 'Ventas totales', value: String(kpiData.value.totalVentas), sub: 'operaciones registradas' },
-        { label: 'Ingresos', value: formatCurrency(kpiData.value.totalIngresos), sub: 'suma de ventas visibles' },
-        { label: 'Disponible', value: String(kpiData.value.availableInventory), sub: 'inventario listo para vender' },
-        { label: 'Reservado', value: String(kpiData.value.reservedInventory), sub: 'unidades con reserva activa' },
+        { label: 'Ingresos', value: formatCurrency(kpiData.value.totalIngresos), sub: 'suma de ventas visibles', tone: 'finance', badge: 'Hoy' },
+        { label: 'Disponible', value: String(kpiData.value.availableInventory), sub: 'inventario listo para vender', tone: 'inventory', badge: 'Stock' },
+        { label: 'Reservado', value: String(kpiData.value.reservedInventory), sub: 'unidades con reserva activa', tone: 'warning', badge: 'Seguimiento' },
+        { label: 'Vendido', value: String(kpiData.value.soldInventory), sub: 'stock ya comercializado', tone: 'success', badge: 'Resultado' },
       ]
     : [
-        { label: 'Ventas del dia', value: String(kpiData.value.salesToday), sub: 'operaciones de hoy' },
-        { label: 'Clientes recientes', value: String(recentClients.value.length), sub: 'ultimas altas consultadas' },
-        { label: 'Vehiculos disponibles', value: String(kpiData.value.availableInventory), sub: 'listos para ofrecer' },
-        { label: 'Ventas totales', value: String(kpiData.value.totalVentas), sub: 'seguimiento operativo' },
+        { label: 'Ventas del dia', value: String(kpiData.value.salesToday), sub: 'operaciones de hoy', tone: 'finance', badge: 'Hoy' },
+        { label: 'Pendientes', value: String(kpiData.value.pendingSales), sub: 'operaciones para continuar', tone: 'warning', badge: 'Prioridad' },
+        { label: 'Reservadas', value: String(kpiData.value.reservedSales), sub: 'ventas con seguimiento activo', tone: 'inventory', badge: 'Seguimiento' },
+        { label: 'Vehiculos disponibles', value: String(kpiData.value.availableInventory), sub: 'listos para ofrecer', tone: 'success', badge: 'Oferta' },
+      ],
+);
+
+const overviewPoints = computed(() =>
+  isAdmin.value
+    ? [
+        { label: 'Inventario listo', value: String(kpiData.value.availableInventory), copy: 'unidades disponibles para vender' },
+        { label: 'Reservas por controlar', value: String(kpiData.value.reservedInventory), copy: 'requieren seguimiento comercial' },
+        { label: 'Clientes activos', value: String(kpiData.value.activeClients), copy: 'base comercial actual' },
+      ]
+    : [
+        { label: 'Unidades disponibles', value: String(kpiData.value.availableInventory), copy: 'para ofrecer hoy' },
+        { label: 'Ventas pagadas', value: String(kpiData.value.paidSales), copy: 'operaciones ya cerradas' },
+        { label: 'Clientes recientes', value: String(recentClients.value.length), copy: 'altas y consultas nuevas' },
+      ],
+);
+
+const pulseMetrics = computed(() =>
+  isAdmin.value
+    ? [
+        { label: 'Reservas vencidas', value: String(adminAlerts.value.expiredReservations), copy: 'necesitan revision o liberacion' },
+        { label: 'Inventario sin ubicacion', value: String(adminAlerts.value.withoutLocation), copy: 'afecta control operativo' },
+        { label: 'Ventas pendientes', value: String(kpiData.value.pendingSales), copy: 'operaciones sin cierre definitivo' },
+        { label: 'Cotizacion activa', value: latestCotizacionLabel.value, copy: 'referencia comercial vigente' },
+      ]
+    : [
+        { label: 'Pendientes por seguir', value: String(kpiData.value.pendingSales), copy: 'ventas para retomar hoy' },
+        { label: 'Reservadas', value: String(kpiData.value.reservedSales), copy: 'operaciones con seguimiento activo' },
+        { label: 'Clientes activos', value: String(kpiData.value.activeClients), copy: 'base disponible para trabajar' },
+        { label: 'Disponibles', value: String(kpiData.value.availableInventory), copy: 'unidades listas para ofrecer' },
       ],
 );
 
@@ -257,6 +361,9 @@ const adminCatalogLinks = [
   { routeName: 'Version', label: 'Versiones', description: 'Define versiones comerciales disponibles.' },
   { routeName: 'Motor', label: 'Motores', description: 'Administra motorizaciones y especificaciones.' },
   { routeName: 'VersionCompatibilityAdmin', label: 'Compatibilidades', description: 'Vincula motores validos por version.' },
+  { routeName: 'MetodoPago', label: 'Metodos de pago', description: 'Configura medios de cobro habilitados.' },
+  { routeName: 'Cotizacion', label: 'Cotizaciones', description: 'Mantiene valores de moneda y referencia comercial.' },
+  { routeName: 'JhiUser', label: 'Usuarios', description: 'Administra accesos y permisos del sistema.' },
 ];
 
 const adminAlerts = computed(() => {
@@ -311,6 +418,9 @@ async function loadDashboard() {
     kpiData.value.totalVentas = Number(ventasRes.headers['x-total-count'] ?? ventas.length);
     kpiData.value.totalIngresos = ventas.reduce((sum, venta) => sum + Number(venta.total ?? 0), 0);
     kpiData.value.salesToday = ventas.filter(venta => sameDay(venta.fecha, new Date())).length;
+    kpiData.value.pendingSales = ventas.filter(venta => venta.estado === 'PENDIENTE').length;
+    kpiData.value.reservedSales = ventas.filter(venta => venta.estado === 'RESERVADA').length;
+    kpiData.value.paidSales = ventas.filter(venta => venta.estado === 'PAGADA').length;
     kpiData.value.activeClients = Number(clientesRes.headers['x-total-count'] ?? clientes.length);
     kpiData.value.vehiclesCount = Number(vehiculosRes.headers['x-total-count'] ?? 0);
     kpiData.value.availableInventory = inventario.filter(item => item.estadoInventario === 'DISPONIBLE').length;
@@ -440,7 +550,50 @@ function startOfDay(value: Date | string) {
 }
 
 .kpi-card {
+  position: relative;
   padding: 1.1rem 1.2rem;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 20px 0 0 20px;
+  background: #cbd5e1;
+}
+
+.tone-finance::before {
+  background: #0f766e;
+}
+
+.tone-inventory::before {
+  background: #2563eb;
+}
+
+.tone-warning::before {
+  background: #d97706;
+}
+
+.tone-success::before {
+  background: #16a34a;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.kpi-badge {
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #475569;
 }
 
 .kpi-label {
@@ -468,6 +621,10 @@ function startOfDay(value: Date | string) {
   display: grid;
   grid-template-columns: 1.35fr 1fr;
   gap: 1rem;
+}
+
+.summary-grid {
+  grid-template-columns: 1.3fr 0.95fr;
 }
 
 .secondary-grid {
@@ -500,6 +657,92 @@ function startOfDay(value: Date | string) {
   font-size: 1.05rem;
   font-weight: 700;
   color: #0f172a;
+}
+
+.overview-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 1rem;
+}
+
+.overview-main {
+  padding: 1.1rem;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.18), transparent 30%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #eff6ff;
+}
+
+.overview-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #bae6fd;
+}
+
+.overview-value {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.overview-copy {
+  margin: 0.55rem 0 0;
+  color: #cbd5e1;
+}
+
+.overview-points {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.overview-point,
+.pulse-item {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.overview-point span,
+.pulse-label {
+  display: block;
+  color: #475569;
+}
+
+.overview-point strong,
+.pulse-value {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 1.08rem;
+  color: #0f172a;
+}
+
+.overview-point small,
+.pulse-sub {
+  display: block;
+  margin-top: 0.18rem;
+  color: #64748b;
+}
+
+.pulse-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pulse-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.pulse-copy {
+  min-width: 0;
 }
 
 .quick-actions {
@@ -661,7 +904,9 @@ function startOfDay(value: Date | string) {
 @media (max-width: 1200px) {
   .content-grid,
   .secondary-grid,
-  .kpi-grid {
+  .summary-grid,
+  .kpi-grid,
+  .overview-layout {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -670,8 +915,10 @@ function startOfDay(value: Date | string) {
   .hero-card,
   .content-grid,
   .secondary-grid,
+  .summary-grid,
   .kpi-grid,
-  .quick-actions {
+  .quick-actions,
+  .overview-layout {
     grid-template-columns: 1fr;
   }
 

@@ -10,14 +10,13 @@ import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.PagoMapper;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,21 +31,12 @@ public class PagoServiceImpl implements PagoService {
     private final VentaRepository ventaRepository;
     private final VentaService ventaService;
 
-    public PagoServiceImpl(
-        PagoRepository pagoRepository,
-        PagoMapper pagoMapper,
-        VentaRepository ventaRepository,
-        VentaService ventaService
-    ) {
+    public PagoServiceImpl(PagoRepository pagoRepository, PagoMapper pagoMapper, VentaRepository ventaRepository, VentaService ventaService) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
         this.ventaRepository = ventaRepository;
         this.ventaService = ventaService;
     }
-
-    // =========================
-    // CRUD BASE
-    // =========================
 
     @Override
     public PagoDTO save(PagoDTO pagoDTO) {
@@ -63,7 +53,8 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public Optional<PagoDTO> partialUpdate(PagoDTO pagoDTO) {
-        return pagoRepository.findById(pagoDTO.getId())
+        return pagoRepository
+            .findById(pagoDTO.getId())
             .map(existing -> {
                 pagoMapper.partialUpdate(existing, pagoDTO);
                 existing.setLastModifiedDate(Instant.now());
@@ -90,79 +81,43 @@ public class PagoServiceImpl implements PagoService {
         pagoRepository.deleteById(id);
     }
 
-    // =========================
-    //  LÓGICA DE NEGOCIO PRO
-    // =========================
-
     @Override
     public PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO) {
-
         LOG.info("Registrando pago para venta {}", ventaId);
 
-        // =========================
-        // VALIDAR VENTA
-        // =========================
-        Venta venta = ventaRepository.findById(ventaId)
-            .orElseThrow(() -> new BadRequestException("La venta no existe"));
-
-        if (venta.getEstado() == EstadoVenta.FINALIZADA) {
-            throw new BadRequestException("La venta ya está completamente pagada");
+        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        if (venta.getEstado() == EstadoVenta.PAGADA) {
+            throw new BadRequestException("La venta ya esta completamente pagada");
         }
-
         if (venta.getSaldo().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("La venta ya está saldada");
+            throw new BadRequestException("La venta ya esta saldada");
         }
-
-        // =========================
-        // VALIDAR MONTO
-        // =========================
         if (pagoDTO.getMonto() == null || pagoDTO.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("El monto del pago es inválido");
+            throw new BadRequestException("El monto del pago es invalido");
         }
-
-        // =========================
-        // VALIDAR SOBREPAGO
-        // =========================
         if (venta.getSaldo().compareTo(pagoDTO.getMonto()) < 0) {
             throw new BadRequestException("El monto excede el saldo pendiente");
         }
 
-        // =========================
-        // CREAR PAGO
-        // =========================
         Pago pago = pagoMapper.toEntity(pagoDTO);
-
         pago.setVenta(venta);
         pago.setFecha(Instant.now());
         pago.setCreatedDate(Instant.now());
         pago.setLastModifiedDate(Instant.now());
-
         pago = pagoRepository.save(pago);
 
-        // =========================
-        // ACTUALIZAR VENTA
-        // =========================
-        BigDecimal nuevoTotalPagado = venta.getTotalPagado().add(pago.getMonto());
+        BigDecimal nuevoTotalPagado = (venta.getTotalPagado() == null ? BigDecimal.ZERO : venta.getTotalPagado()).add(pago.getMonto());
         venta.setTotalPagado(nuevoTotalPagado);
 
         BigDecimal nuevoSaldo = venta.getTotal().subtract(nuevoTotalPagado);
         venta.setSaldo(nuevoSaldo);
-
         venta.setLastModifiedDate(Instant.now());
 
-        // =========================
-        // CIERRE AUTOMÁTICO PRO
-        // =========================
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
-
-            LOG.info("Venta {} completamente pagada", ventaId);
-
-            //  delegar a VentaService (SIN duplicar lógica)
             ventaService.confirmarVenta(ventaId);
         }
 
         ventaRepository.save(venta);
-
         return pagoMapper.toDto(pago);
     }
 }

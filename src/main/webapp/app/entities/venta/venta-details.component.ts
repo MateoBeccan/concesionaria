@@ -13,11 +13,16 @@ import VentaService from './venta.service';
 import DetalleVentaService from '@/entities/detalle-venta/detalle-venta.service';
 import PagoService from '@/entities/pago/pago.service';
 import ComprobanteService from '@/entities/comprobante/comprobante.service';
+import OperationalTraceCard from '@/shared/components/OperationalTraceCard.vue';
 
 export default defineComponent({
   name: 'VentaDetails',
+  components: {
+    OperationalTraceCard,
+  },
   setup() {
     const dateFormat = useDateFormat();
+    const { formatDateLong } = dateFormat;
     const ventaService       = inject('ventaService',       () => new VentaService());
     const detalleVentaService = inject('detalleVentaService', () => new DetalleVentaService());
     const pagoService        = inject('pagoService',        () => new PagoService());
@@ -40,6 +45,42 @@ export default defineComponent({
     const totalPagado = computed(() =>
       pagos.value.reduce((sum, p) => sum + Number(p.monto ?? 0), 0),
     );
+
+    const ventaStatusLabel = computed(() => labelEstado(venta.value.estado));
+    const ventaMonedaDisplay = computed(() => {
+      return (
+        venta.value.moneda ??
+        pagos.value.find(pago => pago.moneda)?.moneda ??
+        comprobantes.value.find(comprobante => comprobante.moneda)?.moneda ??
+        null
+      );
+    });
+    const traceCreatedBy = computed(() => venta.value.createdBy ?? venta.value.user?.login ?? 'No disponible');
+    const traceUpdatedBy = computed(() => venta.value.lastModifiedBy ?? venta.value.user?.login ?? 'No disponible');
+    const traceLastAction = computed(() => {
+      if (comprobantes.value.length > 0) return 'Comprobante emitido';
+      if (pagos.value.length > 0) return 'Pago registrado';
+      if (venta.value.estado === EstadoVenta.PAGADA) return 'Venta confirmada';
+      if (venta.value.estado === EstadoVenta.RESERVADA) return 'Venta reservada';
+      if (venta.value.lastModifiedDate && venta.value.createdDate && venta.value.lastModifiedDate !== venta.value.createdDate) {
+        return 'Venta actualizada';
+      }
+      return 'Venta creada';
+    });
+    const traceLastActionDate = computed(() => {
+      const latestPago = pagos.value
+        .map(pago => pago.fecha)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b as Date).getTime() - new Date(a as Date).getTime())[0];
+
+      const latestComprobante = comprobantes.value
+        .map(comprobante => comprobante.fechaEmision)
+        .filter(Boolean)
+        .sort((a, b) => new Date(b as Date).getTime() - new Date(a as Date).getTime())[0];
+
+      const actionDate = latestComprobante ?? latestPago ?? venta.value.lastModifiedDate ?? venta.value.createdDate;
+      return actionDate ? formatDateLong(actionDate) : 'No disponible';
+    });
 
     const retrieveVenta = async (ventaId: any) => {
       try {
@@ -122,6 +163,12 @@ export default defineComponent({
       pagos,
       comprobantes,
       totalPagado,
+      ventaStatusLabel,
+      ventaMonedaDisplay,
+      traceCreatedBy,
+      traceUpdatedBy,
+      traceLastAction,
+      traceLastActionDate,
       loadingDetalles,
       loadingPagos,
       loadingComprobantes,

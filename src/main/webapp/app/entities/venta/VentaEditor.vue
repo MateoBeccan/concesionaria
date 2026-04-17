@@ -15,10 +15,25 @@
       <button class="btn-close btn-sm" @click="error = null" />
     </div>
 
+    <section class="process-strip mb-4">
+      <article v-for="step in flowSteps" :key="step.number" class="process-step" :class="{ done: step.done, current: step.current }">
+        <div class="process-number">{{ step.number }}</div>
+        <div>
+          <div class="process-title">{{ step.title }}</div>
+          <div class="process-copy">{{ step.copy }}</div>
+        </div>
+      </article>
+    </section>
+
     <div class="row g-4">
       <div class="col-lg-8">
         <div class="card mb-3">
-          <div class="card-header">1. Datos de la venta</div>
+          <div class="card-header">
+            <div>
+              <div class="section-title">1. Cliente y condiciones</div>
+              <div class="section-copy">Primero definí quién compra y bajo qué condiciones se registra la operación.</div>
+            </div>
+          </div>
           <div class="card-body">
             <div class="row g-3">
               <div class="col-12">
@@ -97,7 +112,10 @@
 
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>2. Vehiculos</span>
+            <div>
+              <div class="section-title">2. Vehículos de la operación</div>
+              <div class="section-copy">Sumá unidades válidas y ajustá el precio final solo cuando haga falta.</div>
+            </div>
             <span class="badge bg-primary">{{ detalles.length }} vehiculo(s)</span>
           </div>
           <div class="card-body">
@@ -113,7 +131,10 @@
 
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
-            <span>3. Pagos</span>
+            <div>
+              <div class="section-title">3. Pagos</div>
+              <div class="section-copy">Registrá anticipos o medios de cobro sin superar el saldo pendiente.</div>
+            </div>
             <span class="badge" :class="Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'bg-success' : 'bg-warning text-dark'">
               {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: $ ${fmt(venta.saldo)}` }}
             </span>
@@ -133,7 +154,12 @@
         </div>
 
         <div class="card mb-3">
-          <div class="card-header">4. Comprobante (opcional)</div>
+          <div class="card-header">
+            <div>
+              <div class="section-title">4. Confirmación y comprobante</div>
+              <div class="section-copy">Opcionalmente definí el comprobante y luego confirmá la operación.</div>
+            </div>
+          </div>
           <div class="card-body">
             <div class="row g-3 align-items-center">
               <div class="col-md-6">
@@ -168,6 +194,12 @@
           :cotizacion="venta.cotizacion"
         >
           <template #acciones>
+            <div class="summary-flow mb-3">
+              <div class="summary-flow-item" :class="{ ready: !!venta.cliente?.id }">Cliente</div>
+              <div class="summary-flow-item" :class="{ ready: detalles.length > 0 }">Vehículos</div>
+              <div class="summary-flow-item" :class="{ ready: Number(venta.total ?? 0) > 0 }">Condiciones</div>
+              <div class="summary-flow-item" :class="{ ready: pagos.length > 0 || Number(venta.saldo ?? 0) >= 0 }">Pagos</div>
+            </div>
             <button class="btn btn-primary w-100" @click="guardar" :disabled="guardando || !puedeGuardar">
               <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
               {{ venta.id ? 'Guardar cambios' : 'Guardar borrador' }}
@@ -282,6 +314,39 @@ const mensajeValidacion = computed(() => {
 
 const puedeGuardar = computed(() => !mensajeValidacion.value);
 const puedeConfirmar = computed(() => !mensajeValidacion.value);
+const flowSteps = computed(() => [
+  {
+    number: '01',
+    title: 'Cliente',
+    copy: venta.value.cliente?.id ? 'Cliente seleccionado.' : 'Buscá o seleccioná el cliente.',
+    done: !!venta.value.cliente?.id,
+    current: !venta.value.cliente?.id,
+  },
+  {
+    number: '02',
+    title: 'Vehículo',
+    copy: detalles.value.length > 0 ? `${detalles.value.length} unidad(es) agregada(s).` : 'Agregá al menos una unidad disponible.',
+    done: detalles.value.length > 0,
+    current: !!venta.value.cliente?.id && detalles.value.length === 0,
+  },
+  {
+    number: '03',
+    title: 'Condiciones',
+    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Definí moneda, fecha e impuestos.',
+    done: Number(venta.value.total ?? 0) > 0,
+    current: detalles.value.length > 0 && Number(venta.value.total ?? 0) === 0,
+  },
+  {
+    number: '04',
+    title: 'Pagos y cierre',
+    copy:
+      Number(venta.value.totalPagado ?? 0) > 0
+        ? `${pagos.value.length} pago(s) cargado(s).`
+        : 'Registrá pagos o guardá el borrador para continuar después.',
+    done: Number(venta.value.saldo ?? 0) === 0 && detalles.value.length > 0,
+    current: detalles.value.length > 0,
+  },
+]);
 
 onMounted(async () => {
   const [monedasRes, metodosRes, tiposRes] = await Promise.all([
@@ -361,3 +426,101 @@ function badgeEstado(estado: string) {
   );
 }
 </script>
+
+<style scoped>
+.process-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.process-step {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.process-step.current {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.process-step.done {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.process-number {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.process-step.current .process-number {
+  background: #2563eb;
+  color: #fff;
+}
+
+.process-step.done .process-number {
+  background: #16a34a;
+  color: #fff;
+}
+
+.process-title,
+.section-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.process-copy,
+.section-copy {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.summary-flow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.summary-flow-item {
+  padding: 0.45rem 0.55rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.76rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.summary-flow-item.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+@media (max-width: 991px) {
+  .process-strip,
+  .summary-flow {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 575px) {
+  .process-strip,
+  .summary-flow {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

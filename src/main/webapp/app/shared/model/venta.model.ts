@@ -15,7 +15,9 @@ export interface IVenta {
   saldo?: number | null;
   observaciones?: string | null;
   createdDate?: Date | null;
+  createdBy?: string | null;
   lastModifiedDate?: Date | null;
+  lastModifiedBy?: string | null;
   cliente?: ICliente | null;
   estado?: EstadoVenta | null;
 
@@ -35,7 +37,9 @@ export class Venta implements IVenta {
     public saldo?: number | null,
     public observaciones?: string | null,
     public createdDate?: Date | null,
+    public createdBy?: string | null,
     public lastModifiedDate?: Date | null,
+    public lastModifiedBy?: string | null,
     public cliente?: ICliente | null,
     public estado?: EstadoVenta | null,
     public moneda?: IMoneda | null,

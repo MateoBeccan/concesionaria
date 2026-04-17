@@ -2,6 +2,7 @@ import { type Ref, defineComponent, inject, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { useAlertService } from '@/shared/alert/alert.service';
+import OperationalTraceCard from '@/shared/components/OperationalTraceCard.vue';
 import { useDateFormat } from '@/shared/composables';
 import { type IVehiculo } from '@/shared/model/vehiculo.model';
 
@@ -9,6 +10,9 @@ import VehiculoService from './vehiculo.service';
 
 export default defineComponent({
   name: 'VehiculoDetails',
+  components: {
+    OperationalTraceCard,
+  },
   setup() {
     const dateFormat = useDateFormat();
     const vehiculoService = inject('vehiculoService', () => new VehiculoService());
@@ -58,6 +62,21 @@ export default defineComponent({
       return map[condicion ?? ''] ?? condicion ?? '—';
     }
 
+    const traceStatus = () => {
+      const estado = vehiculo.value.estado === 'NUEVO' ? 'Nuevo' : vehiculo.value.estado === 'USADO' ? 'Usado' : 'Sin estado';
+      const condicion = labelCondicion(vehiculo.value.condicion);
+      return `${estado} · ${condicion}`;
+    };
+
+    const traceLastAction = () => {
+      if (vehiculo.value.condicion === 'VENDIDO') return 'Unidad marcada como vendida';
+      if (vehiculo.value.condicion === 'RESERVADO') return 'Unidad reservada';
+      if (vehiculo.value.lastModifiedDate && vehiculo.value.createdDate && vehiculo.value.lastModifiedDate !== vehiculo.value.createdDate) {
+        return 'Unidad actualizada';
+      }
+      return 'Unidad incorporada al catalogo';
+    };
+
     return {
       ...dateFormat,
       alertService,
@@ -67,6 +86,8 @@ export default defineComponent({
       formatFecha,
       badgeCondicion,
       labelCondicion,
+      traceStatus,
+      traceLastAction,
     };
   },
 });

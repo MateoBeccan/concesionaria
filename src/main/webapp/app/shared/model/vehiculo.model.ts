@@ -19,7 +19,9 @@ export interface IVehiculo {
   precio?: number;
 
   createdDate?: Date | null;
+  createdBy?: string | null;
   lastModifiedDate?: Date | null;
+  lastModifiedBy?: string | null;
 
   version?: IVersion | null;
   motor?: IMotor | null;
@@ -36,7 +38,9 @@ export class Vehiculo implements IVehiculo {
     public patente?: string,
     public precio?: number,
     public createdDate?: Date | null,
+    public createdBy?: string | null,
     public lastModifiedDate?: Date | null,
+    public lastModifiedBy?: string | null,
     public version?: IVersion | null,
     public motor?: IMotor | null,
     public tipoVehiculo?: ITipoVehiculo | null,

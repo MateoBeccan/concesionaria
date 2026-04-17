@@ -13,16 +13,24 @@ export function useVehiculo() {
   const error = ref<string | null>(null);
   const notFound = ref(false);
 
+  function normalizarPatente(patente: string): string {
+    return patente
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+  }
+
   function validarPatente(patente: string): string | null {
-    if (!patente.trim()) return 'Ingrese una patente';
-    if (!PATENTE_REGEX.test(patente.trim().toUpperCase())) {
-      return 'Formato inválido. Ejemplos: ABC123 o AB123CD';
+    const patenteNormalizada = normalizarPatente(patente);
+    if (!patenteNormalizada) return 'Ingrese una patente';
+    if (!PATENTE_REGEX.test(patenteNormalizada)) {
+      return 'Formato invalido. Ejemplos: ABC123 o AB123CD';
     }
     return null;
   }
 
   async function buscarPorPatente(patente: string) {
-    const p = patente.trim().toUpperCase();
+    const p = normalizarPatente(patente);
     const validationError = validarPatente(p);
     if (validationError) {
       error.value = validationError;
@@ -33,10 +41,10 @@ export function useVehiculo() {
     notFound.value = false;
     vehiculo.value = null;
     try {
-      vehiculo.value = await service.findByPatente(p);
+      vehiculo.value = await service.buscar(p);
     } catch (e: any) {
       if (e.response?.status === 404) notFound.value = true;
-      else error.value = 'Error al buscar el vehículo. Intente nuevamente.';
+      else error.value = 'Error al buscar el vehiculo. Intente nuevamente.';
     } finally {
       loading.value = false;
     }

@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface TipoComprobanteRepository extends JpaRepository<TipoComprobante, Long> {}
+public interface TipoComprobanteRepository extends JpaRepository<TipoComprobante, Long> {
+    java.util.Optional<TipoComprobante> findByCodigoIgnoreCase(String codigo);
+}

@@ -37,7 +37,11 @@ public class VehiculoDTO implements Serializable {
 
     private Instant createdDate;
 
+    private String createdBy;
+
     private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
 
     private VersionDTO version;
 
@@ -53,7 +57,7 @@ public class VehiculoDTO implements Serializable {
         this.condicion = condicion;
     }
 
-    @NotNull
+    @Deprecated(forRemoval = false)
     private CondicionVehiculo condicion;
 
     public Long getId() {
@@ -120,6 +124,22 @@ public class VehiculoDTO implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public VersionDTO getVersion() {
         return version;
     }
@@ -176,7 +196,9 @@ public class VehiculoDTO implements Serializable {
             ", patente='" + getPatente() + "'" +
             ", precio=" + getPrecio() +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", version=" + getVersion() +
             ", motor=" + getMotor() +
             ", tipoVehiculo=" + getTipoVehiculo() +

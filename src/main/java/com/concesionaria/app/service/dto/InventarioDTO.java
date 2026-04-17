@@ -23,15 +23,18 @@ public class InventarioDTO implements Serializable {
     @NotNull
     private EstadoInventario estadoInventario;
 
+    private Boolean disponible;
+
     @Size(max = 255)
     private String observaciones;
 
-    @NotNull
-    private Boolean disponible;
-
     private Instant createdDate;
 
+    private String createdBy;
+
     private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
 
     private Instant fechaReserva;
 
@@ -105,6 +108,22 @@ public class InventarioDTO implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public Instant getFechaReserva() {
         return fechaReserva;
     }
@@ -166,10 +185,12 @@ public class InventarioDTO implements Serializable {
             ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
-            ", observaciones='" + getObservaciones() + "'" +
             ", disponible='" + getDisponible() + "'" +
+            ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", fechaReserva='" + getFechaReserva() + "'" +
             ", fechaVencimientoReserva='" + getFechaVencimientoReserva() + "'" +
             ", vehiculo=" + getVehiculo() +

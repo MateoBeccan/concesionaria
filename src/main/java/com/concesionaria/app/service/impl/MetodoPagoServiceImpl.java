@@ -4,7 +4,9 @@ import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.service.MetodoPagoService;
 import com.concesionaria.app.service.dto.MetodoPagoDTO;
+import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.MetodoPagoMapper;
+import java.util.Locale;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +36,7 @@ public class MetodoPagoServiceImpl implements MetodoPagoService {
     @Override
     public MetodoPagoDTO save(MetodoPagoDTO metodoPagoDTO) {
         LOG.debug("Request to save MetodoPago : {}", metodoPagoDTO);
+        normalizarYValidarCodigoUnico(metodoPagoDTO, null);
         MetodoPago metodoPago = metodoPagoMapper.toEntity(metodoPagoDTO);
         metodoPago = metodoPagoRepository.save(metodoPago);
         return metodoPagoMapper.toDto(metodoPago);
@@ -42,6 +45,7 @@ public class MetodoPagoServiceImpl implements MetodoPagoService {
     @Override
     public MetodoPagoDTO update(MetodoPagoDTO metodoPagoDTO) {
         LOG.debug("Request to update MetodoPago : {}", metodoPagoDTO);
+        normalizarYValidarCodigoUnico(metodoPagoDTO, metodoPagoDTO.getId());
         MetodoPago metodoPago = metodoPagoMapper.toEntity(metodoPagoDTO);
         metodoPago = metodoPagoRepository.save(metodoPago);
         return metodoPagoMapper.toDto(metodoPago);
@@ -55,6 +59,9 @@ public class MetodoPagoServiceImpl implements MetodoPagoService {
             .findById(metodoPagoDTO.getId())
             .map(existingMetodoPago -> {
                 metodoPagoMapper.partialUpdate(existingMetodoPago, metodoPagoDTO);
+                MetodoPagoDTO dto = metodoPagoMapper.toDto(existingMetodoPago);
+                normalizarYValidarCodigoUnico(dto, existingMetodoPago.getId());
+                existingMetodoPago.setCodigo(dto.getCodigo());
 
                 return existingMetodoPago;
             })
@@ -80,5 +87,19 @@ public class MetodoPagoServiceImpl implements MetodoPagoService {
     public void delete(Long id) {
         LOG.debug("Request to delete MetodoPago : {}", id);
         metodoPagoRepository.deleteById(id);
+    }
+
+    private void normalizarYValidarCodigoUnico(MetodoPagoDTO dto, Long idActual) {
+        if (dto == null || dto.getCodigo() == null || dto.getCodigo().trim().isEmpty()) {
+            throw new BadRequestException("El codigo del metodo de pago es obligatorio");
+        }
+        String codigo = dto.getCodigo().trim().toUpperCase(Locale.ROOT);
+        dto.setCodigo(codigo);
+        metodoPagoRepository
+            .findByCodigoIgnoreCase(codigo)
+            .filter(existing -> !existing.getId().equals(idActual))
+            .ifPresent(existing -> {
+                throw new BadRequestException("Ya existe un metodo de pago con ese codigo");
+            });
     }
 }

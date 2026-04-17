@@ -7,9 +7,10 @@ export interface IInventario {
   ubicacion?: string | null;
   estadoInventario?: keyof typeof EstadoInventario;
   observaciones?: string | null;
-  disponible?: boolean;
   createdDate?: Date | null;
+  createdBy?: string | null;
   lastModifiedDate?: Date | null;
+  lastModifiedBy?: string | null;
   fechaReserva?: Date | null;
   fechaVencimientoReserva?: Date | null;
   vehiculo?: IVehiculo | null;
@@ -23,14 +24,13 @@ export class Inventario implements IInventario {
     public ubicacion?: string | null,
     public estadoInventario?: keyof typeof EstadoInventario,
     public observaciones?: string | null,
-    public disponible?: boolean,
     public createdDate?: Date | null,
+    public createdBy?: string | null,
     public lastModifiedDate?: Date | null,
+    public lastModifiedBy?: string | null,
     public fechaReserva?: Date | null,
     public fechaVencimientoReserva?: Date | null,
     public vehiculo?: IVehiculo | null,
     public clienteReserva?: ICliente | null,
-  ) {
-    this.disponible = this.disponible ?? false;
-  }
+  ) {}
 }

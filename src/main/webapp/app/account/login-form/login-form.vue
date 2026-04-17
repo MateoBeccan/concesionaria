@@ -217,21 +217,21 @@ export default defineComponent({
 }
 
 .login-panel {
-  width: min(980px, 100%);
+  width: min(900px, 100%);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
-  border-radius: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  border-radius: 24px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 22px 56px rgba(15, 23, 42, 0.1);
 }
 
 .login-intro {
-  padding: 2.5rem 2.6rem;
+  padding: 2rem 2.1rem;
   background:
-    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 26%),
-    linear-gradient(155deg, #0f172a 0%, #16253f 62%, #1d4ed8 100%);
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.14), transparent 24%),
+    linear-gradient(155deg, #0f172a 0%, #16253f 70%, #1e40af 100%);
   color: #eff6ff;
 }
 
@@ -250,45 +250,46 @@ export default defineComponent({
 
 .intro-title {
   margin: 0;
-  font-size: clamp(2rem, 4vw, 2.8rem);
-  line-height: 1.06;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  line-height: 1.08;
   font-weight: 800;
 }
 
 .intro-copy {
-  margin: 1rem 0 0;
-  max-width: 34rem;
+  margin: 0.8rem 0 0;
+  max-width: 30rem;
   color: rgba(226, 232, 240, 0.9);
-  line-height: 1.7;
+  line-height: 1.65;
+  font-size: 0.94rem;
 }
 
 .intro-highlights {
   display: grid;
-  gap: 0.85rem;
-  margin-top: 2rem;
+  gap: 0.7rem;
+  margin-top: 1.55rem;
 }
 
 .highlight-item {
   display: grid;
   gap: 0.2rem;
-  padding: 0.95rem 1rem;
-  border-radius: 18px;
-  background: rgba(15, 23, 42, 0.22);
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.18);
   border: 1px solid rgba(191, 219, 254, 0.12);
 }
 
 .highlight-item strong {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .highlight-item span {
   color: rgba(226, 232, 240, 0.84);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
 }
 
 .login-card {
-  padding: 2.5rem 2.2rem;
-  background: rgba(255, 255, 255, 0.96);
+  padding: 2rem 1.9rem;
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .eyebrow {
@@ -297,24 +298,25 @@ export default defineComponent({
 
 .login-card-header h2 {
   margin: 0;
-  font-size: 1.9rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: #0f172a;
 }
 
 .login-card-copy {
-  margin: 0.5rem 0 0;
+  margin: 0.4rem 0 0;
   color: #64748b;
+  font-size: 0.9rem;
 }
 
 .login-alert {
-  margin: 1rem 0 1.1rem;
-  border-radius: 14px;
+  margin: 0.9rem 0 1rem;
+  border-radius: 12px;
 }
 
 .login-form {
   display: grid;
-  gap: 1.15rem;
+  gap: 1rem;
 }
 
 .field-group {
@@ -324,7 +326,7 @@ export default defineComponent({
 
 .form-label {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: #0f172a;
 }
@@ -338,7 +340,7 @@ export default defineComponent({
 
 .forgot-link {
   color: #2563eb;
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-decoration: none;
 }
@@ -363,7 +365,7 @@ export default defineComponent({
   border: none;
   background: transparent;
   color: #2563eb;
-  font-size: 0.84rem;
+  font-size: 0.8rem;
   font-weight: 700;
   padding: 0.2rem 0.35rem;
 }
@@ -374,14 +376,14 @@ export default defineComponent({
 }
 
 .login-submit {
-  min-height: 3.3rem;
-  border-radius: 14px;
+  min-height: 3.05rem;
+  border-radius: 12px;
   font-weight: 700;
 }
 
 .form-control-lg {
-  min-height: 3.25rem;
-  border-radius: 14px;
+  min-height: 3.05rem;
+  border-radius: 12px;
   border-color: #cbd5e1;
 }
 
@@ -397,7 +399,7 @@ export default defineComponent({
 
   .login-intro,
   .login-card {
-    padding: 1.8rem;
+    padding: 1.5rem;
   }
 }
 
@@ -409,7 +411,7 @@ export default defineComponent({
 
   .login-intro,
   .login-card {
-    padding: 1.35rem;
+    padding: 1.2rem;
   }
 }
 </style>

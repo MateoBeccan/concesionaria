@@ -27,8 +27,19 @@ export default defineComponent({
 
     const search = ref('');
     const filtroEstado = ref('');
-    const filtroDisponible = ref('');
     const filtroReserva = ref('');
+
+    const isReservaVencida = (inventario: IInventario) =>
+      inventario.estadoInventario === 'RESERVADO' &&
+      !!inventario.fechaVencimientoReserva &&
+      dayjs(inventario.fechaVencimientoReserva).isBefore(dayjs());
+
+    const inventorySummary = computed(() => ({
+      disponible: inventarios.value.filter(item => item.estadoInventario === 'DISPONIBLE').length,
+      reservado: inventarios.value.filter(item => item.estadoInventario === 'RESERVADO').length,
+      vendido: inventarios.value.filter(item => item.estadoInventario === 'VENDIDO').length,
+      vencidas: inventarios.value.filter(item => isReservaVencida(item)).length,
+    }));
 
     const filteredInventarios = computed(() => {
       return (inventarios.value || []).filter(inventario => {
@@ -45,7 +56,6 @@ export default defineComponent({
 
         const matchSearch = !search.value || texto.includes(search.value.toLowerCase());
         const matchEstado = !filtroEstado.value || inventario.estadoInventario === filtroEstado.value;
-        const matchDisponible = !filtroDisponible.value || String(inventario.disponible) === filtroDisponible.value;
 
         let matchReserva = true;
         if (filtroReserva.value === 'activas') {
@@ -56,7 +66,7 @@ export default defineComponent({
           matchReserva = inventario.estadoInventario !== 'RESERVADO';
         }
 
-        return matchSearch && matchEstado && matchDisponible && matchReserva;
+        return matchSearch && matchEstado && matchReserva;
       });
     });
 
@@ -67,7 +77,6 @@ export default defineComponent({
     const resetFiltros = () => {
       search.value = '';
       filtroEstado.value = '';
-      filtroDisponible.value = '';
       filtroReserva.value = '';
     };
 
@@ -145,16 +154,11 @@ export default defineComponent({
       return 'bg-light text-dark border';
     };
 
-    const badgeDisponible = (disponible?: boolean | null) => (disponible ? 'bg-success' : 'bg-secondary');
-
-    const isReservaVencida = (inventario: IInventario) =>
-      inventario.estadoInventario === 'RESERVADO' &&
-      !!inventario.fechaVencimientoReserva &&
-      dayjs(inventario.fechaVencimientoReserva).isBefore(dayjs());
+    const badgeDisponibilidad = (estado?: string | null) => (estado === 'DISPONIBLE' ? 'bg-success' : 'bg-secondary');
 
     const vehiculoLabel = (inventario: IInventario) => {
       const patente = inventario.vehiculo?.patente || 'Sin patente';
-      const version = inventario.vehiculo?.version?.nombre || 'Sin versión';
+      const version = inventario.vehiculo?.version?.nombre || 'Sin version';
       return `${patente} · ${version}`;
     };
 
@@ -177,10 +181,10 @@ export default defineComponent({
 
     return {
       inventarios,
+      inventorySummary,
       filteredInventarios,
       search,
       filtroEstado,
-      filtroDisponible,
       filtroReserva,
       resetFiltros,
       handleSyncList,
@@ -201,7 +205,7 @@ export default defineComponent({
       totalItems,
       changeOrder,
       badgeEstado,
-      badgeDisponible,
+      badgeDisponibilidad,
       isReservaVencida,
       vehiculoLabel,
       clienteLabel,

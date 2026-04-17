@@ -37,19 +37,27 @@ public class Inventario implements Serializable {
     @Column(name = "estado_inventario", nullable = false)
     private EstadoInventario estadoInventario;
 
-    @Size(max = 255)
-    @Column(name = "observaciones", length = 255)
-    private String observaciones;
-
     @NotNull
     @Column(name = "disponible", nullable = false)
     private Boolean disponible;
 
+    @Size(max = 255)
+    @Column(name = "observaciones", length = 255)
+    private String observaciones;
+
     @Column(name = "created_date")
     private Instant createdDate;
 
+    @Size(max = 50)
+    @Column(name = "created_by", length = 50)
+    private String createdBy;
+
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
+
+    @Size(max = 50)
+    @Column(name = "last_modified_by", length = 50)
+    private String lastModifiedBy;
 
     @Column(name = "fecha_reserva")
     private Instant fechaReserva;
@@ -172,6 +180,32 @@ public class Inventario implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    public Inventario createdBy(String createdBy) {
+        this.setCreatedBy(createdBy);
+        return this;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return this.lastModifiedBy;
+    }
+
+    public Inventario lastModifiedBy(String lastModifiedBy) {
+        this.setLastModifiedBy(lastModifiedBy);
+        return this;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public Instant getFechaReserva() {
         return this.fechaReserva;
     }
@@ -251,10 +285,12 @@ public class Inventario implements Serializable {
             ", fechaIngreso='" + getFechaIngreso() + "'" +
             ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
-            ", observaciones='" + getObservaciones() + "'" +
             ", disponible='" + getDisponible() + "'" +
+            ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", fechaReserva='" + getFechaReserva() + "'" +
             ", fechaVencimientoReserva='" + getFechaVencimientoReserva() + "'" +
             "}";

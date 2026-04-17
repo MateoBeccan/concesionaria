@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface TipoDocumentoRepository extends JpaRepository<TipoDocumento, Long> {}
+public interface TipoDocumentoRepository extends JpaRepository<TipoDocumento, Long> {
+    java.util.Optional<TipoDocumento> findByCodigoIgnoreCase(String codigo);
+}

@@ -52,7 +52,11 @@ public class ClienteDTO implements Serializable {
 
     private Instant createdDate;
 
+    private String createdBy;
+
     private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
 
     private CondicionIvaDTO condicionIva;
 
@@ -170,6 +174,22 @@ public class ClienteDTO implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public CondicionIvaDTO getCondicionIva() {
         return condicionIva;
     }
@@ -224,7 +244,9 @@ public class ClienteDTO implements Serializable {
             ", activo='" + getActivo() + "'" +
             ", fechaAlta='" + getFechaAlta() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", condicionIva=" + getCondicionIva() +
             ", tipoDocumento=" + getTipoDocumento() +
             "}";

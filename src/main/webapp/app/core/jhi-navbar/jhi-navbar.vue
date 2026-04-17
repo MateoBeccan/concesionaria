@@ -4,6 +4,7 @@
       <span class="logo-img"></span>
       <span class="navbar-title">Concesionaria</span> <span class="navbar-version">{{ version }}</span>
     </b-navbar-brand>
+
     <b-navbar-toggle
       right
       class="jh-navbar-toggler d-lg-none"
@@ -24,25 +25,7 @@
             <span>Inicio</span>
           </span>
         </b-nav-item>
-        <!-- ACCESOS RÁPIDOS DE NEGOCIO -->
-        <b-nav-item v-if="authenticated" :to="{ name: 'VentaEditor' }">
-          <span>
-            <font-awesome-icon icon="plus-circle" />
-            <span>Nueva Venta</span>
-          </span>
-        </b-nav-item>
-        <b-nav-item v-if="authenticated" :to="{ name: 'VehiculoSearch' }">
-          <span>
-            <font-awesome-icon icon="search" />
-            <span>Buscar Vehículo</span>
-          </span>
-        </b-nav-item>
-        <b-nav-item v-if="authenticated" :to="{ name: 'VentaList' }">
-          <span>
-            <font-awesome-icon icon="list" />
-            <span>Ventas</span>
-          </span>
-        </b-nav-item>
+
         <b-nav-item-dropdown
           :no-size="true"
           end
@@ -59,8 +42,8 @@
             </span>
           </template>
           <entities-menu></entities-menu>
-          <!-- jhipster-needle-add-entity-to-menu - JHipster will add entities to the menu here -->
         </b-nav-item-dropdown>
+
         <b-nav-item-dropdown
           right
           id="admin-menu"
@@ -73,16 +56,16 @@
           <template #button-content>
             <span class="navbar-dropdown-menu">
               <font-awesome-icon icon="users-cog" />
-              <span class="no-bold">Administración</span>
+              <span class="no-bold">Administracion</span>
             </span>
           </template>
           <b-dropdown-item to="/admin/user-management" active-class="active">
             <font-awesome-icon icon="users" />
-            <span>Gestión de usuarios</span>
+            <span>Usuarios</span>
           </b-dropdown-item>
           <b-dropdown-item to="/admin/metrics" active-class="active">
             <font-awesome-icon icon="tachometer-alt" />
-            <span>Métricas</span>
+            <span>Metricas</span>
           </b-dropdown-item>
           <b-dropdown-item to="/admin/health" active-class="active">
             <font-awesome-icon icon="heart" />
@@ -90,7 +73,7 @@
           </b-dropdown-item>
           <b-dropdown-item to="/admin/configuration" active-class="active">
             <font-awesome-icon icon="cogs" />
-            <span>Configuración</span>
+            <span>Configuracion</span>
           </b-dropdown-item>
           <b-dropdown-item to="/admin/version-compatibilities" active-class="active">
             <font-awesome-icon icon="cogs" />
@@ -105,6 +88,7 @@
             <span>API</span>
           </b-dropdown-item>
         </b-nav-item-dropdown>
+
         <b-nav-item-dropdown
           right
           href="javascript:void(0);"
@@ -126,15 +110,15 @@
           </b-dropdown-item>
           <b-dropdown-item data-cy="passwordItem" to="/account/password" v-if="authenticated" active-class="active">
             <font-awesome-icon icon="lock" />
-            <span>Contraseña</span>
+            <span>Contrasena</span>
           </b-dropdown-item>
           <b-dropdown-item data-cy="logout" v-if="authenticated" @click="logout()" id="logout" active-class="active">
             <font-awesome-icon icon="sign-out-alt" />
-            <span>Cerrar la sesión</span>
+            <span>Cerrar sesion</span>
           </b-dropdown-item>
           <b-dropdown-item data-cy="login" v-if="!authenticated" @click="showLogin()" id="login" active-class="active">
             <font-awesome-icon icon="sign-in-alt" />
-            <span>Iniciar sesión</span>
+            <span>Iniciar sesion</span>
           </b-dropdown-item>
           <b-dropdown-item data-cy="register" to="/register" id="register" v-if="!authenticated" active-class="active">
             <font-awesome-icon icon="user-plus" />
@@ -148,11 +132,7 @@
 
 <script lang="ts" src="./jhi-navbar.component.ts"></script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-/* ==========================================================================
-  Navbar
-  ========================================================================== */
 .navbar-version {
   font-size: 0.65em;
   color: #ccc;
@@ -179,9 +159,6 @@
   color: white;
 }
 
-/* ==========================================================================
-  Logo styles
-  ========================================================================== */
 .navbar-brand.logo {
   padding: 0 7px;
 }

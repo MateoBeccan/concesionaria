@@ -1,7 +1,7 @@
 import { computed, defineComponent, provide } from 'vue';
 import { useRoute } from 'vue-router';
 
-import { BToastOrchestrator } from 'bootstrap-vue-next';
+import { BOrchestrator } from 'bootstrap-vue-next';
 import { storeToRefs } from 'pinia';
 
 import LoginForm from '@/account/login-form/login-form.vue';
@@ -18,7 +18,7 @@ const PUBLIC_LAYOUT_ROUTE_NAMES = new Set(['Login', 'Register', 'Activate', 'Res
 export default defineComponent({
   name: 'App',
   components: {
-    BToastOrchestrator,
+    BOrchestrator,
     AppLayout,
     PublicLayout,
     Ribbon,

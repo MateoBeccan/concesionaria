@@ -15,7 +15,9 @@ export interface ICliente {
   activo?: boolean;
   fechaAlta?: Date;
   createdDate?: Date | null;
+  createdBy?: string | null;
   lastModifiedDate?: Date | null;
+  lastModifiedBy?: string | null;
   condicionIva?: ICondicionIva | null;
   tipoDocumento?: ITipoDocumento | null;
 }
@@ -35,7 +37,9 @@ export class Cliente implements ICliente {
     public activo?: boolean,
     public fechaAlta?: Date,
     public createdDate?: Date | null,
+    public createdBy?: string | null,
     public lastModifiedDate?: Date | null,
+    public lastModifiedBy?: string | null,
     public condicionIva?: ICondicionIva | null,
     public tipoDocumento?: ITipoDocumento | null,
   ) {

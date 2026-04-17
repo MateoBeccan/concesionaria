@@ -40,7 +40,7 @@ public class DetalleVenta implements Serializable {
     private BigDecimal subtotal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "cliente", "estadoVenta", "moneda", "user" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "cliente", "estado", "moneda", "user" }, allowSetters = true)
     private Venta venta;
 
     @ManyToOne(fetch = FetchType.LAZY)

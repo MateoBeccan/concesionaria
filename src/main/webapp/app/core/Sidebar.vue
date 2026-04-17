@@ -98,15 +98,8 @@ const ADMIN_SECTIONS: SidebarSection[] = [
   {
     title: 'Catalogo tecnico',
     items: [
-      { name: 'Marca', label: 'Marcas', icon: 'MA' },
-      { name: 'Modelo', label: 'Modelos', icon: 'MO' },
-      { name: 'Version', label: 'Versiones', icon: 'VE' },
-      { name: 'Motor', label: 'Motores', icon: 'MT' },
+      { name: 'CatalogoTecnicoAdmin', label: 'Centro de catalogo', icon: 'CT' },
       { name: 'VersionCompatibilityAdmin', label: 'Compatibilidades', icon: 'CM' },
-      { name: 'TipoVehiculo', label: 'Tipos de vehiculo', icon: 'TV' },
-      { name: 'Combustible', label: 'Combustibles', icon: 'CB' },
-      { name: 'Traccion', label: 'Tracciones', icon: 'TR' },
-      { name: 'TipoCaja', label: 'Tipos de caja', icon: 'TC' },
     ],
   },
   {
@@ -157,14 +150,14 @@ async function logout() {
 
 <style scoped>
 .app-sidebar {
-  width: var(--sidebar-width, 272px);
-  flex: 0 0 var(--sidebar-width, 272px);
+  width: var(--sidebar-width, 248px);
+  flex: 0 0 var(--sidebar-width, 248px);
   min-height: 100vh;
-  min-width: var(--sidebar-width, 272px);
-  max-width: var(--sidebar-width, 272px);
+  min-width: var(--sidebar-width, 248px);
+  max-width: var(--sidebar-width, 248px);
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.16), transparent 28%),
-    linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 24%),
+    linear-gradient(180deg, #0f172a 0%, #131c2d 100%);
   color: #e2e8f0;
   display: flex;
   flex-direction: column;
@@ -173,64 +166,64 @@ async function logout() {
 }
 
 .sidebar-brand {
-  min-height: 78px;
+  min-height: 70px;
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  padding: 1rem 1.1rem;
+  gap: 0.75rem;
+  padding: 0.9rem 0.95rem;
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   display: grid;
   place-content: center;
   background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
 
 .brand-name {
-  font-size: 0.98rem;
+  font-size: 0.92rem;
   font-weight: 700;
 }
 
 .brand-sub {
-  margin-top: 0.2rem;
-  font-size: 0.74rem;
+  margin-top: 0.12rem;
+  font-size: 0.7rem;
   color: #94a3b8;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 0.95rem 0.7rem 1.1rem;
+  padding: 0.8rem 0.6rem 1rem;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .sidebar-section {
-  margin: 0.8rem 0.55rem 0.35rem;
-  font-size: 0.66rem;
+  margin: 0.7rem 0.5rem 0.28rem;
+  font-size: 0.63rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #7dd3fc;
+  color: #93c5fd;
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.2rem;
-  padding: 0.68rem 0.72rem;
-  border-radius: 14px;
+  gap: 0.65rem;
+  margin-bottom: 0.16rem;
+  padding: 0.58rem 0.62rem;
+  border-radius: 12px;
   color: #dbeafe;
   text-decoration: none;
-  font-size: 0.89rem;
+  font-size: 0.84rem;
   min-width: 0;
   transition:
     background-color 0.2s ease,
@@ -247,26 +240,26 @@ async function logout() {
 }
 
 .sidebar-item:hover {
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(148, 163, 184, 0.1);
   color: #fff;
   transform: translateX(1px);
 }
 
 .sidebar-item.router-link-active {
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.44), rgba(14, 165, 233, 0.22));
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.34), rgba(14, 165, 233, 0.16));
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.12);
 }
 
 .sidebar-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
   display: grid;
   place-content: center;
   background: rgba(15, 23, 42, 0.4);
   color: #bfdbfe;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
@@ -274,21 +267,21 @@ async function logout() {
 .sidebar-footer {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.95rem 1rem;
+  gap: 0.55rem;
+  padding: 0.8rem 0.9rem;
   border-top: 1px solid rgba(148, 163, 184, 0.15);
-  background: rgba(15, 23, 42, 0.28);
+  background: rgba(15, 23, 42, 0.2);
 }
 
 .user-avatar {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: grid;
   place-content: center;
   background: linear-gradient(135deg, #1d4ed8, #2563eb);
   color: #fff;
-  font-size: 0.77rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -297,7 +290,7 @@ async function logout() {
 }
 
 .user-name {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -305,19 +298,19 @@ async function logout() {
 }
 
 .user-status {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   color: #94a3b8;
 }
 
 .logout-btn {
   margin-left: auto;
-  min-width: 44px;
-  height: 34px;
+  min-width: 38px;
+  height: 30px;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 10px;
+  border-radius: 9px;
   background: rgba(15, 23, 42, 0.5);
   color: #cbd5e1;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-weight: 700;
   cursor: pointer;
 }

@@ -48,7 +48,6 @@ export default defineComponent({
       ...new Inventario(),
       fechaIngreso: dayjs(),
       estadoInventario: EstadoInventario.DISPONIBLE,
-      disponible: true,
     });
 
     const vehiculos: Ref<IVehiculo[]> = ref([]);
@@ -135,6 +134,40 @@ export default defineComponent({
     });
 
     const canSubmit = computed(() => !loadingRelations.value && businessErrors.value.length === 0);
+    const procesoInventario = computed(() => [
+      {
+        number: '01',
+        title: 'Estado',
+        copy: inventario.value.estadoInventario ? `Estado ${inventario.value.estadoInventario} definido.` : 'Defini la situacion operativa de la unidad.',
+        done: !!inventario.value.estadoInventario,
+        current: !inventario.value.vehiculo?.id,
+      },
+      {
+        number: '02',
+        title: 'Unidad',
+        copy: selectedVehiculo.value ? 'Vehiculo asociado al inventario.' : 'Selecciona la unidad que queres administrar.',
+        done: !!selectedVehiculo.value,
+        current: !!inventario.value.estadoInventario && !selectedVehiculo.value,
+      },
+      {
+        number: '03',
+        title: 'Reserva',
+        copy: isReservado.value
+          ? selectedCliente.value
+            ? 'Reserva con cliente y fechas en curso.'
+            : 'Completa cliente y fechas de la reserva.'
+          : 'Sin reserva activa para esta unidad.',
+        done: !isReservado.value || (!!selectedCliente.value && !!inventario.value.fechaReserva && !!inventario.value.fechaVencimientoReserva),
+        current: isReservado.value,
+      },
+      {
+        number: '04',
+        title: 'Validacion',
+        copy: businessErrors.value.length === 0 ? 'Listo para guardar.' : `${businessErrors.value.length} validacion(es) pendiente(s).`,
+        done: businessErrors.value.length === 0,
+        current: businessErrors.value.length > 0,
+      },
+    ]);
 
     const validationRules = {
       fechaIngreso: {
@@ -239,8 +272,6 @@ export default defineComponent({
     watch(
       () => inventario.value.estadoInventario,
       estado => {
-        inventario.value.disponible = estado === EstadoInventario.DISPONIBLE;
-
         if (estado !== EstadoInventario.RESERVADO) {
           inventario.value.clienteReserva = null;
           inventario.value.fechaReserva = null;
@@ -279,6 +310,7 @@ export default defineComponent({
       businessErrors,
       businessWarnings,
       canSubmit,
+      procesoInventario,
       expectedCondicion,
       v$,
       ...useDateFormat({ entityRef: inventario }),
@@ -303,7 +335,6 @@ export default defineComponent({
       try {
         const payload = {
           ...this.inventario,
-          disponible: this.inventario.estadoInventario === EstadoInventario.DISPONIBLE,
           vehiculo: this.inventario.vehiculo ? { id: this.inventario.vehiculo.id } : null,
           clienteReserva: this.inventario.clienteReserva ? { id: this.inventario.clienteReserva.id } : null,
         };

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import dayjs from 'dayjs';
 
 import { useAlertService } from '@/shared/alert/alert.service';
+import OperationalTraceCard from '@/shared/components/OperationalTraceCard.vue';
 import { useDateFormat } from '@/shared/composables';
 import { CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
 import { EstadoInventario } from '@/shared/model/enumerations/estado-inventario.model';
@@ -20,8 +21,12 @@ function mapEstadoToCondicion(estado?: keyof typeof EstadoInventario | null): ke
 
 export default defineComponent({
   name: 'InventarioDetails',
+  components: {
+    OperationalTraceCard,
+  },
   setup() {
     const dateFormat = useDateFormat();
+    const { formatDateLong } = dateFormat;
     const inventarioService = inject('inventarioService', () => new InventarioService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
@@ -56,21 +61,39 @@ export default defineComponent({
         issues.push(`La condición del vehículo no coincide con el estado del inventario. Debería ser ${expectedCondicion}.`);
       }
 
-      if (inventario.value.estadoInventario === EstadoInventario.DISPONIBLE && !inventario.value.disponible) {
-        issues.push('El inventario figura DISPONIBLE pero la unidad no está marcada como disponible.');
-      }
-
       if (inventario.value.estadoInventario === EstadoInventario.RESERVADO) {
         if (!inventario.value.clienteReserva?.id) issues.push('La reserva no tiene cliente asociado.');
         if (!inventario.value.fechaReserva) issues.push('La reserva no tiene fecha de inicio.');
         if (!inventario.value.fechaVencimientoReserva) issues.push('La reserva no tiene fecha de vencimiento.');
       }
 
-      if (inventario.value.estadoInventario === EstadoInventario.VENDIDO && inventario.value.disponible) {
-        issues.push('La unidad figura vendida pero todavía aparece disponible.');
-      }
-
       return issues;
+    });
+
+    const traceStatus = computed(() => {
+      const disponible = inventario.value.estadoInventario === EstadoInventario.DISPONIBLE ? 'Disponible' : 'No disponible';
+      return `${inventario.value.estadoInventario ?? 'Sin estado'} · ${disponible}`;
+    });
+
+    const traceLastAction = computed(() => {
+      if (reservaVencida.value) return 'Reserva vencida';
+      if (inventario.value.estadoInventario === EstadoInventario.RESERVADO) return 'Reserva activa';
+      if (inventario.value.estadoInventario === EstadoInventario.VENDIDO) return 'Unidad marcada como vendida';
+      if (inventario.value.lastModifiedDate && inventario.value.createdDate && inventario.value.lastModifiedDate !== inventario.value.createdDate) {
+        return 'Inventario actualizado';
+      }
+      return 'Unidad ingresada a inventario';
+    });
+
+    const traceLastActionAt = computed(() => {
+      const actionDate =
+        (reservaVencida.value ? inventario.value.fechaVencimientoReserva : null) ??
+        inventario.value.fechaReserva ??
+        inventario.value.lastModifiedDate ??
+        inventario.value.createdDate ??
+        inventario.value.fechaIngreso;
+
+      return actionDate ? formatDateLong(actionDate) : 'No disponible';
     });
 
     return {
@@ -79,6 +102,9 @@ export default defineComponent({
       inventario,
       reservaVencida,
       incoherencias,
+      traceStatus,
+      traceLastAction,
+      traceLastActionAt,
       previousState,
     };
   },

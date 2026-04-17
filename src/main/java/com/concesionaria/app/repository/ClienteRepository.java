@@ -19,6 +19,8 @@ public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
     Optional<Cliente> findByNroDocumento(String nroDocumento);
 
+    Optional<Cliente> findByTipoDocumentoIdAndNroDocumento(Long tipoDocumentoId, String nroDocumento);
+
     @Query("""
 SELECT c FROM Cliente c
 WHERE LOWER(c.nombre) LIKE %:q%

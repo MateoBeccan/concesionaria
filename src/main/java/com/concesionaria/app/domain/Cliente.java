@@ -73,8 +73,16 @@ public class Cliente implements Serializable {
     @Column(name = "created_date")
     private Instant createdDate;
 
+    @Size(max = 50)
+    @Column(name = "created_by", length = 50)
+    private String createdBy;
+
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
+
+    @Size(max = 50)
+    @Column(name = "last_modified_by", length = 50)
+    private String lastModifiedBy;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private CondicionIva condicionIva;
@@ -266,6 +274,32 @@ public class Cliente implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return this.createdBy;
+    }
+
+    public Cliente createdBy(String createdBy) {
+        this.setCreatedBy(createdBy);
+        return this;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return this.lastModifiedBy;
+    }
+
+    public Cliente lastModifiedBy(String lastModifiedBy) {
+        this.setLastModifiedBy(lastModifiedBy);
+        return this;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public CondicionIva getCondicionIva() {
         return this.condicionIva;
     }
@@ -328,7 +362,9 @@ public class Cliente implements Serializable {
             ", activo='" + getActivo() + "'" +
             ", fechaAlta='" + getFechaAlta() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             "}";
     }
 }

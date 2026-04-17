@@ -9,6 +9,7 @@ const JhiHealthComponent = () => import('@/admin/health/health.vue');
 const JhiLogsComponent = () => import('@/admin/logs/logs.vue');
 const JhiMetricsComponent = () => import('@/admin/metrics/metrics.vue');
 const VersionCompatibilityAdmin = () => import('@/admin/version-compatibility/version-compatibility.vue');
+const CatalogoTecnicoAdmin = () => import('@/admin/catalogo-tecnico/catalogo-tecnico.vue');
 
 export default [
   {
@@ -63,6 +64,12 @@ export default [
     path: '/admin/configuration',
     name: 'JhiConfigurationComponent',
     component: JhiConfigurationComponent,
+    meta: { authorities: [Authority.ADMIN] },
+  },
+  {
+    path: '/admin/catalogo-tecnico',
+    name: 'CatalogoTecnicoAdmin',
+    component: CatalogoTecnicoAdmin,
     meta: { authorities: [Authority.ADMIN] },
   },
   {

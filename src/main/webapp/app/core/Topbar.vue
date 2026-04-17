@@ -157,6 +157,62 @@ const pageContext = computed<PageContext>(() => {
         title: 'Compatibilidades',
         subtitle: 'Relaciona versiones y motores con una vista administrativa orientada a negocio.',
       };
+    case 'CatalogoTecnicoAdmin':
+      return {
+        eyebrow: 'Catalogo tecnico',
+        title: 'Centro de catalogo',
+        subtitle: 'Administra marcas, modelos, versiones, motores y configuraciones tecnicas desde una sola vista.',
+        action: { label: 'Compatibilidades', to: { name: 'VersionCompatibilityAdmin' } },
+      };
+    case 'JhiUser':
+      return {
+        eyebrow: 'Administracion',
+        title: 'Usuarios',
+        subtitle: 'Gestiona accesos, perfiles y usuarios del sistema.',
+        action: { label: 'Nuevo usuario', to: { name: 'JhiUserCreate' } },
+      };
+    case 'JhiUserCreate':
+      return {
+        eyebrow: 'Administracion',
+        title: 'Nuevo usuario',
+        subtitle: 'Crea accesos administrativos y operativos.',
+      };
+    case 'JhiUserEdit':
+      return {
+        eyebrow: 'Administracion',
+        title: 'Editar usuario',
+        subtitle: 'Actualiza permisos y datos de acceso.',
+      };
+    case 'JhiUserView':
+      return {
+        eyebrow: 'Administracion',
+        title: 'Detalle de usuario',
+        subtitle: 'Consulta roles, datos y estado del usuario.',
+      };
+    case 'JhiMetricsComponent':
+      return {
+        eyebrow: 'Sistema',
+        title: 'Metricas',
+        subtitle: 'Revisa metricas tecnicas y actividad general del sistema.',
+      };
+    case 'JhiHealthComponent':
+      return {
+        eyebrow: 'Sistema',
+        title: 'Salud',
+        subtitle: 'Consulta el estado actual de servicios y dependencias.',
+      };
+    case 'JhiConfigurationComponent':
+      return {
+        eyebrow: 'Sistema',
+        title: 'Configuracion',
+        subtitle: 'Revisa propiedades y configuracion de entorno.',
+      };
+    case 'JhiLogsComponent':
+      return {
+        eyebrow: 'Sistema',
+        title: 'Logs',
+        subtitle: 'Consulta eventos tecnicos y trazas del sistema.',
+      };
     case 'Marca':
     case 'Modelo':
     case 'Version':
@@ -193,15 +249,14 @@ const pageContext = computed<PageContext>(() => {
 
 <style scoped>
 .app-topbar {
-  min-height: 84px;
+  min-height: 72px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.35rem;
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid #e5eaf2;
-  backdrop-filter: blur(10px);
+  gap: 0.9rem;
+  padding: 0.8rem 1.05rem;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .topbar-copy {
@@ -209,8 +264,8 @@ const pageContext = computed<PageContext>(() => {
 }
 
 .topbar-eyebrow {
-  margin: 0 0 0.18rem;
-  font-size: 0.7rem;
+  margin: 0 0 0.1rem;
+  font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -219,48 +274,48 @@ const pageContext = computed<PageContext>(() => {
 
 .topbar-title {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: #0f172a;
 }
 
 .topbar-subtitle {
-  margin: 0.2rem 0 0;
-  font-size: 0.86rem;
+  margin: 0.12rem 0 0;
+  font-size: 0.78rem;
   color: #64748b;
 }
 
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.55rem;
   flex-shrink: 0;
 }
 
 .topbar-primary-action {
-  min-width: 132px;
+  min-width: 118px;
   justify-content: center;
 }
 
 .user-chip {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0.45rem;
+  gap: 0.5rem;
+  padding: 0.28rem 0.38rem;
   border: 1px solid #e2e8f0;
   border-radius: 999px;
   background: #f8fafc;
 }
 
 .chip-avatar {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-content: center;
   border-radius: 999px;
   background: linear-gradient(135deg, #1d4ed8, #2563eb);
   color: #fff;
-  font-size: 0.76rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
@@ -271,14 +326,14 @@ const pageContext = computed<PageContext>(() => {
 }
 
 .chip-label {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .chip-name {
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #0f172a;
 }
@@ -287,6 +342,7 @@ const pageContext = computed<PageContext>(() => {
   .app-topbar {
     align-items: flex-start;
     flex-direction: column;
+    padding: 0.75rem 0.9rem;
   }
 
   .topbar-actions {

@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface MetodoPagoRepository extends JpaRepository<MetodoPago, Long> {}
+public interface MetodoPagoRepository extends JpaRepository<MetodoPago, Long> {
+    java.util.Optional<MetodoPago> findByCodigoIgnoreCase(String codigo);
+}

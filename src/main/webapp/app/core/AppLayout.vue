@@ -17,10 +17,10 @@ import Topbar from '@/core/Topbar.vue';
 
 <style scoped>
 .app-shell {
-  --sidebar-width: 272px;
+  --sidebar-width: 248px;
   display: flex;
   min-height: 100vh;
-  background: #f3f6fb;
+  background: linear-gradient(180deg, #f7f9fc 0%, #f1f5f9 100%);
 }
 
 .app-main {
@@ -33,20 +33,20 @@ import Topbar from '@/core/Topbar.vue';
 .app-content {
   flex: 1;
   min-width: 0;
-  padding: 1.25rem 1.35rem;
+  padding: 1rem 1.1rem 1.25rem;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 @media (max-width: 1100px) {
   .app-shell {
-    --sidebar-width: 248px;
+    --sidebar-width: 224px;
   }
 }
 
 @media (max-width: 920px) {
   .app-shell {
-    --sidebar-width: 232px;
+    --sidebar-width: 208px;
   }
 
   .app-content {

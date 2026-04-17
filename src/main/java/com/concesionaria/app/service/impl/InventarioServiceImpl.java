@@ -2,12 +2,15 @@ package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
+import com.concesionaria.app.domain.InventarioHistorial;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.repository.ClienteRepository;
+import com.concesionaria.app.repository.InventarioHistorialRepository;
 import com.concesionaria.app.repository.InventarioRepository;
 import com.concesionaria.app.repository.VehiculoRepository;
+import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.InventarioService;
 import com.concesionaria.app.service.dto.InventarioDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
@@ -22,9 +25,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Service Implementation for managing {@link com.concesionaria.app.domain.Inventario}.
- */
 @Service
 @Transactional
 public class InventarioServiceImpl implements InventarioService {
@@ -35,25 +35,33 @@ public class InventarioServiceImpl implements InventarioService {
     private final InventarioMapper inventarioMapper;
     private final VehiculoRepository vehiculoRepository;
     private final ClienteRepository clienteRepository;
+    private final InventarioHistorialRepository inventarioHistorialRepository;
 
     public InventarioServiceImpl(
         InventarioRepository inventarioRepository,
         InventarioMapper inventarioMapper,
         VehiculoRepository vehiculoRepository,
-        ClienteRepository clienteRepository
+        ClienteRepository clienteRepository,
+        InventarioHistorialRepository inventarioHistorialRepository
     ) {
         this.inventarioRepository = inventarioRepository;
         this.inventarioMapper = inventarioMapper;
         this.vehiculoRepository = vehiculoRepository;
         this.clienteRepository = clienteRepository;
+        this.inventarioHistorialRepository = inventarioHistorialRepository;
     }
 
     @Override
     public InventarioDTO save(InventarioDTO dto) {
         Inventario inventario = buildValidatedEntity(dto, null);
-        inventario.setCreatedDate(Instant.now());
-        inventario.setLastModifiedDate(Instant.now());
+        Instant now = Instant.now();
+        String currentUser = currentUserLogin();
+        inventario.setCreatedDate(now);
+        inventario.setCreatedBy(currentUser);
+        inventario.setLastModifiedDate(now);
+        inventario.setLastModifiedBy(currentUser);
         Inventario saved = inventarioRepository.save(inventario);
+        registrarCambioEstado(saved, null, "ALTA_INVENTARIO", "Ingreso inicial de unidad al inventario");
         syncVehiculoCondicion(saved);
         return inventarioMapper.toDto(saved);
     }
@@ -61,10 +69,15 @@ public class InventarioServiceImpl implements InventarioService {
     @Override
     public InventarioDTO update(InventarioDTO dto) {
         Inventario existente = inventarioRepository.findById(dto.getId()).orElseThrow(() -> new BadRequestException("El inventario no existe"));
+        EstadoInventario estadoAnterior = existente.getEstadoInventario();
+
         Inventario inventario = buildValidatedEntity(dto, existente);
         inventario.setCreatedDate(existente.getCreatedDate());
+        inventario.setCreatedBy(existente.getCreatedBy());
         inventario.setLastModifiedDate(Instant.now());
+        inventario.setLastModifiedBy(currentUserLogin());
         Inventario saved = inventarioRepository.save(inventario);
+        registrarCambioEstado(saved, estadoAnterior, "ACTUALIZACION_INVENTARIO", "Actualizacion manual del inventario");
         syncVehiculoCondicion(saved);
         return inventarioMapper.toDto(saved);
     }
@@ -74,21 +87,29 @@ public class InventarioServiceImpl implements InventarioService {
         return inventarioRepository
             .findById(dto.getId())
             .map(existente -> {
+                EstadoInventario estadoAnterior = existente.getEstadoInventario();
                 inventarioMapper.partialUpdate(existente, dto);
                 validarYNormalizar(existente, dto.getId(), existente.getVehiculo(), existente.getClienteReserva());
+                if (existente.getCreatedBy() == null) {
+                    existente.setCreatedBy(currentUserLogin());
+                }
                 existente.setLastModifiedDate(Instant.now());
+                existente.setLastModifiedBy(currentUserLogin());
                 Inventario saved = inventarioRepository.save(existente);
+                registrarCambioEstado(saved, estadoAnterior, "ACTUALIZACION_PARCIAL_INVENTARIO", "Actualizacion parcial de inventario");
                 syncVehiculoCondicion(saved);
                 return inventarioMapper.toDto(saved);
             });
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<InventarioDTO> findAll(Pageable pageable) {
         return inventarioRepository.findAll(pageable).map(inventarioMapper::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<InventarioDTO> findOne(Long id) {
         return inventarioRepository.findById(id).map(inventarioMapper::toDto);
     }
@@ -110,8 +131,8 @@ public class InventarioServiceImpl implements InventarioService {
         inventario.setFechaIngreso(dto.getFechaIngreso());
         inventario.setUbicacion(dto.getUbicacion());
         inventario.setEstadoInventario(dto.getEstadoInventario());
-        inventario.setObservaciones(dto.getObservaciones());
         inventario.setDisponible(dto.getDisponible());
+        inventario.setObservaciones(dto.getObservaciones());
         inventario.setFechaReserva(dto.getFechaReserva());
         inventario.setFechaVencimientoReserva(dto.getFechaVencimientoReserva());
         inventario.setVehiculo(vehiculo);
@@ -127,7 +148,6 @@ public class InventarioServiceImpl implements InventarioService {
         if (vehiculoId == null) {
             throw new BadRequestException("El vehiculo es obligatorio para registrar inventario");
         }
-
         return vehiculoRepository.findById(vehiculoId).orElseThrow(() -> new BadRequestException("El vehiculo seleccionado no existe"));
     }
 
@@ -136,7 +156,6 @@ public class InventarioServiceImpl implements InventarioService {
         if (clienteReservaId == null) {
             return null;
         }
-
         return clienteRepository.findById(clienteReservaId).orElseThrow(() -> new BadRequestException("El cliente de reserva no existe"));
     }
 
@@ -152,10 +171,6 @@ public class InventarioServiceImpl implements InventarioService {
                 throw new BadRequestException("El vehiculo ya tiene un inventario asociado");
             });
 
-        if (CondicionVehiculo.VENDIDO.equals(vehiculo.getCondicion()) && inventario.getEstadoInventario() != EstadoInventario.VENDIDO) {
-            throw new BadRequestException("No se puede marcar disponible o reservado un vehiculo ya vendido");
-        }
-
         Inventario existingForVehicle = inventarioId != null ? inventarioRepository.findById(inventarioId).orElse(null) : null;
         if (
             existingForVehicle != null &&
@@ -164,7 +179,7 @@ public class InventarioServiceImpl implements InventarioService {
             existingForVehicle.getClienteReserva() != null &&
             !Objects.equals(existingForVehicle.getClienteReserva().getId(), clienteReserva != null ? clienteReserva.getId() : null)
         ) {
-            throw new BadRequestException("Liberá la reserva actual antes de asignarla a otro cliente");
+            throw new BadRequestException("Libera la reserva actual antes de asignarla a otro cliente");
         }
 
         switch (inventario.getEstadoInventario()) {
@@ -173,45 +188,34 @@ public class InventarioServiceImpl implements InventarioService {
             case VENDIDO -> validarVendido(inventario);
             default -> throw new BadRequestException("El estado de inventario es obligatorio");
         }
+
     }
 
     private void validarDisponible(Inventario inventario) {
-        if (!Boolean.TRUE.equals(inventario.getDisponible())) {
-            throw new BadRequestException("Un vehiculo en venta debe figurar como disponible");
-        }
-
+        inventario.setDisponible(true);
         inventario.setClienteReserva(null);
         inventario.setFechaReserva(null);
         inventario.setFechaVencimientoReserva(null);
     }
 
     private void validarReservado(Inventario inventario, Cliente clienteReserva) {
-        if (Boolean.TRUE.equals(inventario.getDisponible())) {
-            throw new BadRequestException("Un vehiculo reservado no puede figurar como disponible");
-        }
-
         if (clienteReserva == null) {
-            throw new BadRequestException("Debés seleccionar un cliente para registrar la reserva");
+            throw new BadRequestException("Debes seleccionar un cliente para registrar la reserva");
         }
-
         if (inventario.getFechaReserva() == null) {
-            throw new BadRequestException("La fecha de reserva es obligatoria cuando el inventario está reservado");
+            throw new BadRequestException("La fecha de reserva es obligatoria cuando el inventario esta reservado");
         }
-
         if (inventario.getFechaVencimientoReserva() == null) {
             throw new BadRequestException("La fecha de vencimiento de la reserva es obligatoria");
         }
-
         if (!inventario.getFechaVencimientoReserva().isAfter(inventario.getFechaReserva())) {
             throw new BadRequestException("El vencimiento de la reserva debe ser posterior a la fecha de reserva");
         }
+        inventario.setDisponible(false);
     }
 
     private void validarVendido(Inventario inventario) {
-        if (Boolean.TRUE.equals(inventario.getDisponible())) {
-            throw new BadRequestException("Un vehiculo vendido no puede volver a figurar como disponible");
-        }
-
+        inventario.setDisponible(false);
         inventario.setClienteReserva(null);
         inventario.setFechaReserva(null);
         inventario.setFechaVencimientoReserva(null);
@@ -231,8 +235,32 @@ public class InventarioServiceImpl implements InventarioService {
 
         if (vehiculo.getCondicion() != condicion) {
             vehiculo.setCondicion(condicion);
+            vehiculo.setLastModifiedDate(Instant.now());
+            vehiculo.setLastModifiedBy(currentUserLogin());
             vehiculoRepository.save(vehiculo);
-            LOG.debug("Vehiculo {} sincronizado a condicion {}", vehiculo.getId(), condicion);
+            LOG.debug("Vehiculo {} sincronizado por compatibilidad a condicion {}", vehiculo.getId(), condicion);
         }
+    }
+
+    private void registrarCambioEstado(Inventario inventario, EstadoInventario estadoAnterior, String accion, String detalle) {
+        if (inventario == null || inventario.getEstadoInventario() == null) {
+            return;
+        }
+        if (estadoAnterior != null && estadoAnterior == inventario.getEstadoInventario()) {
+            return;
+        }
+
+        InventarioHistorial historial = new InventarioHistorial();
+        historial.setInventario(inventario);
+        historial.setEstadoAnterior(estadoAnterior);
+        historial.setEstadoNuevo(inventario.getEstadoInventario());
+        historial.setAccion(accion);
+        historial.setDetalle(detalle);
+        historial.setFecha(Instant.now());
+        inventarioHistorialRepository.save(historial);
+    }
+
+    private String currentUserLogin() {
+        return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }

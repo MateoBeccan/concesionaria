@@ -24,6 +24,23 @@ export default defineComponent({
       }),
     );
 
+    const summary = computed(() => {
+      const springPrefixes = configuration.value.length;
+      const springProperties = configuration.value.reduce((acc, entry) => acc + Object.keys(entry.properties ?? {}).length, 0);
+      const envGroups = Object.keys(allConfiguration.value ?? {}).length;
+      const envProperties = Object.values(allConfiguration.value ?? {}).reduce(
+        (acc: number, items: any) => acc + (Array.isArray(items) ? items.length : 0),
+        0,
+      );
+
+      return {
+        springPrefixes,
+        springProperties,
+        envGroups,
+        envProperties,
+      };
+    });
+
     return {
       configurationService,
       orderProp,
@@ -33,6 +50,7 @@ export default defineComponent({
       configKeys,
       filtered,
       filteredConfiguration,
+      summary,
     };
   },
   mounted() {

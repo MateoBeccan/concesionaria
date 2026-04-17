@@ -10,11 +10,11 @@
           <h1 class="page-title mb-0">Venta #{{ venta.id }}</h1>
           <div class="mt-1 d-flex align-items-center gap-2">
             <span class="text-muted small">{{ formatFecha(venta.fecha) }}</span>
-            <span class="badge" :class="badgeEstado(venta.estadoVenta ?? venta.estado)">
-              {{ labelEstado(venta.estadoVenta ?? venta.estado) }}
+            <span class="badge" :class="badgeEstado(venta.estado)">
+              {{ labelEstado(venta.estado) }}
             </span>
-            <span v-if="venta.moneda" class="badge border bg-light text-dark">
-              {{ venta.moneda.simbolo ?? '' }} {{ venta.moneda.codigo }}
+            <span v-if="ventaMonedaDisplay" class="badge border bg-light text-dark">
+              {{ ventaMonedaDisplay.simbolo ?? '' }} {{ ventaMonedaDisplay.codigo }}
             </span>
           </div>
         </div>
@@ -45,13 +45,25 @@
             </div>
             <div class="col-sm-3 text-center">
               <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Estado</div>
-              <span class="badge fs-6" :class="badgeEstado(venta.estadoVenta ?? venta.estado)">
-                {{ labelEstado(venta.estadoVenta ?? venta.estado) }}
+              <span class="badge fs-6" :class="badgeEstado(venta.estado)">
+                {{ labelEstado(venta.estado) }}
               </span>
             </div>
           </div>
         </div>
       </div>
+
+      <OperationalTraceCard
+        class="mb-3"
+        title="Trazabilidad de la venta"
+        :status="ventaStatusLabel"
+        :created-by="traceCreatedBy"
+        :created-at="venta.createdDate ? formatDateLong(venta.createdDate) : 'No disponible'"
+        :updated-by="traceUpdatedBy"
+        :updated-at="venta.lastModifiedDate ? formatDateLong(venta.lastModifiedDate) : 'No disponible'"
+        :last-action="traceLastAction"
+        :last-action-at="traceLastActionDate"
+      />
 
       <div class="row g-3 mb-3">
         <div class="col-md-6">
@@ -98,9 +110,9 @@
                 <dt>Cotizacion</dt>
                 <dd>{{ venta.cotizacion ?? '—' }}</dd>
                 <dt>Moneda</dt>
-                <dd>{{ venta.moneda?.simbolo ?? '' }} {{ venta.moneda?.codigo ?? '—' }}</dd>
+                <dd>{{ ventaMonedaDisplay?.simbolo ?? '' }} {{ ventaMonedaDisplay?.codigo ?? '—' }}</dd>
                 <dt>Registrado por</dt>
-                <dd>{{ venta.user?.login ?? '—' }}</dd>
+                <dd>{{ venta.createdBy ?? venta.user?.login ?? '—' }}</dd>
               </dl>
             </div>
           </div>
@@ -149,8 +161,8 @@
                   {{ detalle.vehiculo?.version?.nombre ?? '' }}
                 </td>
                 <td>
-                  <span class="badge" :class="detalle.vehiculo?.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
-                    {{ detalle.vehiculo?.estado ?? '—' }}
+                  <span class="badge" :class="detalle.vehiculo?.condicion === 'EN_VENTA' ? 'bg-success' : 'bg-secondary'">
+                    {{ detalle.vehiculo?.condicion ?? detalle.vehiculo?.estado ?? '—' }}
                   </span>
                 </td>
                 <td class="text-end">$ {{ formatPrecio(detalle.precioUnitario) }}</td>

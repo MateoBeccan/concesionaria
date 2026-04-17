@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 @SuppressWarnings("unused")
 @Repository
-public interface CondicionIvaRepository extends JpaRepository<CondicionIva, Long> {}
+public interface CondicionIvaRepository extends JpaRepository<CondicionIva, Long> {
+    java.util.Optional<CondicionIva> findByCodigoIgnoreCase(String codigo);
+}

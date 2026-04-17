@@ -111,40 +111,8 @@
             <label>Activo</label>
           </div>
 
-          <div class="row mb-3">
-            <div class="col-md-4">
-              <label>Fecha Alta</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                :class="{ 'is-invalid': v$.fechaAlta.$dirty && v$.fechaAlta.$invalid }"
-                :value="convertDateTimeFromServer(v$.fechaAlta.$model)"
-                @change="updateInstantField('fechaAlta', $event)"
-              />
-              <div v-if="v$.fechaAlta.$dirty && v$.fechaAlta.$invalid" class="invalid-feedback">
-                <span v-for="error of v$.fechaAlta.$errors" :key="error.$uid">{{ error.$message }}</span>
-              </div>
-            </div>
-
-            <div class="col-md-4">
-              <label>Creado</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                :value="convertDateTimeFromServer(v$.createdDate.$model)"
-                @change="updateInstantField('createdDate', $event)"
-              />
-            </div>
-
-            <div class="col-md-4">
-              <label>Modificado</label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                :value="convertDateTimeFromServer(v$.lastModifiedDate.$model)"
-                @change="updateInstantField('lastModifiedDate', $event)"
-              />
-            </div>
+          <div class="mb-3">
+            <small class="text-muted">Los datos de auditoria se completan automaticamente por el sistema.</small>
           </div>
 
           <div class="mb-3">

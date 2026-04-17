@@ -54,8 +54,16 @@
         @Column(name = "created_date")
         private Instant createdDate;
 
+        @Size(max = 50)
+        @Column(name = "created_by", length = 50)
+        private String createdBy;
+
         @Column(name = "last_modified_date")
         private Instant lastModifiedDate;
+
+        @Size(max = 50)
+        @Column(name = "last_modified_by", length = 50)
+        private String lastModifiedBy;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JsonIgnoreProperties(value = { "modelo" }, allowSetters = true)
@@ -68,10 +76,10 @@
         @ManyToOne(fetch = FetchType.LAZY)
         private TipoVehiculo tipoVehiculo;
 
-        @NotNull
-        @Enumerated(EnumType.STRING)
-        @Column(name = "condicion", nullable = false)
-        private CondicionVehiculo condicion;
+    @Deprecated(forRemoval = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condicion")
+    private CondicionVehiculo condicion;
 
         @JsonIgnoreProperties(value = { "vehiculo", "clienteReserva" }, allowSetters = true)
         @OneToOne(fetch = FetchType.LAZY, mappedBy = "vehiculo")
@@ -191,6 +199,32 @@
             this.lastModifiedDate = lastModifiedDate;
         }
 
+        public String getCreatedBy() {
+            return this.createdBy;
+        }
+
+        public Vehiculo createdBy(String createdBy) {
+            this.setCreatedBy(createdBy);
+            return this;
+        }
+
+        public void setCreatedBy(String createdBy) {
+            this.createdBy = createdBy;
+        }
+
+        public String getLastModifiedBy() {
+            return this.lastModifiedBy;
+        }
+
+        public Vehiculo lastModifiedBy(String lastModifiedBy) {
+            this.setLastModifiedBy(lastModifiedBy);
+            return this;
+        }
+
+        public void setLastModifiedBy(String lastModifiedBy) {
+            this.lastModifiedBy = lastModifiedBy;
+        }
+
         public Version getVersion() {
             return this.version;
         }
@@ -279,7 +313,9 @@
                 ", patente='" + getPatente() + "'" +
                 ", precio=" + getPrecio() +
                 ", createdDate='" + getCreatedDate() + "'" +
+                ", createdBy='" + getCreatedBy() + "'" +
                 ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+                ", lastModifiedBy='" + getLastModifiedBy() + "'" +
                 "}";
         }
     }

@@ -39,14 +39,21 @@ export default class VehiculoService {
     return res.data;
   }
 
+  async buscar(q: string): Promise<IVehiculo> {
+    const res = await axios.get<IVehiculo>(`${baseApiUrl}/buscar`, { params: { q } });
+    return res.data;
+  }
+
   async vender(vehiculoId: number, clienteId: number): Promise<void> {
     await axios.post(`${baseApiUrl}/${vehiculoId}/vender/${clienteId}`);
   }
 
   async reservar(vehiculoId: number, clienteId: number): Promise<void> {
-    await axios.post(`${baseApiUrl}/${vehiculoId}/reservar?clienteId=${clienteId}`);
+    await axios.post(`${baseApiUrl}/${vehiculoId}/reservar/${clienteId}`);
   }
 
+  async cancelarReserva(vehiculoId: number): Promise<void> {
+    await axios.post(`${baseApiUrl}/${vehiculoId}/cancelar-reserva`);
+  }
 
 }
-

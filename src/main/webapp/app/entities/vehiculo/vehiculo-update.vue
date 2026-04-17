@@ -10,10 +10,30 @@
       <button class="btn btn-sm btn-outline-secondary" @click="previousState()">Volver</button>
     </div>
 
+    <section class="process-strip mb-4">
+      <article v-for="step in procesoVehiculo" :key="step.number" class="process-step" :class="{ done: step.done, current: step.current }">
+        <div class="process-number">{{ step.number }}</div>
+        <div>
+          <div class="process-title">{{ step.title }}</div>
+          <div class="process-copy">{{ step.copy }}</div>
+        </div>
+      </article>
+    </section>
+
     <form @submit.prevent="save()" novalidate>
       <div class="card mb-3">
-        <div class="card-header">1. Identificacion comercial</div>
+        <div class="card-header">
+          <div>
+            <div class="section-title">1. Catalogo tecnico y datos comerciales</div>
+            <div class="section-copy">Primero definí qué unidad es y después completá los datos que el negocio necesita para venderla.</div>
+          </div>
+        </div>
         <div class="card-body">
+          <div class="guided-banner mb-3">
+            <span class="guided-chip" :class="{ ready: catalogoCompleto }">Catalogo tecnico</span>
+            <span class="guided-chip" :class="{ ready: datosComercialesCompletos }">Datos comerciales</span>
+            <span class="guided-chip" :class="{ ready: !!inventarioAsociado }">Inventario</span>
+          </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">Patente <span v-if="patenteRequerida" class="text-danger">*</span></label>
@@ -108,7 +128,12 @@
       </div>
 
       <div class="card mb-3">
-        <div class="card-header">2. Catalogo del vehiculo</div>
+        <div class="card-header">
+          <div>
+            <div class="section-title">2. Configuracion tecnica</div>
+            <div class="section-copy">Seguí el orden marca → modelo → version → motor para evitar combinaciones invalidas.</div>
+          </div>
+        </div>
         <div class="card-body">
           <div class="row g-3">
             <div class="col-md-6">
@@ -220,13 +245,18 @@
       </div>
 
       <div class="card mb-3">
-        <div class="card-header">3. Inventario asociado</div>
+        <div class="card-header">
+          <div>
+            <div class="section-title">3. Inventario asociado</div>
+            <div class="section-copy">Revisá si la unidad ya esta operativa en inventario y si su estado coincide con la condicion comercial.</div>
+          </div>
+        </div>
         <div class="card-body">
           <div v-if="inventarioAsociado" class="d-flex flex-column gap-2">
             <div class="d-flex flex-wrap gap-2 align-items-center">
               <span class="badge bg-light text-dark border">Estado: {{ inventarioAsociado.estadoInventario }}</span>
-              <span class="badge" :class="inventarioAsociado.disponible ? 'bg-success' : 'bg-secondary'">
-                {{ inventarioAsociado.disponible ? 'Disponible' : 'No disponible' }}
+              <span class="badge" :class="inventarioAsociado.estadoInventario === 'DISPONIBLE' ? 'bg-success' : 'bg-secondary'">
+                {{ inventarioAsociado.estadoInventario === 'DISPONIBLE' ? 'Disponible' : 'No disponible' }}
               </span>
               <span class="text-muted small">Ubicacion: {{ inventarioAsociado.ubicacion ?? 'Sin definir' }}</span>
             </div>
@@ -259,3 +289,91 @@
 </template>
 
 <script lang="ts" src="./vehiculo-update.component.ts"></script>
+
+<style scoped>
+.process-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.process-step {
+  display: flex;
+  gap: 0.8rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.process-step.current {
+  border-color: #93c5fd;
+  background: #f8fbff;
+}
+
+.process-step.done {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.process-number {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.process-step.current .process-number {
+  background: #2563eb;
+  color: #fff;
+}
+
+.process-step.done .process-number {
+  background: #16a34a;
+  color: #fff;
+}
+
+.process-title,
+.section-title {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.process-copy,
+.section-copy {
+  font-size: 0.84rem;
+  color: #64748b;
+}
+
+.guided-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.guided-chip {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.guided-chip.ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+@media (max-width: 767px) {
+  .process-strip {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

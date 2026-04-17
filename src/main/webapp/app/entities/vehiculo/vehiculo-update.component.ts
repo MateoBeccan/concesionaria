@@ -37,14 +37,14 @@ function patenteEsObligatoria(estado?: keyof typeof EstadoVehiculo | null): bool
 
 function mapearCondicionAInventario(condicion?: keyof typeof CondicionVehiculo | null) {
   if (condicion === CondicionVehiculo.RESERVADO) {
-    return { estadoInventario: EstadoInventario.RESERVADO, disponible: false };
+    return { estadoInventario: EstadoInventario.RESERVADO };
   }
 
   if (condicion === CondicionVehiculo.VENDIDO) {
-    return { estadoInventario: EstadoInventario.VENDIDO, disponible: false };
+    return { estadoInventario: EstadoInventario.VENDIDO };
   }
 
-  return { estadoInventario: EstadoInventario.DISPONIBLE, disponible: true };
+  return { estadoInventario: EstadoInventario.DISPONIBLE };
 }
 
 export default defineComponent({
@@ -127,10 +127,7 @@ export default defineComponent({
       if (!inventarioAsociado.value) return '';
 
       const esperado = mapearCondicionAInventario(vehiculo.value.condicion);
-      if (
-        inventarioAsociado.value.estadoInventario !== esperado.estadoInventario ||
-        inventarioAsociado.value.disponible !== esperado.disponible
-      ) {
+      if (inventarioAsociado.value.estadoInventario !== esperado.estadoInventario) {
         return 'La condicion comercial del vehiculo no coincide con el estado actual del inventario. Revisalo antes de operar.';
       }
 
@@ -172,6 +169,39 @@ export default defineComponent({
 
       return !!vehiculo.value.motor?.id && isMotorCompatible(vehiculo.value.motor.id);
     });
+
+    const catalogoCompleto = computed(
+      () => !!selectedMarca.value?.id && !!selectedModelo.value?.id && !!vehiculo.value.version?.id && !!vehiculo.value.motor?.id,
+    );
+
+    const datosComercialesCompletos = computed(() => {
+      const patenteOk = patenteRequerida.value ? !!normalizarPatente(vehiculo.value.patente) : true;
+      return !!vehiculo.value.estado && !!vehiculo.value.fechaFabricacion && Number(vehiculo.value.precio ?? 0) > 0 && patenteOk;
+    });
+
+    const procesoVehiculo = computed(() => [
+      {
+        number: '01',
+        title: 'Catalogo tecnico',
+        copy: catalogoCompleto.value ? 'Marca, modelo, version y motor definidos.' : 'Defini la configuracion tecnica de la unidad.',
+        done: catalogoCompleto.value,
+        current: !catalogoCompleto.value,
+      },
+      {
+        number: '02',
+        title: 'Datos comerciales',
+        copy: datosComercialesCompletos.value ? 'Patente, estado, km y precio listos.' : 'Completa identificacion, estado y precio.',
+        done: datosComercialesCompletos.value,
+        current: catalogoCompleto.value && !datosComercialesCompletos.value,
+      },
+      {
+        number: '03',
+        title: 'Inventario',
+        copy: inventarioAsociado.value ? 'La unidad ya tiene seguimiento en inventario.' : 'Podras asociarla a inventario en el siguiente paso.',
+        done: !!inventarioAsociado.value,
+        current: catalogoCompleto.value && datosComercialesCompletos.value,
+      },
+    ]);
 
     const patenteRequerida = computed(() => patenteEsObligatoria(vehiculo.value.estado));
 
@@ -378,6 +408,9 @@ export default defineComponent({
       v$,
       motorValidationMessage,
       canSaveVehiculo,
+      procesoVehiculo,
+      catalogoCompleto,
+      datosComercialesCompletos,
       patenteRequerida,
       patenteHint,
       handleMarcaChange,

@@ -7,7 +7,7 @@ import { helpers } from '@vuelidate/validators';
 import CondicionIvaService from '@/entities/condicion-iva/condicion-iva.service';
 import TipoDocumentoService from '@/entities/tipo-documento/tipo-documento.service';
 import { useAlertService } from '@/shared/alert/alert.service';
-import { useDateFormat, useValidation } from '@/shared/composables';
+import { useValidation } from '@/shared/composables';
 import { Cliente, type ICliente } from '@/shared/model/cliente.model';
 import { type ICondicionIva } from '@/shared/model/condicion-iva.model';
 import { type ITipoDocumento } from '@/shared/model/tipo-documento.model';
@@ -33,7 +33,9 @@ export default defineComponent({
     const clienteService = inject('clienteService', () => new ClienteService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
-    const cliente: Ref<ICliente> = ref(new Cliente());
+    const cliente: Ref<ICliente> = ref(
+      new Cliente(undefined, undefined, undefined, undefined, null, undefined, null, null, null, null, true, new Date(), null, null, null, null),
+    );
 
     const condicionIvaService = inject('condicionIvaService', () => new CondicionIvaService());
 
@@ -54,8 +56,6 @@ export default defineComponent({
       try {
         const res = await clienteService().find(clienteId);
         res.fechaAlta = toDateOrNull(res.fechaAlta);
-        res.createdDate = toDateOrNull(res.createdDate);
-        res.lastModifiedDate = toDateOrNull(res.lastModifiedDate);
         cliente.value = res;
       } catch (error) {
         alertService.showHttpError(error.response);
@@ -133,8 +133,6 @@ export default defineComponent({
       fechaAlta: {
         required: validations.required('Este campo es obligatorio.'),
       },
-      createdDate: {},
-      lastModifiedDate: {},
       condicionIva: {},
       tipoDocumento: {
         required: validations.required('Seleccioná un tipo de documento.'),
@@ -152,7 +150,6 @@ export default defineComponent({
       condicionIvas,
       tipoDocumentos,
       v$,
-      ...useDateFormat({ entityRef: cliente }),
     };
   },
   methods: {
@@ -174,8 +171,6 @@ export default defineComponent({
         provincia: normalizeString(this.cliente.provincia) || null,
         pais: normalizeString(this.cliente.pais) || null,
         fechaAlta: toIsoOrNull(this.cliente.fechaAlta),
-        createdDate: toIsoOrNull(this.cliente.createdDate),
-        lastModifiedDate: toIsoOrNull(this.cliente.lastModifiedDate),
       };
 
       this.isSaving = true;

@@ -28,6 +28,14 @@ public class CotizacionDTO implements Serializable {
     @NotNull
     private Boolean activo;
 
+    private Instant createdDate;
+
+    private String createdBy;
+
+    private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
+
     private MonedaDTO moneda;
 
     public Long getId() {
@@ -70,6 +78,38 @@ public class CotizacionDTO implements Serializable {
         this.activo = activo;
     }
 
+    public Instant getCreatedDate() {
+        return createdDate;
+    }
+
+    public void setCreatedDate(Instant createdDate) {
+        this.createdDate = createdDate;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public MonedaDTO getMoneda() {
         return moneda;
     }
@@ -108,6 +148,10 @@ public class CotizacionDTO implements Serializable {
             ", valorCompra=" + getValorCompra() +
             ", valorVenta=" + getValorVenta() +
             ", activo='" + getActivo() + "'" +
+            ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", moneda=" + getMoneda() +
             "}";
     }

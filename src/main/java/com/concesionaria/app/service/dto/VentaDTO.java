@@ -49,7 +49,11 @@ public class VentaDTO implements Serializable {
 
     private Instant createdDate;
 
+    private String createdBy;
+
     private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
 
     private ClienteDTO cliente;
 
@@ -155,6 +159,22 @@ public class VentaDTO implements Serializable {
         this.lastModifiedDate = lastModifiedDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
     public ClienteDTO getCliente() {
         return cliente;
     }
@@ -223,7 +243,9 @@ public class VentaDTO implements Serializable {
             ", saldo=" + getSaldo() +
             ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", cliente=" + getCliente() +
             ", estado=" + getEstado() +
             ", moneda=" + getMoneda() +

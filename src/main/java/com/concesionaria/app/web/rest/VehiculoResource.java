@@ -193,6 +193,17 @@
             return vehiculo.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
         }
+
+        @GetMapping("/buscar")
+        public ResponseEntity<VehiculoDTO> buscar(@RequestParam(name = "q", required = false) String q) {
+            if (q == null || q.trim().isEmpty()) {
+                throw new BadRequestAlertException("La busqueda es obligatoria", ENTITY_NAME, "queryrequired");
+            }
+
+            Optional<VehiculoDTO> vehiculo = vehiculoService.findByPatente(q.trim());
+            return vehiculo.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        }
+
         @PostMapping("/{id}/reservar/{clienteId}")
         public ResponseEntity<Void> reservar(
             @PathVariable Long id,
@@ -208,6 +219,12 @@
             @PathVariable Long clienteId
         ) {
             vehiculoService.venderVehiculo(id, clienteId);
+            return ResponseEntity.ok().build();
+        }
+
+        @PostMapping("/{id}/cancelar-reserva")
+        public ResponseEntity<Void> cancelarReserva(@PathVariable Long id) {
+            vehiculoService.cancelarReserva(id);
             return ResponseEntity.ok().build();
         }
     }

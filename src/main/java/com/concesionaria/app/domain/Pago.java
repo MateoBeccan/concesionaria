@@ -41,7 +41,7 @@ public class Pago implements Serializable {
     private Instant createdDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "cliente", "estadoVenta", "moneda", "user" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "cliente", "estado", "moneda", "user" }, allowSetters = true)
     private Venta venta;
 
     @ManyToOne(fetch = FetchType.LAZY)

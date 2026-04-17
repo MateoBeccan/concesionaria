@@ -27,13 +27,26 @@
                 <div class="fw-bold fs-5">{{ inventario.estadoInventario }}</div>
               </div>
               <div class="d-flex gap-2">
-                <span class="badge" :class="inventario.disponible ? 'bg-success' : 'bg-secondary'">
-                  {{ inventario.disponible ? 'Disponible' : 'No disponible' }}
+                <span class="badge" :class="inventario.estadoInventario === 'DISPONIBLE' ? 'bg-success' : 'bg-secondary'">
+                  {{ inventario.estadoInventario === 'DISPONIBLE' ? 'Disponible' : 'No disponible' }}
                 </span>
                 <span class="badge bg-dark">{{ inventario.vehiculo?.condicion ?? 'Sin condición' }}</span>
               </div>
             </div>
           </div>
+        </div>
+
+        <div class="col-12">
+          <OperationalTraceCard
+            title="Trazabilidad del inventario"
+            :status="traceStatus"
+            :created-by="inventario.createdBy || 'No disponible'"
+            :created-at="inventario.createdDate ? formatDateLong(inventario.createdDate) : 'No disponible'"
+            :updated-by="inventario.lastModifiedBy || 'No disponible'"
+            :updated-at="inventario.lastModifiedDate ? formatDateLong(inventario.lastModifiedDate) : 'No disponible'"
+            :last-action="traceLastAction"
+            :last-action-at="traceLastActionAt"
+          />
         </div>
 
         <div v-if="incoherencias.length" class="col-12">
