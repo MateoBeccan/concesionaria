@@ -32,6 +32,15 @@ export default class ComprobanteService {
     });
   }
 
+  findByVentaId(ventaId: number): Promise<IComprobante[]> {
+    return new Promise<IComprobante[]>((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/by-venta/${ventaId}`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
   delete(id: number): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       axios

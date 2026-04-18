@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -160,6 +161,20 @@ public class InventarioResource {
         LOG.debug("REST request to get Inventario : {}", id);
         Optional<InventarioDTO> inventarioDTO = inventarioService.findOne(id);
         return ResponseUtil.wrapOrNotFound(inventarioDTO);
+    }
+
+    @GetMapping("/vehiculo/{vehiculoId}")
+    public ResponseEntity<InventarioDTO> getInventarioByVehiculoId(@PathVariable("vehiculoId") Long vehiculoId) {
+        LOG.debug("REST request to get Inventario by Vehiculo : {}", vehiculoId);
+        Optional<InventarioDTO> inventarioDTO = inventarioService.findByVehiculoId(vehiculoId);
+        return ResponseUtil.wrapOrNotFound(inventarioDTO);
+    }
+
+    @PostMapping("/expirar-reservas")
+    public ResponseEntity<Map<String, Long>> expirarReservas() {
+        LOG.debug("REST request to expire Inventario reservations");
+        long expiradas = inventarioService.expirarReservasVencidas();
+        return ResponseEntity.ok(Map.of("reservasExpiradas", expiradas));
     }
 
     /**

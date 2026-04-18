@@ -11,10 +11,13 @@ import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.PagoMapper;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,9 @@ public class PagoServiceImpl implements PagoService {
     private final VentaRepository ventaRepository;
     private final VentaService ventaService;
 
+    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
+    private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
+
     public PagoServiceImpl(PagoRepository pagoRepository, PagoMapper pagoMapper, VentaRepository ventaRepository, VentaService ventaService) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
@@ -40,8 +46,11 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO save(PagoDTO pagoDTO) {
-        Pago pago = pagoMapper.toEntity(pagoDTO);
-        return pagoMapper.toDto(pagoRepository.save(pago));
+        Long ventaId = pagoDTO.getVenta() != null ? pagoDTO.getVenta().getId() : null;
+        if (ventaId == null) {
+            throw new BadRequestException("Debe informar la venta para registrar el pago");
+        }
+        return registrarPago(ventaId, pagoDTO);
     }
 
     @Override
@@ -77,6 +86,12 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PagoDTO> findByVentaId(Long ventaId) {
+        return pagoRepository.findAllByVentaIdWithRelaciones(ventaId).stream().map(pagoMapper::toDto).toList();
+    }
+
+    @Override
     public void delete(Long id) {
         pagoRepository.deleteById(id);
     }
@@ -89,6 +104,9 @@ public class PagoServiceImpl implements PagoService {
         if (venta.getEstado() == EstadoVenta.PAGADA) {
             throw new BadRequestException("La venta ya esta completamente pagada");
         }
+        if (venta.getEstado() == EstadoVenta.CANCELADA) {
+            throw new BadRequestException("No se puede registrar pagos sobre una venta cancelada");
+        }
         if (venta.getSaldo().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("La venta ya esta saldada");
         }
@@ -97,6 +115,23 @@ public class PagoServiceImpl implements PagoService {
         }
         if (venta.getSaldo().compareTo(pagoDTO.getMonto()) < 0) {
             throw new BadRequestException("El monto excede el saldo pendiente");
+        }
+        if (venta.getMoneda() != null && pagoDTO.getMoneda() != null && pagoDTO.getMoneda().getId() != null) {
+            Long ventaMonedaId = venta.getMoneda().getId();
+            if (!ventaMonedaId.equals(pagoDTO.getMoneda().getId())) {
+                throw new BadRequestException("La moneda del pago debe coincidir con la moneda de la venta");
+            }
+        }
+
+        BigDecimal totalPagadoActual = venta.getTotalPagado() == null ? BigDecimal.ZERO : venta.getTotalPagado();
+        BigDecimal totalPagadoProyectado = totalPagadoActual.add(pagoDTO.getMonto()).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal montoMinimoReserva = calcularMontoMinimoReserva(venta);
+        if (totalPagadoProyectado.compareTo(BigDecimal.ZERO) > 0 && totalPagadoProyectado.compareTo(montoMinimoReserva) < 0) {
+            throw new BadRequestException(
+                "La venta requiere una sena minima del " +
+                porcentajeMinimoReserva.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() +
+                "% para registrar pagos"
+            );
         }
 
         Pago pago = pagoMapper.toEntity(pagoDTO);
@@ -115,9 +150,16 @@ public class PagoServiceImpl implements PagoService {
 
         if (nuevoSaldo.compareTo(BigDecimal.ZERO) == 0) {
             ventaService.confirmarVenta(ventaId);
+        } else {
+            venta.setEstado(EstadoVenta.PENDIENTE);
+            ventaRepository.save(venta);
+            ventaService.sincronizarInventarioConVenta(ventaId);
         }
-
-        ventaRepository.save(venta);
         return pagoMapper.toDto(pago);
+    }
+
+    private BigDecimal calcularMontoMinimoReserva(Venta venta) {
+        BigDecimal base = venta.getImporteNeto() == null ? BigDecimal.ZERO : venta.getImporteNeto();
+        return base.multiply(porcentajeMinimoReserva).setScale(2, RoundingMode.HALF_UP);
     }
 }

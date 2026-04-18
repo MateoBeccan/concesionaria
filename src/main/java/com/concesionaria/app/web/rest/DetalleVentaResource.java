@@ -163,6 +163,12 @@ public class DetalleVentaResource {
         return ResponseUtil.wrapOrNotFound(detalleVentaDTO);
     }
 
+    @GetMapping("/by-venta/{ventaId}")
+    public ResponseEntity<List<DetalleVentaDTO>> getDetalleVentasByVenta(@PathVariable("ventaId") Long ventaId) {
+        LOG.debug("REST request to get DetalleVentas by Venta : {}", ventaId);
+        return ResponseEntity.ok(detalleVentaService.findByVentaId(ventaId));
+    }
+
     /**
      * {@code DELETE  /detalle-ventas/:id} : delete the "id" detalleVenta.
      *

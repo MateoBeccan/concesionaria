@@ -6,7 +6,9 @@ import com.concesionaria.app.domain.InventarioHistorial;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.ClienteRepository;
+import com.concesionaria.app.repository.DetalleVentaRepository;
 import com.concesionaria.app.repository.InventarioHistorialRepository;
 import com.concesionaria.app.repository.InventarioRepository;
 import com.concesionaria.app.repository.VehiculoRepository;
@@ -16,6 +18,9 @@ import com.concesionaria.app.service.dto.InventarioDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.InventarioMapper;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -36,19 +41,22 @@ public class InventarioServiceImpl implements InventarioService {
     private final VehiculoRepository vehiculoRepository;
     private final ClienteRepository clienteRepository;
     private final InventarioHistorialRepository inventarioHistorialRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
 
     public InventarioServiceImpl(
         InventarioRepository inventarioRepository,
         InventarioMapper inventarioMapper,
         VehiculoRepository vehiculoRepository,
         ClienteRepository clienteRepository,
-        InventarioHistorialRepository inventarioHistorialRepository
+        InventarioHistorialRepository inventarioHistorialRepository,
+        DetalleVentaRepository detalleVentaRepository
     ) {
         this.inventarioRepository = inventarioRepository;
         this.inventarioMapper = inventarioMapper;
         this.vehiculoRepository = vehiculoRepository;
         this.clienteRepository = clienteRepository;
         this.inventarioHistorialRepository = inventarioHistorialRepository;
+        this.detalleVentaRepository = detalleVentaRepository;
     }
 
     @Override
@@ -69,6 +77,7 @@ public class InventarioServiceImpl implements InventarioService {
     @Override
     public InventarioDTO update(InventarioDTO dto) {
         Inventario existente = inventarioRepository.findById(dto.getId()).orElseThrow(() -> new BadRequestException("El inventario no existe"));
+        expirarReservaVencidaSiCorresponde(existente);
         EstadoInventario estadoAnterior = existente.getEstadoInventario();
 
         Inventario inventario = buildValidatedEntity(dto, existente);
@@ -87,6 +96,7 @@ public class InventarioServiceImpl implements InventarioService {
         return inventarioRepository
             .findById(dto.getId())
             .map(existente -> {
+                expirarReservaVencidaSiCorresponde(existente);
                 EstadoInventario estadoAnterior = existente.getEstadoInventario();
                 inventarioMapper.partialUpdate(existente, dto);
                 validarYNormalizar(existente, dto.getId(), existente.getVehiculo(), existente.getClienteReserva());
@@ -112,6 +122,31 @@ public class InventarioServiceImpl implements InventarioService {
     @Transactional(readOnly = true)
     public Optional<InventarioDTO> findOne(Long id) {
         return inventarioRepository.findById(id).map(inventarioMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<InventarioDTO> findByVehiculoId(Long vehiculoId) {
+        if (vehiculoId == null) {
+            return Optional.empty();
+        }
+        return inventarioRepository.findByVehiculoId(vehiculoId).map(inventarioMapper::toDto);
+    }
+
+    @Override
+    public long expirarReservasVencidas() {
+        Instant now = Instant.now();
+        List<Inventario> vencidas = inventarioRepository.findAllByEstadoInventarioAndFechaVencimientoReservaBefore(EstadoInventario.RESERVADO, now);
+        long expiradas = 0L;
+
+        for (Inventario inventario : vencidas) {
+            if (!expirarReservaVencidaSiCorresponde(inventario)) {
+                continue;
+            }
+            expiradas++;
+        }
+
+        return expiradas;
     }
 
     @Override
@@ -184,7 +219,7 @@ public class InventarioServiceImpl implements InventarioService {
 
         switch (inventario.getEstadoInventario()) {
             case DISPONIBLE -> validarDisponible(inventario);
-            case RESERVADO -> validarReservado(inventario, clienteReserva);
+            case RESERVADO -> validarReservado(inventario, clienteReserva, existingForVehicle);
             case VENDIDO -> validarVendido(inventario);
             default -> throw new BadRequestException("El estado de inventario es obligatorio");
         }
@@ -198,15 +233,18 @@ public class InventarioServiceImpl implements InventarioService {
         inventario.setFechaVencimientoReserva(null);
     }
 
-    private void validarReservado(Inventario inventario, Cliente clienteReserva) {
+    private void validarReservado(Inventario inventario, Cliente clienteReserva, Inventario existente) {
+        if (existente == null || existente.getEstadoInventario() != EstadoInventario.RESERVADO) {
+            throw new BadRequestException("La reserva se gestiona exclusivamente desde venta con seña minima");
+        }
         if (clienteReserva == null) {
             throw new BadRequestException("Debes seleccionar un cliente para registrar la reserva");
         }
         if (inventario.getFechaReserva() == null) {
-            throw new BadRequestException("La fecha de reserva es obligatoria cuando el inventario esta reservado");
+            inventario.setFechaReserva(Instant.now());
         }
         if (inventario.getFechaVencimientoReserva() == null) {
-            throw new BadRequestException("La fecha de vencimiento de la reserva es obligatoria");
+            inventario.setFechaVencimientoReserva(plusOneMonth(inventario.getFechaReserva()));
         }
         if (!inventario.getFechaVencimientoReserva().isAfter(inventario.getFechaReserva())) {
             throw new BadRequestException("El vencimiento de la reserva debe ser posterior a la fecha de reserva");
@@ -262,5 +300,44 @@ public class InventarioServiceImpl implements InventarioService {
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
+    }
+
+    private boolean expirarReservaVencidaSiCorresponde(Inventario inventario) {
+        if (inventario == null || inventario.getEstadoInventario() != EstadoInventario.RESERVADO) {
+            return false;
+        }
+
+        Instant vencimiento = inventario.getFechaVencimientoReserva();
+        if (vencimiento == null || !vencimiento.isBefore(Instant.now())) {
+            return false;
+        }
+
+        if (inventario.getVehiculo() != null && inventario.getVehiculo().getId() != null) {
+            boolean ventaActiva = detalleVentaRepository.existsByVehiculoIdAndVentaEstadoIn(
+                inventario.getVehiculo().getId(),
+                EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA)
+            );
+            if (ventaActiva) {
+                return false;
+            }
+        }
+
+        EstadoInventario estadoAnterior = inventario.getEstadoInventario();
+        inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
+        inventario.setDisponible(true);
+        inventario.setClienteReserva(null);
+        inventario.setFechaReserva(null);
+        inventario.setFechaVencimientoReserva(null);
+        inventario.setLastModifiedDate(Instant.now());
+        inventario.setLastModifiedBy(currentUserLogin());
+
+        Inventario saved = inventarioRepository.save(inventario);
+        syncVehiculoCondicion(saved);
+        registrarCambioEstado(saved, estadoAnterior, "RESERVA_EXPIRADA", "Reserva vencida automaticamente");
+        return true;
+    }
+
+    private Instant plusOneMonth(Instant base) {
+        return base.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
     }
 }

@@ -29,12 +29,15 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
         return this.findAllWithToOneRelationships(pageable);
     }
 
-    @Query(value = "select venta from Venta venta left join fetch venta.user", countQuery = "select count(venta) from Venta venta")
+    @Query(
+        value = "select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda",
+        countQuery = "select count(venta) from Venta venta"
+    )
     Page<Venta> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query("select venta from Venta venta left join fetch venta.user")
+    @Query("select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda")
     List<Venta> findAllWithToOneRelationships();
 
-    @Query("select venta from Venta venta left join fetch venta.user where venta.id =:id")
+    @Query("select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda where venta.id =:id")
     Optional<Venta> findOneWithToOneRelationships(@Param("id") Long id);
 }

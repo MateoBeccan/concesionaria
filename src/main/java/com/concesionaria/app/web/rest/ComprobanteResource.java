@@ -162,6 +162,12 @@ public class ComprobanteResource {
         return ResponseUtil.wrapOrNotFound(comprobanteDTO);
     }
 
+    @GetMapping("/by-venta/{ventaId}")
+    public ResponseEntity<List<ComprobanteDTO>> getComprobantesByVenta(@PathVariable("ventaId") Long ventaId) {
+        LOG.debug("REST request to get Comprobantes by Venta : {}", ventaId);
+        return ResponseEntity.ok(comprobanteService.findByVentaId(ventaId));
+    }
+
     /**
      * {@code DELETE  /comprobantes/:id} : delete the "id" comprobante.
      *

@@ -59,61 +59,10 @@
 
       <div class="d-flex flex-wrap gap-2 mt-4">
         <button v-if="vehiculo.condicion !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">Vender</button>
-        <button v-if="vehiculo.condicion === 'EN_VENTA'" class="btn btn-warning" @click="abrirReserva">Reservar</button>
-        <button
-          v-if="vehiculo.condicion === 'RESERVADO'"
-          class="btn btn-outline-warning"
-          :disabled="reserving"
-          @click="liberarReserva"
-        >
-          Liberar reserva
-        </button>
         <button class="btn btn-outline-primary" @click="editar">Editar</button>
       </div>
-
-      <div v-if="mostrarReserva" class="reserve-panel mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <h3 class="h6 mb-0">Asignar reserva</h3>
-          <button class="btn btn-sm btn-outline-secondary" @click="cerrarReserva">Cerrar</button>
-        </div>
-
-        <p class="text-muted small mb-3">Selecciona el cliente para reservar esta unidad.</p>
-
-        <input
-          v-model="clienteQuery"
-          class="form-control"
-          placeholder="Buscar cliente por nombre, DNI o email"
-          @input="buscarClientes"
-        />
-
-        <div v-if="clientesLoading" class="small text-muted mt-2">Buscando clientes...</div>
-        <div v-else-if="clienteQuery.trim().length >= 2 && clientes.length === 0" class="small text-muted mt-2">
-          No hay resultados para la busqueda.
-        </div>
-
-        <ul v-if="clientes.length > 0" class="client-list mt-3">
-          <li
-            v-for="cliente in clientes"
-            :key="cliente.id"
-            class="client-item"
-            :class="{ active: selectedCliente?.id === cliente.id }"
-            @click="selectedCliente = cliente"
-          >
-            <div>
-              <strong>{{ cliente.apellido }}, {{ cliente.nombre }}</strong>
-              <div class="small text-muted">{{ cliente.nroDocumento ?? 'Sin documento' }}</div>
-            </div>
-            <span class="small text-muted">{{ cliente.email ?? cliente.telefono ?? 'Sin contacto' }}</span>
-          </li>
-        </ul>
-
-        <div class="d-flex flex-wrap gap-2 mt-3">
-          <router-link :to="{ name: 'ClienteCreate' }" class="btn btn-sm btn-outline-secondary">Nuevo cliente</router-link>
-          <button class="btn btn-primary btn-sm" :disabled="!selectedCliente?.id || reserving" @click="confirmarReserva">
-            <span v-if="reserving" class="spinner-border spinner-border-sm me-1" />
-            Confirmar reserva
-          </button>
-        </div>
+      <div class="alert alert-info mt-4 mb-0 py-2">
+        Las reservas se gestionan desde el flujo de venta con seña minima registrada.
       </div>
     </section>
 
@@ -133,32 +82,21 @@
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import ClienteService from '@/entities/cliente/cliente.service';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import { useAlertService } from '@/shared/alert/alert.service';
 import EntitySearchInput from '@/shared/composables/EntitySearchInput.vue';
 import { useVehiculo } from '@/shared/composables/useVehiculo';
-import type { ICliente } from '@/shared/model/cliente.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 
 import VehiculoQuickCreate from './VehiculoQuickCreate.vue';
 
 const router = useRouter();
 const alertService = useAlertService();
-const clienteService = new ClienteService();
 const vehiculoService = new VehiculoService();
 const { vehiculo, loading, error, notFound, buscarPorPatente, setVehiculo, limpiar: limpiarComposable } = useVehiculo();
 
 const patente = ref('');
 const modo = ref<'BUSCAR' | 'EXISTENTE' | 'NO_ENCONTRADO' | 'CREAR'>('BUSCAR');
-
-const mostrarReserva = ref(false);
-const reserving = ref(false);
-const clienteQuery = ref('');
-const clientes = ref<ICliente[]>([]);
-const selectedCliente = ref<ICliente | null>(null);
-const clientesLoading = ref(false);
-let clientesDebounce: ReturnType<typeof setTimeout> | null = null;
 
 watch(vehiculo, value => {
   if (value) {
@@ -174,23 +112,29 @@ watch(notFound, value => {
 
 async function buscar() {
   await buscarPorPatente(patente.value);
-  if (!vehiculo.value) {
-    mostrarReserva.value = false;
-  }
 }
 
 function limpiar() {
   limpiarComposable();
   modo.value = 'BUSCAR';
-  mostrarReserva.value = false;
-  clienteQuery.value = '';
-  clientes.value = [];
-  selectedCliente.value = null;
 }
 
-function onVehiculoCreado(value: IVehiculo) {
-  setVehiculo(value);
+async function onVehiculoCreado(value: IVehiculo) {
   patente.value = value.patente ?? '';
+
+  try {
+    if (value.id) {
+      const vehiculoCompleto = await vehiculoService.find(value.id);
+      setVehiculo(vehiculoCompleto);
+    } else if (patente.value.trim()) {
+      await buscarPorPatente(patente.value);
+    } else {
+      setVehiculo(value);
+    }
+  } catch {
+    setVehiculo(value);
+  }
+
   modo.value = 'EXISTENTE';
   alertService.showSuccess('Vehiculo registrado correctamente');
 }
@@ -198,71 +142,6 @@ function onVehiculoCreado(value: IVehiculo) {
 function irAVenta() {
   if (!vehiculo.value?.id) return;
   router.push({ name: 'VentaEditor', query: { vehiculoId: vehiculo.value.id } });
-}
-
-function abrirReserva() {
-  mostrarReserva.value = true;
-}
-
-function cerrarReserva() {
-  mostrarReserva.value = false;
-  clienteQuery.value = '';
-  clientes.value = [];
-  selectedCliente.value = null;
-}
-
-async function buscarClientes() {
-  if (clientesDebounce) {
-    clearTimeout(clientesDebounce);
-  }
-
-  clientesDebounce = setTimeout(async () => {
-    const q = clienteQuery.value.trim();
-    if (q.length < 2) {
-      clientes.value = [];
-      return;
-    }
-
-    clientesLoading.value = true;
-    try {
-      clientes.value = await clienteService.buscarPorQuery(q);
-    } catch (e: any) {
-      clientes.value = [];
-      alertService.showHttpError(e.response);
-    } finally {
-      clientesLoading.value = false;
-    }
-  }, 250);
-}
-
-async function confirmarReserva() {
-  if (!vehiculo.value?.id || !selectedCliente.value?.id) return;
-
-  reserving.value = true;
-  try {
-    await vehiculoService.reservar(vehiculo.value.id, selectedCliente.value.id);
-    alertService.showSuccess(`Reserva asignada a ${selectedCliente.value.apellido}, ${selectedCliente.value.nombre}`);
-    cerrarReserva();
-    await buscar();
-  } catch (e: any) {
-    alertService.showHttpError(e.response);
-  } finally {
-    reserving.value = false;
-  }
-}
-
-async function liberarReserva() {
-  if (!vehiculo.value?.id) return;
-  reserving.value = true;
-  try {
-    await vehiculoService.cancelarReserva(vehiculo.value.id);
-    alertService.showSuccess('Reserva liberada correctamente');
-    await buscar();
-  } catch (e: any) {
-    alertService.showHttpError(e.response);
-  } finally {
-    reserving.value = false;
-  }
 }
 
 function editar() {
@@ -363,34 +242,6 @@ function formatPrecio(precio?: number | null) {
 
 .spec-card small {
   color: #6b7280;
-}
-
-.reserve-panel {
-  border-top: 1px solid #e5e7eb;
-  padding-top: 1rem;
-}
-
-.client-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.client-item {
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-
-.client-item.active {
-  border-color: #1d4ed8;
-  background: #eff6ff;
 }
 
 .warning {

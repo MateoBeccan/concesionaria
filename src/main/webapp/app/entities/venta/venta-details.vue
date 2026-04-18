@@ -161,8 +161,19 @@
                   {{ detalle.vehiculo?.version?.nombre ?? '' }}
                 </td>
                 <td>
-                  <span class="badge" :class="detalle.vehiculo?.condicion === 'EN_VENTA' ? 'bg-success' : 'bg-secondary'">
-                    {{ detalle.vehiculo?.condicion ?? detalle.vehiculo?.estado ?? '—' }}
+                  <span
+                    class="badge"
+                    :class="
+                      detalle.vehiculo?.estadoInventario === 'DISPONIBLE'
+                        ? 'bg-success'
+                        : detalle.vehiculo?.estadoInventario === 'RESERVADO'
+                          ? 'bg-warning text-dark'
+                          : detalle.vehiculo?.estadoInventario === 'VENDIDO'
+                            ? 'bg-danger'
+                            : 'bg-secondary'
+                    "
+                  >
+                    {{ detalle.vehiculo?.estadoInventario ?? detalle.vehiculo?.condicion ?? detalle.vehiculo?.estado ?? '-' }}
                   </span>
                 </td>
                 <td class="text-end">$ {{ formatPrecio(detalle.precioUnitario) }}</td>

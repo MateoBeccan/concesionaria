@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,6 +39,9 @@ public class VentaResource {
 
     @Value("${jhipster.clientApp.name:concesionaria}")
     private String applicationName;
+
+    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
+    private BigDecimal porcentajeMinimoReserva;
 
     private final VentaService ventaService;
 
@@ -199,5 +204,15 @@ public class VentaResource {
         return ResponseEntity.created(new URI("/api/ventas/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);
+    }
+
+    @GetMapping("/reserva-config")
+    public ResponseEntity<Map<String, Object>> getReservaConfig() {
+        return ResponseEntity.ok(
+            Map.of(
+                "porcentajeMinimo", porcentajeMinimoReserva,
+                "porcentajeMinimoLabel", porcentajeMinimoReserva.multiply(new BigDecimal("100"))
+            )
+        );
     }
 }

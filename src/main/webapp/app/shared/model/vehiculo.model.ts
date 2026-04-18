@@ -1,5 +1,6 @@
 import { type EstadoVehiculo } from '@/shared/model/enumerations/estado-vehiculo.model';
 import { type CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
+import { type EstadoInventario } from '@/shared/model/enumerations/estado-inventario.model';
 import { type IMotor } from '@/shared/model/motor.model';
 import { type ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
 import { type IVersion } from '@/shared/model/version.model';
@@ -12,6 +13,7 @@ export interface IVehiculo {
 
   // Condición comercial: EN_VENTA / RESERVADO / VENDIDO
   condicion?: keyof typeof CondicionVehiculo;
+  estadoInventario?: keyof typeof EstadoInventario;
 
   fechaFabricacion?: Date;
   km?: number;
@@ -33,6 +35,7 @@ export class Vehiculo implements IVehiculo {
     public id?: number,
     public estado?: keyof typeof EstadoVehiculo,
     public condicion?: keyof typeof CondicionVehiculo,
+    public estadoInventario?: keyof typeof EstadoInventario,
     public fechaFabricacion?: Date,
     public km?: number,
     public patente?: string,

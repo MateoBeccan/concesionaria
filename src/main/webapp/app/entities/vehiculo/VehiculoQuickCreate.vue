@@ -160,9 +160,11 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import MarcaService from '@/entities/marca/marca.service';
 import ModeloService from '@/entities/modelo/modelo.service';
+import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
 import VersionService from '@/entities/version/version.service';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import type { IMotor } from '@/shared/model/motor.model';
+import type { ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 import type { IVersion } from '@/shared/model/version.model';
 
@@ -178,6 +180,7 @@ const vehiculoService = new VehiculoService();
 const marcaService = new MarcaService();
 const modeloService = new ModeloService();
 const versionService = new VersionService();
+const tipoVehiculoService = new TipoVehiculoService();
 
 const PATENTE_REGEX = /^(?:[A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
 
@@ -185,6 +188,7 @@ const formCatalog = useVehiculoForm({
   marcaService,
   modeloService,
   versionService,
+  tipoVehiculoService,
 });
 
 const {
@@ -212,6 +216,7 @@ const form = reactive({
   fechaFabricacion: '',
   motor: null as IMotor | null,
   version: null as IVersion | null,
+  tipoVehiculo: null as ITipoVehiculo | null,
 });
 
 const errores = reactive({
@@ -246,7 +251,7 @@ async function handleMarcaChange() {
 }
 
 async function handleModeloChange() {
-  onModeloChange(form, false);
+  onModeloChange(form);
 }
 
 async function handleVersionChange() {
@@ -331,6 +336,7 @@ async function guardar() {
       fechaFabricacion: form.fechaFabricacion,
       motor: form.motor ? { id: form.motor.id } : null,
       version: form.version ? { id: form.version.id } : null,
+      tipoVehiculo: form.tipoVehiculo ? { id: form.tipoVehiculo.id } : null,
     };
 
     const vehiculo = await vehiculoService.create(payload as IVehiculo);

@@ -6,8 +6,9 @@ import com.concesionaria.app.domain.InventarioHistorial;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
-import com.concesionaria.app.repository.ClienteRepository;
+import com.concesionaria.app.repository.DetalleVentaRepository;
 import com.concesionaria.app.repository.InventarioHistorialRepository;
 import com.concesionaria.app.repository.InventarioRepository;
 import com.concesionaria.app.repository.VehiculoRepository;
@@ -19,7 +20,8 @@ import com.concesionaria.app.service.dto.VehiculoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VehiculoMapper;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneOffset;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -36,27 +38,27 @@ public class VehiculoServiceImpl implements VehiculoService {
     private final VehiculoRepository vehiculoRepository;
     private final VehiculoMapper vehiculoMapper;
     private final InventarioRepository inventarioRepository;
-    private final ClienteRepository clienteRepository;
     private final VentaService ventaService;
     private final VersionMotorRepository versionMotorRepository;
     private final InventarioHistorialRepository inventarioHistorialRepository;
+    private final DetalleVentaRepository detalleVentaRepository;
 
     public VehiculoServiceImpl(
         VehiculoRepository vehiculoRepository,
         VehiculoMapper vehiculoMapper,
         InventarioRepository inventarioRepository,
-        ClienteRepository clienteRepository,
         VentaService ventaService,
         VersionMotorRepository versionMotorRepository,
-        InventarioHistorialRepository inventarioHistorialRepository
+        InventarioHistorialRepository inventarioHistorialRepository,
+        DetalleVentaRepository detalleVentaRepository
     ) {
         this.vehiculoRepository = vehiculoRepository;
         this.vehiculoMapper = vehiculoMapper;
         this.inventarioRepository = inventarioRepository;
-        this.clienteRepository = clienteRepository;
         this.ventaService = ventaService;
         this.versionMotorRepository = versionMotorRepository;
         this.inventarioHistorialRepository = inventarioHistorialRepository;
+        this.detalleVentaRepository = detalleVentaRepository;
     }
 
     @Override
@@ -152,30 +154,7 @@ public class VehiculoServiceImpl implements VehiculoService {
 
     @Override
     public void reservarVehiculo(Long vehiculoId, Long clienteId) {
-        Inventario inventario = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-        if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
-            throw new BadRequestException("No se puede reservar un vehiculo ya vendido");
-        }
-        if (inventario.getEstadoInventario() == EstadoInventario.RESERVADO) {
-            throw new BadRequestException("El vehiculo ya tiene una reserva activa. Liberala antes de reasignarla");
-        }
-        if (inventario.getEstadoInventario() != EstadoInventario.DISPONIBLE) {
-            throw new BadRequestException("El vehiculo no esta disponible para reservar");
-        }
-
-        Cliente cliente = clienteRepository.findById(clienteId).orElseThrow(() -> new BadRequestException("El cliente no existe"));
-        EstadoInventario anterior = inventario.getEstadoInventario();
-        inventario.setEstadoInventario(EstadoInventario.RESERVADO);
-        inventario.setDisponible(false);
-        inventario.setClienteReserva(cliente);
-        inventario.setFechaReserva(Instant.now());
-        inventario.setFechaVencimientoReserva(Instant.now().plus(3, ChronoUnit.DAYS));
-        inventario.setLastModifiedDate(Instant.now());
-        inventario.setLastModifiedBy(currentUserLogin());
-        inventarioRepository.save(inventario);
-
-        syncVehiculo(inventario);
-        registrarHistorial(inventario, anterior, EstadoInventario.RESERVADO, "RESERVA", "Reserva desde operacion vehiculo");
+        throw new BadRequestException("La reserva directa no esta permitida. Inicia una venta y registra la seña minima");
     }
 
     @Override
@@ -235,6 +214,14 @@ public class VehiculoServiceImpl implements VehiculoService {
             throw new BadRequestException("El vehiculo es obligatorio");
         }
 
+        if (idActual != null) {
+            inventarioRepository.findByVehiculoId(idActual).ifPresent(inventario -> {
+                if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
+                    throw new BadRequestException("No se puede editar un vehiculo ya vendido");
+                }
+            });
+        }
+
         String patenteNormalizada = normalizarPatenteNullable(vehiculoDTO.getPatente());
         vehiculoDTO.setPatente(patenteNormalizada);
 
@@ -287,7 +274,43 @@ public class VehiculoServiceImpl implements VehiculoService {
         inventarioHistorialRepository.save(historial);
     }
 
+    private void liberarReservaSiVencida(Inventario inventario) {
+        if (inventario.getEstadoInventario() != EstadoInventario.RESERVADO) {
+            return;
+        }
+        Instant vencimiento = inventario.getFechaVencimientoReserva();
+        if (vencimiento == null || vencimiento.isAfter(Instant.now())) {
+            return;
+        }
+        if (inventario.getVehiculo() != null && inventario.getVehiculo().getId() != null) {
+            boolean ventaActiva = detalleVentaRepository.existsByVehiculoIdAndVentaEstadoIn(
+                inventario.getVehiculo().getId(),
+                EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA)
+            );
+            if (ventaActiva) {
+                return;
+            }
+        }
+
+        EstadoInventario anterior = inventario.getEstadoInventario();
+        inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
+        inventario.setDisponible(true);
+        inventario.setClienteReserva(null);
+        inventario.setFechaReserva(null);
+        inventario.setFechaVencimientoReserva(null);
+        inventario.setLastModifiedDate(Instant.now());
+        inventario.setLastModifiedBy(currentUserLogin());
+        inventarioRepository.save(inventario);
+
+        syncVehiculo(inventario);
+        registrarHistorial(inventario, anterior, EstadoInventario.DISPONIBLE, "RESERVA_EXPIRADA", "Reserva vencida automaticamente");
+    }
+
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
+    }
+
+    private Instant plusOneMonth(Instant base) {
+        return base.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
     }
 }

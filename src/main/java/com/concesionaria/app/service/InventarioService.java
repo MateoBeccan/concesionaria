@@ -50,9 +50,19 @@
         Optional<InventarioDTO> findOne(Long id);
 
         /**
-         * Delete the "id" inventario.
+         * Get inventario by vehiculo id.
          *
-         * @param id the id of the entity.
+         * @param vehiculoId the vehiculo id.
+         * @return the entity.
+         */
+    Optional<InventarioDTO> findByVehiculoId(Long vehiculoId);
+
+    long expirarReservasVencidas();
+
+    /**
+     * Delete the "id" inventario.
+     *
+     * @param id the id of the entity.
          */
         void delete(Long id);
     }

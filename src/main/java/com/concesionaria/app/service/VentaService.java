@@ -26,4 +26,6 @@ public interface VentaService {
 
     void confirmarVenta(Long ventaId);
 
+    void sincronizarInventarioConVenta(Long ventaId);
+
 }

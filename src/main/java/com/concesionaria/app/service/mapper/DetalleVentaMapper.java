@@ -34,6 +34,7 @@ public interface DetalleVentaMapper extends EntityMapper<DetalleVentaDTO, Detall
     @Mapping(target = "patente", source = "patente")
     @Mapping(target = "estado", source = "estado")
     @Mapping(target = "condicion", source = "condicion")
+    @Mapping(target = "estadoInventario", source = "inventario.estadoInventario")
     @Mapping(target = "precio", source = "precio")
     @Mapping(target = "version", source = "version", qualifiedByName = "versionResumen")
     VehiculoDTO toDtoVehiculoResumen(Vehiculo vehiculo);

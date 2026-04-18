@@ -1,6 +1,9 @@
 package com.concesionaria.app.repository;
 
 import com.concesionaria.app.domain.Inventario;
+import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import java.time.Instant;
+import java.util.List;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.stereotype.Repository;
 
@@ -14,5 +17,7 @@ import java.util.Optional;
 public interface InventarioRepository extends JpaRepository<Inventario, Long> {
 
     Optional<Inventario> findByVehiculoId(Long vehiculoId);
+
+    List<Inventario> findAllByEstadoInventarioAndFechaVencimientoReservaBefore(EstadoInventario estadoInventario, Instant fecha);
 
 }

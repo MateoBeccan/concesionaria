@@ -227,3 +227,7 @@ jhipster:
 # ===================================================================
 
 # application:
+app:
+  negocio:
+    reserva:
+      porcentaje-minimo: 0.10

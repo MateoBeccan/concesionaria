@@ -59,9 +59,12 @@ export function useVentaEditor() {
   const metodoPagos = ref<IMetodoPago[]>([]);
   const tipoComprobantes = ref<ITipoComprobante[]>([]);
   const cotizacionActiva = ref<ICotizacion | null>(null);
+  const porcentajeMinimoReserva = ref(0.1);
 
   const sumaSubtotales = computed(() => detalles.value.reduce((acc, detalle) => acc + detalle.subtotal, 0));
   const sumaPagos = computed(() => pagos.value.reduce((acc, pago) => acc + pago.monto, 0));
+  const montoMinimoReserva = computed(() => Math.max(0, sumaSubtotales.value * porcentajeMinimoReserva.value));
+  const cumpleMinimoReserva = computed(() => sumaPagos.value + EPSILON >= montoMinimoReserva.value && montoMinimoReserva.value > 0);
   const estadoCalculado = computed(() => {
     if (detalles.value.length === 0) {
       return EstadoVenta.PENDIENTE;
@@ -71,7 +74,7 @@ export function useVentaEditor() {
       return EstadoVenta.PAGADA;
     }
 
-    if (sumaPagos.value > 0) {
+    if (cumpleMinimoReserva.value) {
       return EstadoVenta.RESERVADA;
     }
 
@@ -104,6 +107,14 @@ export function useVentaEditor() {
     venta.value.totalPagado = sumaPagos.value;
     venta.value.saldo = Math.max(0, Number(venta.value.total ?? 0) - sumaPagos.value);
     venta.value.estado = estadoCalculado.value;
+  }
+
+  function setPorcentajeMinimoReserva(porcentaje: number) {
+    if (!Number.isFinite(porcentaje) || porcentaje <= 0) {
+      return;
+    }
+    porcentajeMinimoReserva.value = porcentaje;
+    recalcularSaldo();
   }
 
   async function cargarCotizacionActiva(monedaId: number) {
@@ -186,6 +197,11 @@ export function useVentaEditor() {
 
     if (montoNormalizado - saldoActual > EPSILON) {
       error.value = 'El pago no puede superar el saldo pendiente';
+      return;
+    }
+    const totalProyectado = sumaPagos.value + montoNormalizado;
+    if (totalProyectado > EPSILON && totalProyectado + EPSILON < montoMinimoReserva.value) {
+      error.value = `La seña minima requerida es $ ${fmt(montoMinimoReserva.value)}`;
       return;
     }
 
@@ -276,6 +292,12 @@ export function useVentaEditor() {
 
     if (sumaPagos.value - total > EPSILON) {
       throw new Error('Los pagos no pueden superar el total de la venta');
+    }
+    if (sumaPagos.value <= EPSILON) {
+      throw new Error(`Debe registrar un pago minimo de $ ${fmt(montoMinimoReserva.value)} para continuar`);
+    }
+    if (sumaPagos.value > EPSILON && sumaPagos.value + EPSILON < montoMinimoReserva.value) {
+      throw new Error(`La venta requiere una seña minima de $ ${fmt(montoMinimoReserva.value)}`);
     }
 
     venta.value.estado = estadoCalculado.value;
@@ -430,6 +452,9 @@ export function useVentaEditor() {
     metodoPagos,
     tipoComprobantes,
     cotizacionActiva,
+    porcentajeMinimoReserva,
+    montoMinimoReserva,
+    cumpleMinimoReserva,
     estadoCalculado,
     sumaSubtotales,
     sumaPagos,
@@ -441,6 +466,7 @@ export function useVentaEditor() {
     confirmar,
     cargarVenta,
     cargarCotizacionActiva,
+    setPorcentajeMinimoReserva,
     validarVentaAntesDeGuardar,
     fmt,
   };

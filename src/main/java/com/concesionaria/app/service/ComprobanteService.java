@@ -1,6 +1,7 @@
 package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.ComprobanteDTO;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +49,8 @@ public interface ComprobanteService {
      * @return the entity.
      */
     Optional<ComprobanteDTO> findOne(Long id);
+
+    List<ComprobanteDTO> findByVentaId(Long ventaId);
 
     /**
      * Delete the "id" comprobante.

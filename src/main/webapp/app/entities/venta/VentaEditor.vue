@@ -102,6 +102,18 @@
                 <small class="text-muted">El estado se calcula automaticamente segun el saldo y los pagos cargados.</small>
               </div>
 
+              <div class="col-md-6">
+                <label class="form-label">Regla de reserva con seña</label>
+                <div class="form-control bg-light">
+                  Para reservar este vehiculo se requiere una seña minima de
+                  <strong>$ {{ fmt(montoMinimoReserva) }}</strong>
+                  (<strong>{{ porcentajeMinimoReservaLabel }}%</strong> del valor del vehiculo).
+                </div>
+                <small :class="cumpleMinimoReserva ? 'text-success' : 'text-danger'">
+                  {{ cumpleMinimoReserva ? 'Reserva valida: seña minima cumplida.' : 'Reserva no valida: falta seña minima.' }}
+                </small>
+              </div>
+
               <div class="col-12">
                 <label class="form-label">Observaciones</label>
                 <textarea class="form-control" v-model="venta.observaciones" rows="2" placeholder="Notas adicionales..." />
@@ -198,17 +210,23 @@
               <div class="summary-flow-item" :class="{ ready: !!venta.cliente?.id }">Cliente</div>
               <div class="summary-flow-item" :class="{ ready: detalles.length > 0 }">Vehículos</div>
               <div class="summary-flow-item" :class="{ ready: Number(venta.total ?? 0) > 0 }">Condiciones</div>
-              <div class="summary-flow-item" :class="{ ready: pagos.length > 0 || Number(venta.saldo ?? 0) >= 0 }">Pagos</div>
+              <div class="summary-flow-item" :class="{ ready: pagos.length > 0 }">Pagos</div>
             </div>
-            <button class="btn btn-primary w-100" @click="guardar" :disabled="guardando || !puedeGuardar">
+            <button class="btn btn-warning w-100" @click="confirmarReserva" :disabled="guardando || !puedeConfirmarReserva">
               <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
-              {{ venta.id ? 'Guardar cambios' : 'Guardar borrador' }}
+              Confirmar reserva
             </button>
             <button class="btn btn-success w-100" @click="confirmarVenta" :disabled="guardando || !puedeConfirmar">
               <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
               Confirmar venta
             </button>
-            <p v-if="!puedeConfirmar" class="text-muted small text-center mb-0">
+            <p v-if="!puedeConfirmarReserva && !mensajeValidacion" class="text-danger small text-center mb-0">
+              Confirmar reserva requiere cumplir la seña mínima.
+            </p>
+            <p v-if="!puedeConfirmar && !mensajeValidacion" class="text-danger small text-center mb-0">
+              Confirmar venta requiere pago total (100%).
+            </p>
+            <p v-if="mensajeValidacion" class="text-muted small text-center mb-0">
               {{ mensajeValidacion }}
             </p>
           </template>
@@ -225,6 +243,7 @@ import axios from 'axios';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import type { ICliente } from '@/shared/model/cliente.model';
+import type { IInventario } from '@/shared/model/inventario.model';
 import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 
@@ -248,6 +267,9 @@ const {
   metodoPagos,
   tipoComprobantes,
   cotizacionActiva,
+  porcentajeMinimoReserva,
+  montoMinimoReserva,
+  cumpleMinimoReserva,
   estadoCalculado,
   sumaSubtotales,
   sumaPagos,
@@ -259,6 +281,7 @@ const {
   confirmar,
   cargarVenta,
   fmt,
+  setPorcentajeMinimoReserva,
   validarVentaAntesDeGuardar,
 } = useVentaEditor();
 
@@ -312,8 +335,18 @@ const mensajeValidacion = computed(() => {
   }
 });
 
-const puedeGuardar = computed(() => !mensajeValidacion.value);
-const puedeConfirmar = computed(() => !mensajeValidacion.value);
+const puedeConfirmar = computed(
+  () => !mensajeValidacion.value && Number(venta.value.total ?? 0) > 0 && Number(venta.value.saldo ?? 0) === 0,
+);
+const puedeConfirmarReserva = computed(
+  () =>
+    !mensajeValidacion.value &&
+    Number(venta.value.total ?? 0) > 0 &&
+    Number(venta.value.saldo ?? 0) > 0 &&
+    Number(venta.value.totalPagado ?? 0) > 0 &&
+    cumpleMinimoReserva.value,
+);
+const porcentajeMinimoReservaLabel = computed(() => (Number(porcentajeMinimoReserva.value ?? 0) * 100).toFixed(2).replace(/\.00$/, ''));
 const flowSteps = computed(() => [
   {
     number: '01',
@@ -342,22 +375,24 @@ const flowSteps = computed(() => [
     copy:
       Number(venta.value.totalPagado ?? 0) > 0
         ? `${pagos.value.length} pago(s) cargado(s).`
-        : 'Registrá pagos o guardá el borrador para continuar después.',
+        : 'Registrá pagos para poder continuar.',
     done: Number(venta.value.saldo ?? 0) === 0 && detalles.value.length > 0,
     current: detalles.value.length > 0,
   },
 ]);
 
 onMounted(async () => {
-  const [monedasRes, metodosRes, tiposRes] = await Promise.all([
+  const [monedasRes, metodosRes, tiposRes, reservaConfigRes] = await Promise.all([
     axios.get('api/monedas?activo.equals=true&page=0&size=50'),
     axios.get('api/metodo-pagos?activo.equals=true&page=0&size=50'),
     axios.get('api/tipo-comprobantes?page=0&size=50'),
+    axios.get('api/ventas/reserva-config'),
   ]);
 
   monedas.value = monedasRes.data;
   metodoPagos.value = metodosRes.data;
   tipoComprobantes.value = tiposRes.data;
+  setPorcentajeMinimoReserva(Number(reservaConfigRes.data?.porcentajeMinimo ?? 0.1));
 
   if (route.params?.ventaId) {
     await cargarVenta(Number(route.params.ventaId));
@@ -369,29 +404,38 @@ onMounted(async () => {
     try {
       const vehiculo = await vehiculoService.find(vehiculoId);
       agregarVehiculo(vehiculo);
+
+      const inventarioRes = await axios.get<IInventario>(`api/inventarios/vehiculo/${vehiculoId}`);
+      const clienteReserva = inventarioRes.data?.clienteReserva;
+      const vencimiento = inventarioRes.data?.fechaVencimientoReserva ? new Date(inventarioRes.data.fechaVencimientoReserva).getTime() : null;
+      const reservaVencida = inventarioRes.data?.estadoInventario === 'RESERVADO' && !!vencimiento && vencimiento < Date.now();
+      if (inventarioRes.data?.estadoInventario === 'RESERVADO' && !reservaVencida && clienteReserva?.id && !venta.value.cliente?.id) {
+        venta.value.cliente = clienteReserva;
+      }
     } catch (e: any) {
-      alertService.showHttpError(e.response);
+      if (e?.response?.status !== 404) {
+        alertService.showHttpError(e.response);
+      }
+    }
+  }
+
+  const clienteId = Number(route.query.clienteId);
+  if (Number.isFinite(clienteId) && clienteId > 0 && !venta.value.cliente?.id) {
+    try {
+      const clienteRes = await axios.get<ICliente>(`api/clientes/${clienteId}`);
+      venta.value.cliente = clienteRes.data;
+    } catch {
+      // Si no se puede precargar por query se mantiene seleccion manual.
     }
   }
 });
 
-async function guardar() {
-  try {
-    validarVentaAntesDeGuardar();
-    const { venta: ventaGuardada } = await confirmar();
-    alertService.showSuccess(`Venta #${ventaGuardada.id} guardada correctamente`);
-
-    if (!route.params?.ventaId) {
-      router.replace({ name: 'VentaEditorEdit', params: { ventaId: ventaGuardada.id } });
-    }
-  } catch (e: any) {
-    alertService.showError(e.message ?? 'Error al guardar la venta');
-  }
-}
-
 async function confirmarVenta() {
   try {
     validarVentaAntesDeGuardar();
+    if (Number(venta.value.saldo ?? 0) > 0) {
+      throw new Error('Para vender la unidad se requiere pago total (100%).');
+    }
     const { venta: ventaGuardada, comprobante } = await confirmar(tipoComprobanteSeleccionado.value ?? undefined);
     const message = comprobante
       ? `Venta #${ventaGuardada.id} confirmada. Comprobante ${comprobante.numeroComprobante} generado.`
@@ -401,6 +445,22 @@ async function confirmarVenta() {
     router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la venta');
+  }
+}
+
+async function confirmarReserva() {
+  try {
+    validarVentaAntesDeGuardar();
+    if (!cumpleMinimoReserva.value) {
+      throw new Error('La reserva requiere una seña mínima.');
+    }
+    const { venta: ventaGuardada } = await confirmar();
+    alertService.showSuccess(`Reserva confirmada para la venta #${ventaGuardada.id}`);
+    if (!route.params?.ventaId) {
+      router.replace({ name: 'VentaEditorEdit', params: { ventaId: ventaGuardada.id } });
+    }
+  } catch (e: any) {
+    alertService.showError(e.message ?? 'Error al confirmar la reserva');
   }
 }
 

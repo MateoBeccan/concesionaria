@@ -3,8 +3,10 @@ package com.concesionaria.app.service.impl;
 import com.concesionaria.app.domain.DetalleVenta;
 import com.concesionaria.app.repository.DetalleVentaRepository;
 import com.concesionaria.app.service.DetalleVentaService;
+import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.DetalleVentaDTO;
 import com.concesionaria.app.service.mapper.DetalleVentaMapper;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +28,16 @@ public class DetalleVentaServiceImpl implements DetalleVentaService {
 
     private final DetalleVentaMapper detalleVentaMapper;
 
-    public DetalleVentaServiceImpl(DetalleVentaRepository detalleVentaRepository, DetalleVentaMapper detalleVentaMapper) {
+    private final VentaService ventaService;
+
+    public DetalleVentaServiceImpl(
+        DetalleVentaRepository detalleVentaRepository,
+        DetalleVentaMapper detalleVentaMapper,
+        VentaService ventaService
+    ) {
         this.detalleVentaRepository = detalleVentaRepository;
         this.detalleVentaMapper = detalleVentaMapper;
+        this.ventaService = ventaService;
     }
 
     @Override
@@ -36,6 +45,9 @@ public class DetalleVentaServiceImpl implements DetalleVentaService {
         LOG.debug("Request to save DetalleVenta : {}", detalleVentaDTO);
         DetalleVenta detalleVenta = detalleVentaMapper.toEntity(detalleVentaDTO);
         detalleVenta = detalleVentaRepository.save(detalleVenta);
+        if (detalleVenta.getVenta() != null && detalleVenta.getVenta().getId() != null) {
+            ventaService.sincronizarInventarioConVenta(detalleVenta.getVenta().getId());
+        }
         return detalleVentaMapper.toDto(detalleVenta);
     }
 
@@ -44,6 +56,9 @@ public class DetalleVentaServiceImpl implements DetalleVentaService {
         LOG.debug("Request to update DetalleVenta : {}", detalleVentaDTO);
         DetalleVenta detalleVenta = detalleVentaMapper.toEntity(detalleVentaDTO);
         detalleVenta = detalleVentaRepository.save(detalleVenta);
+        if (detalleVenta.getVenta() != null && detalleVenta.getVenta().getId() != null) {
+            ventaService.sincronizarInventarioConVenta(detalleVenta.getVenta().getId());
+        }
         return detalleVentaMapper.toDto(detalleVenta);
     }
 
@@ -59,6 +74,12 @@ public class DetalleVentaServiceImpl implements DetalleVentaService {
                 return existingDetalleVenta;
             })
             .map(detalleVentaRepository::save)
+            .map(saved -> {
+                if (saved.getVenta() != null && saved.getVenta().getId() != null) {
+                    ventaService.sincronizarInventarioConVenta(saved.getVenta().getId());
+                }
+                return saved;
+            })
             .map(detalleVentaMapper::toDto);
     }
 
@@ -80,5 +101,12 @@ public class DetalleVentaServiceImpl implements DetalleVentaService {
     public void delete(Long id) {
         LOG.debug("Request to delete DetalleVenta : {}", id);
         detalleVentaRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DetalleVentaDTO> findByVentaId(Long ventaId) {
+        LOG.debug("Request to get DetalleVentas by Venta : {}", ventaId);
+        return detalleVentaRepository.findAllByVentaIdWithVehiculo(ventaId).stream().map(detalleVentaMapper::toDto).toList();
     }
 }

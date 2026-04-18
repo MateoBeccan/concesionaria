@@ -22,7 +22,13 @@ export default defineComponent({
   },
   setup() {
     const dateFormat = useDateFormat();
-    const { formatDateLong } = dateFormat;
+    const formatDateLong = (value?: Date | string | null): string => {
+      if (!value) return 'No disponible';
+      if (typeof dateFormat.formatDateLong === 'function') {
+        return dateFormat.formatDateLong(value);
+      }
+      return new Date(value).toLocaleString('es-AR');
+    };
     const ventaService       = inject('ventaService',       () => new VentaService());
     const detalleVentaService = inject('detalleVentaService', () => new DetalleVentaService());
     const pagoService        = inject('pagoService',        () => new PagoService());
@@ -98,8 +104,7 @@ export default defineComponent({
     const cargarDetalles = async (ventaId: any) => {
       loadingDetalles.value = true;
       try {
-        const res = await detalleVentaService().retrieve({ 'ventaId.equals': ventaId, page: 0, size: 50 });
-        detalles.value = res.data;
+        detalles.value = await detalleVentaService().findByVentaId(Number(ventaId));
       } catch { detalles.value = []; }
       finally { loadingDetalles.value = false; }
     };
@@ -107,8 +112,7 @@ export default defineComponent({
     const cargarPagos = async (ventaId: any) => {
       loadingPagos.value = true;
       try {
-        const res = await pagoService().retrieve({ 'ventaId.equals': ventaId, page: 0, size: 50 });
-        pagos.value = res.data;
+        pagos.value = await pagoService().findByVentaId(Number(ventaId));
       } catch { pagos.value = []; }
       finally { loadingPagos.value = false; }
     };
@@ -116,8 +120,7 @@ export default defineComponent({
     const cargarComprobantes = async (ventaId: any) => {
       loadingComprobantes.value = true;
       try {
-        const res = await comprobanteService().retrieve({ 'ventaId.equals': ventaId, page: 0, size: 50 });
-        comprobantes.value = res.data;
+        comprobantes.value = await comprobanteService().findByVentaId(Number(ventaId));
       } catch { comprobantes.value = []; }
       finally { loadingComprobantes.value = false; }
     };
@@ -157,6 +160,7 @@ export default defineComponent({
 
     return {
       ...dateFormat,
+      formatDateLong,
       alertService,
       venta,
       detalles,

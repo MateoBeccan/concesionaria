@@ -162,6 +162,12 @@ public class PagoResource {
         return ResponseUtil.wrapOrNotFound(pagoDTO);
     }
 
+    @GetMapping("/by-venta/{ventaId}")
+    public ResponseEntity<List<PagoDTO>> getPagosByVenta(@PathVariable("ventaId") Long ventaId) {
+        LOG.debug("REST request to get Pagos by Venta : {}", ventaId);
+        return ResponseEntity.ok(pagoService.findByVentaId(ventaId));
+    }
+
     /**
      * {@code DELETE  /pagos/:id} : delete the "id" pago.
      *

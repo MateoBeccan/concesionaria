@@ -16,8 +16,8 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface ComprobanteMapper extends EntityMapper<ComprobanteDTO, Comprobante> {
     @Mapping(target = "venta", source = "venta", qualifiedByName = "ventaId")
-    @Mapping(target = "tipoComprobante", source = "tipoComprobante", qualifiedByName = "tipoComprobanteId")
-    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaId")
+    @Mapping(target = "tipoComprobante", source = "tipoComprobante", qualifiedByName = "tipoComprobanteResumen")
+    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaResumen")
     ComprobanteDTO toDto(Comprobante s);
 
     @Named("ventaId")
@@ -25,13 +25,18 @@ public interface ComprobanteMapper extends EntityMapper<ComprobanteDTO, Comproba
     @Mapping(target = "id", source = "id")
     VentaDTO toDtoVentaId(Venta venta);
 
-    @Named("tipoComprobanteId")
+    @Named("tipoComprobanteResumen")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    TipoComprobanteDTO toDtoTipoComprobanteId(TipoComprobante tipoComprobante);
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    TipoComprobanteDTO toDtoTipoComprobanteResumen(TipoComprobante tipoComprobante);
 
-    @Named("monedaId")
+    @Named("monedaResumen")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MonedaDTO toDtoMonedaId(Moneda moneda);
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    @Mapping(target = "simbolo", source = "simbolo")
+    MonedaDTO toDtoMonedaResumen(Moneda moneda);
 }

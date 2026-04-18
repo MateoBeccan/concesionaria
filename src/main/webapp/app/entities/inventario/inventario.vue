@@ -126,6 +126,9 @@
               <td>
                 <div v-if="inventario.estadoInventario === 'RESERVADO'" class="cell-main">
                   <span class="cell-title text-body">{{ clienteLabel(inventario) }}</span>
+                  <span class="badge align-self-start mb-1" :class="isReservaVencida(inventario) ? 'bg-danger-subtle text-danger-emphasis' : 'bg-info-subtle text-info-emphasis'">
+                    {{ isReservaVencida(inventario) ? 'Reserva vencida (pendiente de actualizacion)' : 'Reserva activa' }}
+                  </span>
                   <small :class="isReservaVencida(inventario) ? 'text-danger' : 'cell-copy'">
                     {{ isReservaVencida(inventario) ? 'Reserva vencida' : `Vence ${formatDateShort(inventario.fechaVencimientoReserva) || '-'}` }}
                   </small>
@@ -146,7 +149,13 @@
                   </router-link>
                   <router-link
                     v-if="inventario.vehiculo?.id && inventario.estadoInventario !== 'VENDIDO'"
-                    :to="{ name: 'VentaEditor', query: { vehiculoId: inventario.vehiculo.id } }"
+                    :to="{
+                      name: 'VentaEditor',
+                      query: {
+                        vehiculoId: inventario.vehiculo.id,
+                        clienteId: !isReservaVencida(inventario) ? (inventario.clienteReserva?.id ?? undefined) : undefined,
+                      },
+                    }"
                     class="btn btn-sm btn-success"
                   >
                     Vender

@@ -1,6 +1,7 @@
 package com.concesionaria.app.service.dto;
 
 import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
+import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
@@ -48,6 +49,8 @@ public class VehiculoDTO implements Serializable {
     private MotorDTO motor;
 
     private TipoVehiculoDTO tipoVehiculo;
+
+    private EstadoInventario estadoInventario;
 
     public CondicionVehiculo getCondicion() {
         return condicion;
@@ -162,6 +165,14 @@ public class VehiculoDTO implements Serializable {
 
     public void setTipoVehiculo(TipoVehiculoDTO tipoVehiculo) {
         this.tipoVehiculo = tipoVehiculo;
+    }
+
+    public EstadoInventario getEstadoInventario() {
+        return estadoInventario;
+    }
+
+    public void setEstadoInventario(EstadoInventario estadoInventario) {
+        this.estadoInventario = estadoInventario;
     }
 
     @Override

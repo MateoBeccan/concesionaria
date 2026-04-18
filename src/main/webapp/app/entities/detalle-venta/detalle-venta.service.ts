@@ -32,6 +32,15 @@ export default class DetalleVentaService {
     });
   }
 
+  findByVentaId(ventaId: number): Promise<IDetalleVenta[]> {
+    return new Promise<IDetalleVenta[]>((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/by-venta/${ventaId}`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
   delete(id: number): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       axios

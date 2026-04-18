@@ -16,8 +16,8 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface PagoMapper extends EntityMapper<PagoDTO, Pago> {
     @Mapping(target = "venta", source = "venta", qualifiedByName = "ventaId")
-    @Mapping(target = "metodoPago", source = "metodoPago", qualifiedByName = "metodoPagoId")
-    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaId")
+    @Mapping(target = "metodoPago", source = "metodoPago", qualifiedByName = "metodoPagoResumen")
+    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaResumen")
     PagoDTO toDto(Pago s);
 
     @Named("ventaId")
@@ -25,13 +25,18 @@ public interface PagoMapper extends EntityMapper<PagoDTO, Pago> {
     @Mapping(target = "id", source = "id")
     VentaDTO toDtoVentaId(Venta venta);
 
-    @Named("metodoPagoId")
+    @Named("metodoPagoResumen")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MetodoPagoDTO toDtoMetodoPagoId(MetodoPago metodoPago);
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    MetodoPagoDTO toDtoMetodoPagoResumen(MetodoPago metodoPago);
 
-    @Named("monedaId")
+    @Named("monedaResumen")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
-    MonedaDTO toDtoMonedaId(Moneda moneda);
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    @Mapping(target = "simbolo", source = "simbolo")
+    MonedaDTO toDtoMonedaResumen(Moneda moneda);
 }
