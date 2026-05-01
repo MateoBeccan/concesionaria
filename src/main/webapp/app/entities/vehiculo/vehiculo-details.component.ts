@@ -35,8 +35,11 @@ export default defineComponent({
       retrieveVehiculo(route.params.vehiculoId);
     }
 
-    function formatPrecio(precio?: number | null): string {
-      return Number(precio ?? 0).toLocaleString('es-AR');
+    function formatPrecio(precio?: number | null, simbolo?: string | null, codigo?: string | null): string {
+      const monto = Number(precio ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const simboloMoneda = simbolo ? `${simbolo} ` : '$ ';
+      const codigoMoneda = codigo ?? 'ARS';
+      return `${simboloMoneda}${monto} ${codigoMoneda}`;
     }
 
     function formatFecha(fecha?: Date | string | null): string {
@@ -44,33 +47,33 @@ export default defineComponent({
       return new Date(fecha).toLocaleDateString('es-AR');
     }
 
-    function badgeCondicion(condicion?: string): string {
+    function badgeStock(estadoInventario?: string): string {
       const map: Record<string, string> = {
-        EN_VENTA:  'bg-primary',
+        DISPONIBLE: 'bg-primary',
         RESERVADO: 'bg-warning text-dark',
-        VENDIDO:   'bg-danger',
+        VENDIDO: 'bg-danger',
       };
-      return map[condicion ?? ''] ?? 'bg-light text-dark border';
+      return map[estadoInventario ?? ''] ?? 'bg-light text-dark border';
     }
 
-    function labelCondicion(condicion?: string): string {
+    function labelStock(estadoInventario?: string): string {
       const map: Record<string, string> = {
-        EN_VENTA:  'En venta',
+        DISPONIBLE: 'Disponible',
         RESERVADO: 'Reservado',
-        VENDIDO:   'Vendido',
+        VENDIDO: 'Vendido',
       };
-      return map[condicion ?? ''] ?? condicion ?? '—';
+      return map[estadoInventario ?? ''] ?? estadoInventario ?? '—';
     }
 
     const traceStatus = () => {
       const estado = vehiculo.value.estado === 'NUEVO' ? 'Nuevo' : vehiculo.value.estado === 'USADO' ? 'Usado' : 'Sin estado';
-      const condicion = labelCondicion(vehiculo.value.condicion);
-      return `${estado} · ${condicion}`;
+      const stock = labelStock(vehiculo.value.estadoInventario);
+      return `${estado} · ${stock}`;
     };
 
     const traceLastAction = () => {
-      if (vehiculo.value.condicion === 'VENDIDO') return 'Unidad marcada como vendida';
-      if (vehiculo.value.condicion === 'RESERVADO') return 'Unidad reservada';
+      if (vehiculo.value.estadoInventario === 'VENDIDO') return 'Unidad marcada como vendida';
+      if (vehiculo.value.estadoInventario === 'RESERVADO') return 'Unidad reservada';
       if (vehiculo.value.lastModifiedDate && vehiculo.value.createdDate && vehiculo.value.lastModifiedDate !== vehiculo.value.createdDate) {
         return 'Unidad actualizada';
       }
@@ -84,8 +87,8 @@ export default defineComponent({
       previousState,
       formatPrecio,
       formatFecha,
-      badgeCondicion,
-      labelCondicion,
+      badgeStock,
+      labelStock,
       traceStatus,
       traceLastAction,
     };

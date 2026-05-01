@@ -12,9 +12,7 @@
         </div>
         <div class="d-flex gap-2">
           <button class="btn btn-sm btn-outline-secondary" @click="previousState()">Volver</button>
-          <router-link :to="{ name: 'InventarioEdit', params: { inventarioId: inventario.id } }" class="btn btn-sm btn-primary">
-            Editar
-          </router-link>
+          <router-link :to="{ name: 'InventarioEdit', params: { inventarioId: inventario.id } }" class="btn btn-sm btn-primary">Editar</router-link>
         </div>
       </div>
 
@@ -30,7 +28,6 @@
                 <span class="badge" :class="inventario.estadoInventario === 'DISPONIBLE' ? 'bg-success' : 'bg-secondary'">
                   {{ inventario.estadoInventario === 'DISPONIBLE' ? 'Disponible' : 'No disponible' }}
                 </span>
-                <span class="badge bg-dark">{{ inventario.vehiculo?.condicion ?? 'Sin condición' }}</span>
               </div>
             </div>
           </div>
@@ -49,38 +46,25 @@
           />
         </div>
 
-        <div v-if="incoherencias.length" class="col-12">
-          <div class="alert alert-danger mb-0">
-            <div class="fw-semibold mb-1">Se detectaron incoherencias</div>
-            <div v-for="item in incoherencias" :key="item">{{ item }}</div>
-          </div>
-        </div>
-
-        <div v-else-if="reservaVencida" class="col-12">
-          <div class="alert alert-warning mb-0">
-            La reserva está vencida. Revisá si corresponde liberarla o renovarla.
-          </div>
-        </div>
-
         <div class="col-md-6">
           <div class="card h-100">
             <div class="card-header">Unidad asociada</div>
             <div class="card-body">
               <dl class="detail-list">
-                <dt>Vehículo</dt>
+                <dt>Vehiculo</dt>
                 <dd>
                   <router-link v-if="inventario.vehiculo?.id" :to="{ name: 'VehiculoView', params: { vehiculoId: inventario.vehiculo.id } }">
-                    {{ inventario.vehiculo?.patente || `Vehículo ${inventario.vehiculo?.id}` }}
+                    {{ inventario.vehiculo?.patente || `Vehiculo ${inventario.vehiculo?.id}` }}
                   </router-link>
                 </dd>
 
-                <dt>Condición comercial</dt>
-                <dd>{{ inventario.vehiculo?.condicion ?? 'Sin dato' }}</dd>
+                <dt>Stock comercial</dt>
+                <dd>{{ inventario.estadoInventario ?? 'Sin dato' }}</dd>
 
                 <dt>Fecha de ingreso</dt>
                 <dd>{{ inventario.fechaIngreso ? formatDateLong(inventario.fechaIngreso) : 'Sin dato' }}</dd>
 
-                <dt>Ubicación</dt>
+                <dt>Ubicacion</dt>
                 <dd>{{ inventario.ubicacion || 'Sin definir' }}</dd>
               </dl>
             </div>
@@ -89,28 +73,13 @@
 
         <div class="col-md-6">
           <div class="card h-100">
-            <div class="card-header">Reserva actual</div>
+            <div class="card-header">Reserva</div>
             <div class="card-body">
               <dl class="detail-list">
-                <dt>Cliente</dt>
-                <dd>
-                  <router-link
-                    v-if="inventario.clienteReserva?.id"
-                    :to="{ name: 'ClienteView', params: { clienteId: inventario.clienteReserva.id } }"
-                  >
-                    {{ `${inventario.clienteReserva?.apellido ?? ''}, ${inventario.clienteReserva?.nombre ?? ''}`.replace(/^, |, $/g, '') }}
-                  </router-link>
-                  <span v-else>Sin reserva</span>
-                </dd>
-
-                <dt>Desde</dt>
-                <dd>{{ inventario.fechaReserva ? formatDateLong(inventario.fechaReserva) : 'Sin dato' }}</dd>
-
-                <dt>Vence</dt>
-                <dd>{{ inventario.fechaVencimientoReserva ? formatDateLong(inventario.fechaVencimientoReserva) : 'Sin dato' }}</dd>
-
                 <dt>Estado</dt>
-                <dd>{{ reservaVencida ? 'Vencida' : inventario.estadoInventario === 'RESERVADO' ? 'Activa' : 'Sin reserva' }}</dd>
+                <dd>{{ inventario.estadoInventario === 'RESERVADO' ? 'Gestionada desde Reserva activa' : 'Sin reserva activa' }}</dd>
+                <dt>Nota operativa</dt>
+                <dd>La informacion de cliente y vencimiento se consulta desde la entidad Reserva.</dd>
               </dl>
             </div>
           </div>
@@ -119,9 +88,7 @@
         <div class="col-12">
           <div class="card">
             <div class="card-header">Observaciones</div>
-            <div class="card-body">
-              {{ inventario.observaciones || 'Sin observaciones registradas.' }}
-            </div>
+            <div class="card-body">{{ inventario.observaciones || 'Sin observaciones registradas.' }}</div>
           </div>
         </div>
       </div>

@@ -1,7 +1,6 @@
 import { ref } from 'vue';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
-import { CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
 
 const PATENTE_REGEX = /^[A-Z]{3}\d{3}$|^[A-Z]{2}\d{3}[A-Z]{2}$/;
 
@@ -57,7 +56,7 @@ export function useVehiculo() {
   }
 
   function esVendido(v: IVehiculo): boolean {
-    return v.condicion === CondicionVehiculo.VENDIDO;
+    return v.estadoInventario === 'VENDIDO';
   }
 
   function limpiar() {

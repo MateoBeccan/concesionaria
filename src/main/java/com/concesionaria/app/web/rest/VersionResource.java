@@ -4,6 +4,7 @@ import com.concesionaria.app.repository.VersionRepository;
 import com.concesionaria.app.service.VersionService;
 import com.concesionaria.app.service.dto.MotorDTO;
 import com.concesionaria.app.service.dto.VersionDTO;
+import com.concesionaria.app.service.mapper.VersionMapper;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -37,10 +38,12 @@ public class VersionResource {
 
     private final VersionService versionService;
     private final VersionRepository versionRepository;
+    private final VersionMapper versionMapper;
 
-    public VersionResource(VersionService versionService, VersionRepository versionRepository) {
+    public VersionResource(VersionService versionService, VersionRepository versionRepository, VersionMapper versionMapper) {
         this.versionService = versionService;
         this.versionRepository = versionRepository;
+        this.versionMapper = versionMapper;
     }
 
     @PostMapping("")
@@ -101,7 +104,14 @@ public class VersionResource {
     }
 
     @GetMapping("")
-    public ResponseEntity<List<VersionDTO>> getAllVersions(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+    public ResponseEntity<List<VersionDTO>> getAllVersions(
+        @RequestParam(value = "modeloId", required = false) Long modeloId,
+        @org.springdoc.core.annotations.ParameterObject Pageable pageable
+    ) {
+        if (modeloId != null) {
+            List<VersionDTO> versions = versionRepository.findAllByModeloIdOrderByNombreAsc(modeloId).stream().map(versionMapper::toDto).toList();
+            return ResponseEntity.ok(versions);
+        }
         LOG.debug("REST request to get a page of Versions");
         Page<VersionDTO> page = versionService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);

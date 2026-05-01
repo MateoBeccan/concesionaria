@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.dto;
 
+import com.concesionaria.app.domain.enumeration.TipoPersona;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.time.Instant;
@@ -61,6 +62,8 @@ public class ClienteDTO implements Serializable {
     private CondicionIvaDTO condicionIva;
 
     private TipoDocumentoDTO tipoDocumento;
+
+    private TipoPersona tipoPersona;
 
     public Long getId() {
         return id;
@@ -206,6 +209,14 @@ public class ClienteDTO implements Serializable {
         this.tipoDocumento = tipoDocumento;
     }
 
+    public TipoPersona getTipoPersona() {
+        return tipoPersona;
+    }
+
+    public void setTipoPersona(TipoPersona tipoPersona) {
+        this.tipoPersona = tipoPersona;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -249,6 +260,7 @@ public class ClienteDTO implements Serializable {
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
             ", condicionIva=" + getCondicionIva() +
             ", tipoDocumento=" + getTipoDocumento() +
+            ", tipoPersona='" + getTipoPersona() + "'" +
             "}";
     }
 }

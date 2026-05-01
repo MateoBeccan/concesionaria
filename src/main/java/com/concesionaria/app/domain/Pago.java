@@ -1,5 +1,7 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.EstadoPago;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -25,7 +27,7 @@ public class Pago implements Serializable {
     private Long id;
 
     @NotNull
-    @DecimalMin(value = "0")
+    @DecimalMin(value = "0.01")
     @Column(name = "monto", precision = 21, scale = 2, nullable = false)
     private BigDecimal monto;
 
@@ -37,6 +39,41 @@ public class Pago implements Serializable {
     @Column(name = "referencia", length = 100)
     private String referencia;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_movimiento")
+    private TipoMovimientoPago tipoMovimiento;
+
+    @DecimalMin(value = "0")
+    @Column(name = "cotizacion_usada", precision = 21, scale = 8)
+    private BigDecimal cotizacionUsada;
+
+    @DecimalMin(value = "0")
+    @Column(name = "monto_aplicado_venta", precision = 21, scale = 2)
+    private BigDecimal montoAplicadoVenta;
+
+    @Column(name = "fecha_cotizacion_usada")
+    private Instant fechaCotizacionUsada;
+
+    @Size(max = 50)
+    @Column(name = "usuario_registro", length = 50)
+    private String usuarioRegistro;
+
+    @Size(max = 500)
+    @Column(name = "observaciones", length = 500)
+    private String observaciones;
+
+    @Size(max = 100)
+    @Column(name = "comprobante_externo", length = 100)
+    private String comprobanteExterno;
+
+    @Size(max = 100)
+    @Column(name = "banco_entidad", length = 100)
+    private String bancoEntidad;
+
+    @Size(max = 100)
+    @Column(name = "numero_operacion", length = 100)
+    private String numeroOperacion;
+
     @Column(name = "created_date")
     private Instant createdDate;
 
@@ -45,13 +82,31 @@ public class Pago implements Serializable {
     private Venta venta;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "inventario", "cliente", "moneda" }, allowSetters = true)
+    @JoinColumn(name = "reserva_id")
+    private Reserva reserva;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     private MetodoPago metodoPago;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Moneda moneda;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cotizacion_id")
+    private Cotizacion cotizacionRef;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tasacion_usado_id")
+    private TasacionUsado tasacionUsado;
+
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false)
+    private EstadoPago estado;
 
     public Instant getLastModifiedDate() {
         return lastModifiedDate;
@@ -59,6 +114,19 @@ public class Pago implements Serializable {
 
     public void setLastModifiedDate(Instant lastModifiedDate) {
         this.lastModifiedDate = lastModifiedDate;
+    }
+
+    public EstadoPago getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoPago estado) {
+        this.estado = estado;
+    }
+
+    public Pago estado(EstadoPago estado) {
+        this.setEstado(estado);
+        return this;
     }
 // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -114,6 +182,78 @@ public class Pago implements Serializable {
         this.referencia = referencia;
     }
 
+    public TipoMovimientoPago getTipoMovimiento() {
+        return tipoMovimiento;
+    }
+
+    public void setTipoMovimiento(TipoMovimientoPago tipoMovimiento) {
+        this.tipoMovimiento = tipoMovimiento;
+    }
+
+    public BigDecimal getCotizacionUsada() {
+        return cotizacionUsada;
+    }
+
+    public void setCotizacionUsada(BigDecimal cotizacionUsada) {
+        this.cotizacionUsada = cotizacionUsada;
+    }
+
+    public BigDecimal getMontoAplicadoVenta() {
+        return montoAplicadoVenta;
+    }
+
+    public void setMontoAplicadoVenta(BigDecimal montoAplicadoVenta) {
+        this.montoAplicadoVenta = montoAplicadoVenta;
+    }
+
+    public Instant getFechaCotizacionUsada() {
+        return fechaCotizacionUsada;
+    }
+
+    public void setFechaCotizacionUsada(Instant fechaCotizacionUsada) {
+        this.fechaCotizacionUsada = fechaCotizacionUsada;
+    }
+
+    public String getUsuarioRegistro() {
+        return usuarioRegistro;
+    }
+
+    public void setUsuarioRegistro(String usuarioRegistro) {
+        this.usuarioRegistro = usuarioRegistro;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
+
+    public String getComprobanteExterno() {
+        return comprobanteExterno;
+    }
+
+    public void setComprobanteExterno(String comprobanteExterno) {
+        this.comprobanteExterno = comprobanteExterno;
+    }
+
+    public String getBancoEntidad() {
+        return bancoEntidad;
+    }
+
+    public void setBancoEntidad(String bancoEntidad) {
+        this.bancoEntidad = bancoEntidad;
+    }
+
+    public String getNumeroOperacion() {
+        return numeroOperacion;
+    }
+
+    public void setNumeroOperacion(String numeroOperacion) {
+        this.numeroOperacion = numeroOperacion;
+    }
+
     public Instant getCreatedDate() {
         return this.createdDate;
     }
@@ -137,6 +277,19 @@ public class Pago implements Serializable {
 
     public Pago venta(Venta venta) {
         this.setVenta(venta);
+        return this;
+    }
+
+    public Reserva getReserva() {
+        return reserva;
+    }
+
+    public void setReserva(Reserva reserva) {
+        this.reserva = reserva;
+    }
+
+    public Pago reserva(Reserva reserva) {
+        this.setReserva(reserva);
         return this;
     }
 
@@ -166,6 +319,22 @@ public class Pago implements Serializable {
         return this;
     }
 
+    public Cotizacion getCotizacionRef() {
+        return cotizacionRef;
+    }
+
+    public void setCotizacionRef(Cotizacion cotizacionRef) {
+        this.cotizacionRef = cotizacionRef;
+    }
+
+    public TasacionUsado getTasacionUsado() {
+        return tasacionUsado;
+    }
+
+    public void setTasacionUsado(TasacionUsado tasacionUsado) {
+        this.tasacionUsado = tasacionUsado;
+    }
+
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -193,7 +362,15 @@ public class Pago implements Serializable {
             ", monto=" + getMonto() +
             ", fecha='" + getFecha() + "'" +
             ", referencia='" + getReferencia() + "'" +
+            ", tipoMovimiento='" + getTipoMovimiento() + "'" +
+            ", cotizacionUsada='" + getCotizacionUsada() + "'" +
+            ", usuarioRegistro='" + getUsuarioRegistro() + "'" +
+            ", observaciones='" + getObservaciones() + "'" +
+            ", comprobanteExterno='" + getComprobanteExterno() + "'" +
+            ", bancoEntidad='" + getBancoEntidad() + "'" +
+            ", numeroOperacion='" + getNumeroOperacion() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", estado='" + getEstado() + "'" +
             "}";
     }
 }

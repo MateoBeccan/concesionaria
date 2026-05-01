@@ -187,11 +187,8 @@
         }
         @GetMapping("/patente/{patente}")
         public ResponseEntity<VehiculoDTO> getByPatente(@PathVariable String patente) {
-
             Optional<VehiculoDTO> vehiculo = vehiculoService.findByPatente(patente);
-
-            return vehiculo.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+            return ResponseUtil.wrapOrNotFound(vehiculo);
         }
 
         @GetMapping("/buscar")

@@ -71,6 +71,7 @@
               <th>Cliente</th>
               <th>Email</th>
               <th>Teléfono</th>
+              <th>Tipo</th>
               <th>Ubicación</th>
               <th>Estado</th>
               <th>Fecha Alta</th>
@@ -93,6 +94,8 @@
               <td>{{ cliente.email }}</td>
 
               <td>{{ cliente.telefono || '-' }}</td>
+
+              <td>{{ cliente.tipoPersona || '-' }}</td>
 
               <td>
                 {{ cliente.ciudad || '-' }},

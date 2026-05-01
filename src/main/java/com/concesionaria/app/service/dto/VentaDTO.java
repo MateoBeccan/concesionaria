@@ -18,9 +18,10 @@ public class VentaDTO implements Serializable {
     @NotNull
     private Instant fecha;
 
-    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal cotizacion;
+    private Instant fechaCotizacionUsada;
+    private Long cotizacionId;
 
     @NotNull
     @DecimalMin(value = "0")
@@ -63,6 +64,18 @@ public class VentaDTO implements Serializable {
 
     private UserDTO user;
 
+    private ReservaDTO reserva;
+
+    private VehiculoDTO vehiculo;
+
+    private TasacionUsadoDTO tasacionUsado;
+
+    private BigDecimal precioBaseVehiculo;
+
+    private MonedaDTO monedaVehiculo;
+
+    private BigDecimal importeConvertido;
+
     public Long getId() {
         return id;
     }
@@ -85,6 +98,22 @@ public class VentaDTO implements Serializable {
 
     public void setCotizacion(BigDecimal cotizacion) {
         this.cotizacion = cotizacion;
+    }
+
+    public Instant getFechaCotizacionUsada() {
+        return fechaCotizacionUsada;
+    }
+
+    public void setFechaCotizacionUsada(Instant fechaCotizacionUsada) {
+        this.fechaCotizacionUsada = fechaCotizacionUsada;
+    }
+
+    public Long getCotizacionId() {
+        return cotizacionId;
+    }
+
+    public void setCotizacionId(Long cotizacionId) {
+        this.cotizacionId = cotizacionId;
     }
 
     public BigDecimal getImporteNeto() {
@@ -207,6 +236,54 @@ public class VentaDTO implements Serializable {
         this.user = user;
     }
 
+    public ReservaDTO getReserva() {
+        return reserva;
+    }
+
+    public void setReserva(ReservaDTO reserva) {
+        this.reserva = reserva;
+    }
+
+    public VehiculoDTO getVehiculo() {
+        return vehiculo;
+    }
+
+    public void setVehiculo(VehiculoDTO vehiculo) {
+        this.vehiculo = vehiculo;
+    }
+
+    public TasacionUsadoDTO getTasacionUsado() {
+        return tasacionUsado;
+    }
+
+    public void setTasacionUsado(TasacionUsadoDTO tasacionUsado) {
+        this.tasacionUsado = tasacionUsado;
+    }
+
+    public BigDecimal getPrecioBaseVehiculo() {
+        return precioBaseVehiculo;
+    }
+
+    public void setPrecioBaseVehiculo(BigDecimal precioBaseVehiculo) {
+        this.precioBaseVehiculo = precioBaseVehiculo;
+    }
+
+    public MonedaDTO getMonedaVehiculo() {
+        return monedaVehiculo;
+    }
+
+    public void setMonedaVehiculo(MonedaDTO monedaVehiculo) {
+        this.monedaVehiculo = monedaVehiculo;
+    }
+
+    public BigDecimal getImporteConvertido() {
+        return importeConvertido;
+    }
+
+    public void setImporteConvertido(BigDecimal importeConvertido) {
+        this.importeConvertido = importeConvertido;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -250,6 +327,12 @@ public class VentaDTO implements Serializable {
             ", estado=" + getEstado() +
             ", moneda=" + getMoneda() +
             ", user=" + getUser() +
+            ", reserva=" + getReserva() +
+            ", vehiculo=" + getVehiculo() +
+            ", tasacionUsado=" + getTasacionUsado() +
+            ", precioBaseVehiculo=" + getPrecioBaseVehiculo() +
+            ", monedaVehiculo=" + getMonedaVehiculo() +
+            ", importeConvertido=" + getImporteConvertido() +
             "}";
     }
 }

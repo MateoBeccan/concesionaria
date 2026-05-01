@@ -37,6 +37,23 @@
 
           <div class="row mb-3">
             <div class="col-md-6">
+              <label>Tipo persona *</label>
+              <select
+                class="form-control"
+                v-model="v$.tipoPersona.$model"
+                :class="{ 'is-invalid': v$.tipoPersona.$dirty && v$.tipoPersona.$invalid }"
+              >
+                <option :value="null">Seleccione</option>
+                <option v-for="tipo in tipoPersonaValues" :key="tipo" :value="tipo">
+                  {{ tipo === 'FISICA' ? 'Fisica' : 'Juridica' }}
+                </option>
+              </select>
+              <div v-if="v$.tipoPersona.$dirty && v$.tipoPersona.$invalid" class="invalid-feedback">
+                <span v-for="error of v$.tipoPersona.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-6">
               <label>Documento *</label>
               <input
                 class="form-control"

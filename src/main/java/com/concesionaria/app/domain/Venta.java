@@ -32,8 +32,11 @@ public class Venta implements Serializable {
 
     @NotNull
     @DecimalMin(value = "0")
-    @Column(name = "cotizacion", precision = 21, scale = 2, nullable = false)
+    @Column(name = "cotizacion", precision = 21, scale = 8, nullable = false)
     private BigDecimal cotizacion;
+
+    @Column(name = "fecha_cotizacion_usada")
+    private Instant fechaCotizacionUsada;
 
     @NotNull
     @DecimalMin(value = "0")
@@ -56,11 +59,11 @@ public class Venta implements Serializable {
     private BigDecimal porcentajeImpuesto;
 
     @DecimalMin(value = "0")
-    @Column(name = "total_pagado", precision = 21, scale = 2)
+    @Column(name = "total_pagado", precision = 21, scale = 2, nullable = false)
     private BigDecimal totalPagado;
 
     @DecimalMin(value = "0")
-    @Column(name = "saldo", precision = 21, scale = 2)
+    @Column(name = "saldo", precision = 21, scale = 2, nullable = false)
     private BigDecimal saldo;
 
     @Size(max = 500)
@@ -81,19 +84,44 @@ public class Venta implements Serializable {
     @Column(name = "last_modified_by", length = 50)
     private String lastModifiedBy;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cliente_id", nullable = false)
     @JsonIgnoreProperties(value = { "condicionIva", "tipoDocumento" }, allowSetters = true)
     private Cliente cliente;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "estado")
+    @Column(name = "estado", nullable = false)
     private EstadoVenta estado;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "moneda_id", nullable = false)
     private Moneda moneda;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cotizacion_id")
+    private Cotizacion cotizacionRef;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reserva_id")
+    private Reserva reserva;
+
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "vehiculo_id", nullable = false)
+    @JsonIgnoreProperties(value = { "version", "motor", "tipoVehiculo", "inventario" }, allowSetters = true)
+    private Vehiculo vehiculo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tasacion_usado_id")
+    private TasacionUsado tasacionUsado;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -134,6 +162,14 @@ public class Venta implements Serializable {
 
     public void setCotizacion(BigDecimal cotizacion) {
         this.cotizacion = cotizacion;
+    }
+
+    public Instant getFechaCotizacionUsada() {
+        return fechaCotizacionUsada;
+    }
+
+    public void setFechaCotizacionUsada(Instant fechaCotizacionUsada) {
+        this.fechaCotizacionUsada = fechaCotizacionUsada;
     }
 
     public BigDecimal getImporteNeto() {
@@ -318,6 +354,14 @@ public class Venta implements Serializable {
         return this;
     }
 
+    public Cotizacion getCotizacionRef() {
+        return cotizacionRef;
+    }
+
+    public void setCotizacionRef(Cotizacion cotizacionRef) {
+        this.cotizacionRef = cotizacionRef;
+    }
+
     public User getUser() {
         return this.user;
     }
@@ -329,6 +373,30 @@ public class Venta implements Serializable {
     public Venta user(User user) {
         this.setUser(user);
         return this;
+    }
+
+    public Reserva getReserva() {
+        return reserva;
+    }
+
+    public void setReserva(Reserva reserva) {
+        this.reserva = reserva;
+    }
+
+    public Vehiculo getVehiculo() {
+        return vehiculo;
+    }
+
+    public void setVehiculo(Vehiculo vehiculo) {
+        this.vehiculo = vehiculo;
+    }
+
+    public TasacionUsado getTasacionUsado() {
+        return tasacionUsado;
+    }
+
+    public void setTasacionUsado(TasacionUsado tasacionUsado) {
+        this.tasacionUsado = tasacionUsado;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

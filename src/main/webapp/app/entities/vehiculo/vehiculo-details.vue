@@ -13,8 +13,8 @@
               <span class="badge" :class="vehiculo.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
                 {{ vehiculo.estado === 'NUEVO' ? 'Nuevo' : 'Usado' }}
               </span>
-              <span class="badge" :class="badgeCondicion(vehiculo.condicion)">
-                {{ labelCondicion(vehiculo.condicion) }}
+              <span class="badge" :class="badgeStock(vehiculo.estadoInventario)">
+                {{ labelStock(vehiculo.estadoInventario) }}
               </span>
             </div>
           </div>
@@ -33,7 +33,9 @@
             <div class="card-body py-3">
               <div class="d-flex justify-content-between align-items-center">
                 <span class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Precio de venta</span>
-                <h2 class="mb-0 fw-bold" style="color: var(--color-primary)">$ {{ formatPrecio(vehiculo.precio) }}</h2>
+                <h2 class="mb-0 fw-bold" style="color: var(--color-primary)">
+                  {{ formatPrecio(vehiculo.precio, vehiculo.moneda?.simbolo, vehiculo.moneda?.codigo) }}
+                </h2>
               </div>
             </div>
           </div>
@@ -74,6 +76,9 @@
 
                 <dt>Ano fabricacion</dt>
                 <dd>{{ formatFecha(vehiculo.fechaFabricacion) }}</dd>
+
+                <dt>Moneda</dt>
+                <dd>{{ vehiculo.moneda?.codigo ?? '-' }}</dd>
               </dl>
             </div>
           </div>

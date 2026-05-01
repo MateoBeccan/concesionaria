@@ -1,6 +1,5 @@
 package com.concesionaria.app.service.dto;
 
-import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import jakarta.validation.constraints.*;
@@ -29,11 +28,21 @@ public class VehiculoDTO implements Serializable {
     @Max(value = 1000000)
     private Integer km;
 
+    @Size(max = 10)
     @Pattern(regexp = "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)")
     private String patente;
 
+    @Size(max = 30)
+    private String vinChasis;
+
+    @Size(max = 50)
+    private String color;
+
+    @Size(max = 500)
+    private String observaciones;
+
     @NotNull
-    @DecimalMin(value = "0")
+    @DecimalMin(value = "0.01")
     private BigDecimal precio;
 
     private Instant createdDate;
@@ -50,18 +59,10 @@ public class VehiculoDTO implements Serializable {
 
     private TipoVehiculoDTO tipoVehiculo;
 
+    @NotNull
+    private MonedaDTO moneda;
+
     private EstadoInventario estadoInventario;
-
-    public CondicionVehiculo getCondicion() {
-        return condicion;
-    }
-
-    public void setCondicion(CondicionVehiculo condicion) {
-        this.condicion = condicion;
-    }
-
-    @Deprecated(forRemoval = false)
-    private CondicionVehiculo condicion;
 
     public Long getId() {
         return id;
@@ -101,6 +102,30 @@ public class VehiculoDTO implements Serializable {
 
     public void setPatente(String patente) {
         this.patente = patente;
+    }
+
+    public String getVinChasis() {
+        return vinChasis;
+    }
+
+    public void setVinChasis(String vinChasis) {
+        this.vinChasis = vinChasis;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 
     public BigDecimal getPrecio() {
@@ -167,6 +192,14 @@ public class VehiculoDTO implements Serializable {
         this.tipoVehiculo = tipoVehiculo;
     }
 
+    public MonedaDTO getMoneda() {
+        return moneda;
+    }
+
+    public void setMoneda(MonedaDTO moneda) {
+        this.moneda = moneda;
+    }
+
     public EstadoInventario getEstadoInventario() {
         return estadoInventario;
     }
@@ -205,6 +238,9 @@ public class VehiculoDTO implements Serializable {
             ", fechaFabricacion='" + getFechaFabricacion() + "'" +
             ", km=" + getKm() +
             ", patente='" + getPatente() + "'" +
+            ", vinChasis='" + getVinChasis() + "'" +
+            ", color='" + getColor() + "'" +
+            ", observaciones='" + getObservaciones() + "'" +
             ", precio=" + getPrecio() +
             ", createdDate='" + getCreatedDate() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
@@ -213,6 +249,7 @@ public class VehiculoDTO implements Serializable {
             ", version=" + getVersion() +
             ", motor=" + getMotor() +
             ", tipoVehiculo=" + getTipoVehiculo() +
+            ", moneda=" + getMoneda() +
             "}";
     }
 }

@@ -5,7 +5,6 @@ import UserService from '@/entities/user/user.service';
 import CarroceriaService from './carroceria/carroceria.service';
 import ClienteService from './cliente/cliente.service';
 import CombustibleService from './combustible/combustible.service';
-import DetalleVentaService from './detalle-venta/detalle-venta.service';
 import ComprobanteService from './comprobante/comprobante.service';
 import CondicionIvaService from './condicion-iva/condicion-iva.service';
 import TipoComprobanteService from './tipo-comprobante/tipo-comprobante.service';
@@ -38,7 +37,6 @@ export default defineComponent({
     provide('clienteService', () => new ClienteService());
     provide('condicionIvaService', () => new CondicionIvaService());
     provide('ventaService', () => new VentaService());
-    provide('detalleVentaService', () => new DetalleVentaService());
     provide('comprobanteService', () => new ComprobanteService());
     provide('tipoComprobanteService', () => new TipoComprobanteService());
     provide('pagoService', () => new PagoService());

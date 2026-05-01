@@ -1,11 +1,10 @@
 <template>
   <div>
-    <!-- FORMULARIO NUEVO PAGO -->
     <div class="card mb-3 border-success" style="border-style: dashed !important">
       <div class="card-body">
         <p class="fw-semibold small text-success mb-3">Registrar pago</p>
         <div class="row g-2 align-items-end">
-          <div class="col-md-3">
+          <div class="col-md-3" v-if="!esEntregaUsado">
             <label class="form-label form-label-sm">Monto <span class="text-danger">*</span></label>
             <div class="input-group input-group-sm">
               <span class="input-group-text">$</span>
@@ -17,31 +16,41 @@
           </div>
 
           <div class="col-md-3">
-            <label class="form-label form-label-sm">Método de pago</label>
+            <label class="form-label form-label-sm">Metodo de pago</label>
             <select class="form-select form-select-sm" v-model="nuevoPago.metodoPago">
-              <option :value="null">— Seleccionar —</option>
+              <option :value="null">- Seleccionar -</option>
               <option v-for="m in metodoPagos" :key="m.id" :value="m">
                 {{ m.descripcion ?? m.codigo }}
               </option>
             </select>
           </div>
 
-          <div class="col-md-2">
+          <div class="col-md-2" v-if="!esEntregaUsado">
             <label class="form-label form-label-sm">Moneda</label>
             <select class="form-select form-select-sm" v-model="nuevoPago.moneda">
-              <option :value="null">—</option>
+              <option :value="null">-</option>
               <option v-for="m in monedas" :key="m.id" :value="m">{{ m.simbolo ?? '' }} {{ m.codigo }}</option>
             </select>
           </div>
 
-          <div class="col-md-3" v-if="nuevoPago.metodoPago?.requiereReferencia">
+          <div class="col-md-5" v-if="esEntregaUsado">
+            <label class="form-label form-label-sm">Tasacion usada <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" v-model.number="nuevoPago.tasacionUsadoId">
+              <option :value="null">- Seleccionar tasacion aceptada -</option>
+              <option v-for="t in tasacionesUsado" :key="t.id" :value="t.id">
+                #{{ t.id }} - {{ tasacionVehiculoLabel(t) }} - {{ t.patenteUsado ?? 'Sin patente' }} - $ {{ fmt(t.montoTasacion) }}
+              </option>
+            </select>
+            <div class="small text-muted mt-1">El monto se toma automaticamente desde la tasacion.</div>
+            <div v-if="tasacionesUsado.length === 0" class="small mt-2">
+              <span class="text-danger">No hay tasaciones aceptadas disponibles para este cliente.</span>
+              <button class="btn btn-link btn-sm p-0 ms-2" @click="emit('crearTasacion')">Crear tasacion</button>
+            </div>
+          </div>
+
+          <div class="col-md-3" v-if="!esEntregaUsado && nuevoPago.metodoPago?.requiereReferencia">
             <label class="form-label form-label-sm">Referencia</label>
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              v-model="nuevoPago.referencia"
-              placeholder="Nro. cheque / transferencia"
-            />
+            <input type="text" class="form-control form-control-sm" v-model="nuevoPago.referencia" placeholder="Nro. cheque / transferencia" />
           </div>
 
           <div class="col-md-1">
@@ -49,7 +58,7 @@
           </div>
         </div>
         <div class="mt-2 d-flex flex-wrap justify-content-between gap-2 small text-muted">
-          <span>Saldo luego del pago: $ {{ fmt(saldoPosterior) }}</span>
+          <span>El sistema convierte pagos en moneda distinta usando Cotización (valor venta).</span>
           <span v-if="nuevoPago.metodoPago?.requiereReferencia">Este metodo requiere referencia obligatoria.</span>
         </div>
         <div v-if="mensajeValidacionPago" class="text-danger small mt-2">
@@ -58,43 +67,54 @@
       </div>
     </div>
 
-    <!-- LISTA DE PAGOS -->
-    <div v-if="pagos.length === 0" class="text-center py-3 text-muted small border rounded">No hay pagos registrados aún.</div>
+    <div v-if="pagos.length === 0" class="text-center py-3 text-muted small border rounded">No hay pagos registrados aun.</div>
 
     <div v-else class="table-responsive">
       <table class="table align-middle mb-0">
         <thead class="table-light">
           <tr>
-            <th>Método</th>
+            <th>Metodo</th>
             <th>Moneda</th>
             <th>Referencia</th>
             <th>Fecha</th>
+            <th>Estado</th>
             <th class="text-end">Monto</th>
+            <th class="text-end">Cotización</th>
+            <th class="text-end">Aplicado ARS</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="p in pagos" :key="p._key">
-            <td>{{ p.metodoPago?.descripcion ?? p.metodoPago?.codigo ?? '—' }}</td>
-            <td>{{ p.moneda?.simbolo ?? '' }} {{ p.moneda?.codigo ?? '—' }}</td>
-            <td class="text-muted small">{{ p.referencia || '—' }}</td>
+            <td>{{ p.metodoPago?.descripcion ?? p.metodoPago?.codigo ?? '-' }}</td>
+            <td>{{ p.moneda?.simbolo ?? '' }} {{ p.moneda?.codigo ?? '-' }}</td>
+            <td class="text-muted small">{{ p.referencia || '-' }}</td>
             <td class="text-muted small">{{ formatFecha(p.fecha) }}</td>
-            <td class="text-end fw-semibold text-success">$ {{ fmt(p.monto) }}</td>
+            <td>
+              <span class="badge" :class="p.estado === EstadoPago.ANULADO ? 'bg-secondary' : 'bg-success'">
+                {{ p.estado === EstadoPago.ANULADO ? 'Anulado' : 'Registrado' }}
+              </span>
+            </td>
+            <td class="text-end fw-semibold" :class="p.estado === EstadoPago.ANULADO ? 'text-muted text-decoration-line-through' : 'text-success'">
+              $ {{ fmt(p.monto) }}
+            </td>
+            <td class="text-end">{{ fmt(p.cotizacionUsada) }}</td>
+            <td class="text-end fw-semibold">{{ fmt(p.montoAplicadoMonedaVenta) }}</td>
             <td class="text-end">
               <button
                 class="btn btn-sm btn-outline-danger"
-                @click="emit('quitar', p._key)"
-                :disabled="p.guardado"
-                :title="p.guardado ? 'Pago ya persistido' : 'Quitar'"
+                @click="p.guardado ? emit('anular', p._key) : emit('quitar', p._key)"
+                :disabled="p.estado === EstadoPago.ANULADO"
+                :title="p.guardado ? 'Anular pago' : 'Quitar'"
               >
-                ✕
+                {{ p.guardado ? 'Anular' : 'Quitar' }}
               </button>
             </td>
           </tr>
         </tbody>
         <tfoot class="table-light">
           <tr>
-            <td colspan="4" class="text-end fw-semibold">Total pagado:</td>
+            <td colspan="7" class="text-end fw-semibold">Total pagado aplicado (ARS):</td>
             <td class="text-end fw-bold text-success">$ {{ fmt(sumaPagos) }}</td>
             <td></td>
           </tr>
@@ -109,6 +129,8 @@ import { computed, reactive } from 'vue';
 import type { PagoLocal } from './useVentaEditor';
 import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
+import type { ITasacionUsado } from '@/shared/model/tasacion-usado.model';
+import { EstadoPago } from '@/shared/model/estado-pago.model';
 
 const props = defineProps<{
   pagos: PagoLocal[];
@@ -116,12 +138,15 @@ const props = defineProps<{
   saldoPendiente: number;
   metodoPagos: IMetodoPago[];
   monedas: IMoneda[];
+  tasacionesUsado: ITasacionUsado[];
   monedaDefault?: IMoneda | null;
 }>();
 
 const emit = defineEmits<{
   agregar: [monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia: string];
   quitar: [key: string];
+  anular: [key: string];
+  crearTasacion: [];
 }>();
 
 const nuevoPago = reactive({
@@ -129,21 +154,25 @@ const nuevoPago = reactive({
   metodoPago: null as IMetodoPago | null,
   moneda: props.monedaDefault ?? null,
   referencia: '',
+  tasacionUsadoId: null as number | null,
 });
 
-const saldoPosterior = computed(() => Math.max(0, props.saldoPendiente - Number(nuevoPago.monto ?? 0)));
+const esEntregaUsado = computed(() => (nuevoPago.metodoPago?.codigo ?? '').toUpperCase() === 'ENTREGA_USADO');
 
 const mensajeValidacionPago = computed(() => {
+  if (esEntregaUsado.value) {
+    if (!nuevoPago.tasacionUsadoId) {
+      return 'Debes seleccionar una tasacion aceptada';
+    }
+    return '';
+  }
+
   if (!nuevoPago.monto || nuevoPago.monto <= 0) {
     return 'Ingresa un monto mayor a 0';
   }
 
   if (props.saldoPendiente <= 0) {
     return 'La venta no tiene saldo pendiente';
-  }
-
-  if (nuevoPago.monto > props.saldoPendiente) {
-    return 'El pago no puede superar el saldo pendiente';
   }
 
   if (nuevoPago.metodoPago?.requiereReferencia && !nuevoPago.referencia.trim()) {
@@ -155,11 +184,13 @@ const mensajeValidacionPago = computed(() => {
 
 function agregarPago() {
   if (mensajeValidacionPago.value) return;
-  emit('agregar', nuevoPago.monto, nuevoPago.metodoPago, nuevoPago.moneda, nuevoPago.referencia.trim());
+  const referencia = esEntregaUsado.value ? String(nuevoPago.tasacionUsadoId ?? '') : nuevoPago.referencia.trim();
+  emit('agregar', nuevoPago.monto, nuevoPago.metodoPago, nuevoPago.moneda, referencia);
   nuevoPago.monto = 0;
   nuevoPago.metodoPago = null;
   nuevoPago.moneda = props.monedaDefault ?? null;
   nuevoPago.referencia = '';
+  nuevoPago.tasacionUsadoId = null;
 }
 
 function fmt(n?: number | null) {
@@ -167,6 +198,13 @@ function fmt(n?: number | null) {
 }
 
 function formatFecha(f?: Date) {
-  return f ? new Date(f).toLocaleDateString('es-AR') : '—';
+  return f ? new Date(f).toLocaleDateString('es-AR') : '-';
+}
+
+function tasacionVehiculoLabel(t: ITasacionUsado) {
+  const marca = t.version?.modelo?.marca?.nombre;
+  const modelo = t.version?.modelo?.nombre;
+  const version = t.version?.nombre;
+  return [marca, modelo, version].filter(Boolean).join(' ') || t.marcaModeloUsado || 'Usado';
 }
 </script>

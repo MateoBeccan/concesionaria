@@ -1,6 +1,9 @@
 package com.concesionaria.app.domain;
 
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import com.concesionaria.app.domain.enumeration.EstadoOperativoDocumental;
+import com.concesionaria.app.domain.enumeration.OrigenVehiculo;
+import com.concesionaria.app.domain.enumeration.TipoTenenciaInventario;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -28,18 +31,54 @@ public class Inventario implements Serializable {
     @Column(name = "fecha_ingreso", nullable = false)
     private Instant fechaIngreso;
 
+    @NotNull
+    @Size(max = 30)
+    @Column(name = "codigo_interno_stock", length = 30, nullable = false, unique = true)
+    private String codigoInternoStock;
+
+    @DecimalMin(value = "0")
+    @Column(name = "costo_adquisicion", precision = 21, scale = 2)
+    private java.math.BigDecimal costoAdquisicion;
+
+    @Column(name = "fecha_egreso")
+    private Instant fechaEgreso;
+
+    @Size(max = 50)
+    @Column(name = "tipo_origen_ingreso", length = 50)
+    private String tipoOrigenIngreso;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origen_vehiculo")
+    private OrigenVehiculo origenVehiculo;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_tenencia")
+    private TipoTenenciaInventario tipoTenencia;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_operativo_documental")
+    private EstadoOperativoDocumental estadoOperativoDocumental;
+
+    @Size(max = 100)
+    @Column(name = "proveedor_referencia", length = 100)
+    private String proveedorReferencia;
+
+    @Size(max = 30)
+    @Column(name = "numero_interno_stock", length = 30)
+    private String numeroInternoStock;
+
     @Size(max = 100)
     @Column(name = "ubicacion", length = 100)
     private String ubicacion;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ubicacion_stock_id")
+    private UbicacionStock ubicacionStock;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_inventario", nullable = false)
     private EstadoInventario estadoInventario;
-
-    @NotNull
-    @Column(name = "disponible", nullable = false)
-    private Boolean disponible;
 
     @Size(max = 255)
     @Column(name = "observaciones", length = 255)
@@ -59,20 +98,10 @@ public class Inventario implements Serializable {
     @Column(name = "last_modified_by", length = 50)
     private String lastModifiedBy;
 
-    @Column(name = "fecha_reserva")
-    private Instant fechaReserva;
-
-    @Column(name = "fecha_vencimiento_reserva")
-    private Instant fechaVencimientoReserva;
-
     @JsonIgnoreProperties(value = { "version", "motor", "tipoVehiculo", "inventario" }, allowSetters = true)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(unique = true)
     private Vehiculo vehiculo;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "condicionIva", "tipoDocumento" }, allowSetters = true)
-    private Cliente clienteReserva;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -102,6 +131,98 @@ public class Inventario implements Serializable {
         this.fechaIngreso = fechaIngreso;
     }
 
+    public String getCodigoInternoStock() {
+        return codigoInternoStock;
+    }
+
+    public void setCodigoInternoStock(String codigoInternoStock) {
+        this.codigoInternoStock = codigoInternoStock;
+    }
+
+    public Inventario codigoInternoStock(String codigoInternoStock) {
+        this.setCodigoInternoStock(codigoInternoStock);
+        return this;
+    }
+
+    public java.math.BigDecimal getCostoAdquisicion() {
+        return costoAdquisicion;
+    }
+
+    public void setCostoAdquisicion(java.math.BigDecimal costoAdquisicion) {
+        this.costoAdquisicion = costoAdquisicion;
+    }
+
+    public Inventario costoAdquisicion(java.math.BigDecimal costoAdquisicion) {
+        this.setCostoAdquisicion(costoAdquisicion);
+        return this;
+    }
+
+    public Instant getFechaEgreso() {
+        return fechaEgreso;
+    }
+
+    public void setFechaEgreso(Instant fechaEgreso) {
+        this.fechaEgreso = fechaEgreso;
+    }
+
+    public Inventario fechaEgreso(Instant fechaEgreso) {
+        this.setFechaEgreso(fechaEgreso);
+        return this;
+    }
+
+    public String getTipoOrigenIngreso() {
+        return tipoOrigenIngreso;
+    }
+
+    public void setTipoOrigenIngreso(String tipoOrigenIngreso) {
+        this.tipoOrigenIngreso = tipoOrigenIngreso;
+    }
+
+    public Inventario tipoOrigenIngreso(String tipoOrigenIngreso) {
+        this.setTipoOrigenIngreso(tipoOrigenIngreso);
+        return this;
+    }
+
+    public OrigenVehiculo getOrigenVehiculo() {
+        return origenVehiculo;
+    }
+
+    public void setOrigenVehiculo(OrigenVehiculo origenVehiculo) {
+        this.origenVehiculo = origenVehiculo;
+    }
+
+    public TipoTenenciaInventario getTipoTenencia() {
+        return tipoTenencia;
+    }
+
+    public void setTipoTenencia(TipoTenenciaInventario tipoTenencia) {
+        this.tipoTenencia = tipoTenencia;
+    }
+
+    public EstadoOperativoDocumental getEstadoOperativoDocumental() {
+        return estadoOperativoDocumental;
+    }
+
+    public void setEstadoOperativoDocumental(EstadoOperativoDocumental estadoOperativoDocumental) {
+        this.estadoOperativoDocumental = estadoOperativoDocumental;
+    }
+
+    public String getProveedorReferencia() {
+        return proveedorReferencia;
+    }
+
+    public void setProveedorReferencia(String proveedorReferencia) {
+        this.proveedorReferencia = proveedorReferencia;
+    }
+
+    public String getNumeroInternoStock() {
+        return numeroInternoStock;
+    }
+
+    public void setNumeroInternoStock(String numeroInternoStock) {
+        this.numeroInternoStock = numeroInternoStock;
+    }
+
     public String getUbicacion() {
         return this.ubicacion;
     }
@@ -113,6 +234,14 @@ public class Inventario implements Serializable {
 
     public void setUbicacion(String ubicacion) {
         this.ubicacion = ubicacion;
+    }
+
+    public UbicacionStock getUbicacionStock() {
+        return ubicacionStock;
+    }
+
+    public void setUbicacionStock(UbicacionStock ubicacionStock) {
+        this.ubicacionStock = ubicacionStock;
     }
 
     public EstadoInventario getEstadoInventario() {
@@ -139,19 +268,6 @@ public class Inventario implements Serializable {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
-    }
-
-    public Boolean getDisponible() {
-        return this.disponible;
-    }
-
-    public Inventario disponible(Boolean disponible) {
-        this.setDisponible(disponible);
-        return this;
-    }
-
-    public void setDisponible(Boolean disponible) {
-        this.disponible = disponible;
     }
 
     public Instant getCreatedDate() {
@@ -206,32 +322,6 @@ public class Inventario implements Serializable {
         this.lastModifiedBy = lastModifiedBy;
     }
 
-    public Instant getFechaReserva() {
-        return this.fechaReserva;
-    }
-
-    public Inventario fechaReserva(Instant fechaReserva) {
-        this.setFechaReserva(fechaReserva);
-        return this;
-    }
-
-    public void setFechaReserva(Instant fechaReserva) {
-        this.fechaReserva = fechaReserva;
-    }
-
-    public Instant getFechaVencimientoReserva() {
-        return this.fechaVencimientoReserva;
-    }
-
-    public Inventario fechaVencimientoReserva(Instant fechaVencimientoReserva) {
-        this.setFechaVencimientoReserva(fechaVencimientoReserva);
-        return this;
-    }
-
-    public void setFechaVencimientoReserva(Instant fechaVencimientoReserva) {
-        this.fechaVencimientoReserva = fechaVencimientoReserva;
-    }
-
     public Vehiculo getVehiculo() {
         return this.vehiculo;
     }
@@ -242,19 +332,6 @@ public class Inventario implements Serializable {
 
     public Inventario vehiculo(Vehiculo vehiculo) {
         this.setVehiculo(vehiculo);
-        return this;
-    }
-
-    public Cliente getClienteReserva() {
-        return this.clienteReserva;
-    }
-
-    public void setClienteReserva(Cliente cliente) {
-        this.clienteReserva = cliente;
-    }
-
-    public Inventario clienteReserva(Cliente cliente) {
-        this.setClienteReserva(cliente);
         return this;
     }
 
@@ -283,16 +360,22 @@ public class Inventario implements Serializable {
         return "Inventario{" +
             "id=" + getId() +
             ", fechaIngreso='" + getFechaIngreso() + "'" +
+            ", codigoInternoStock='" + getCodigoInternoStock() + "'" +
+            ", costoAdquisicion='" + getCostoAdquisicion() + "'" +
+            ", fechaEgreso='" + getFechaEgreso() + "'" +
+            ", tipoOrigenIngreso='" + getTipoOrigenIngreso() + "'" +
+            ", origenVehiculo='" + getOrigenVehiculo() + "'" +
+            ", tipoTenencia='" + getTipoTenencia() + "'" +
+            ", estadoOperativoDocumental='" + getEstadoOperativoDocumental() + "'" +
+            ", proveedorReferencia='" + getProveedorReferencia() + "'" +
+            ", numeroInternoStock='" + getNumeroInternoStock() + "'" +
             ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
-            ", disponible='" + getDisponible() + "'" +
             ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
-            ", fechaReserva='" + getFechaReserva() + "'" +
-            ", fechaVencimientoReserva='" + getFechaVencimientoReserva() + "'" +
             "}";
     }
 }

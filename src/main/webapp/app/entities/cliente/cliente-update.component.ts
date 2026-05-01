@@ -10,6 +10,7 @@ import { useAlertService } from '@/shared/alert/alert.service';
 import { useValidation } from '@/shared/composables';
 import { Cliente, type ICliente } from '@/shared/model/cliente.model';
 import { type ICondicionIva } from '@/shared/model/condicion-iva.model';
+import { TipoPersona } from '@/shared/model/enumerations/tipo-persona.model';
 import { type ITipoDocumento } from '@/shared/model/tipo-documento.model';
 
 import ClienteService from './cliente.service';
@@ -34,7 +35,7 @@ export default defineComponent({
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const cliente: Ref<ICliente> = ref(
-      new Cliente(undefined, undefined, undefined, undefined, null, undefined, null, null, null, null, true, new Date(), null, null, null, null),
+      new Cliente(undefined, undefined, undefined, undefined, null, undefined, null, null, null, null, true, new Date(), null, null, null, null, null, null, 'FISICA'),
     );
 
     const condicionIvaService = inject('condicionIvaService', () => new CondicionIvaService());
@@ -130,6 +131,9 @@ export default defineComponent({
       activo: {
         required: validations.required('Este campo es obligatorio.'),
       },
+      tipoPersona: {
+        required: validations.required('SeleccionÃ¡ el tipo de persona.'),
+      },
       fechaAlta: {
         required: validations.required('Este campo es obligatorio.'),
       },
@@ -149,6 +153,7 @@ export default defineComponent({
       currentLanguage,
       condicionIvas,
       tipoDocumentos,
+      tipoPersonaValues: Object.values(TipoPersona),
       v$,
     };
   },
@@ -170,6 +175,7 @@ export default defineComponent({
         ciudad: normalizeString(this.cliente.ciudad) || null,
         provincia: normalizeString(this.cliente.provincia) || null,
         pais: normalizeString(this.cliente.pais) || null,
+        tipoPersona: this.cliente.tipoPersona ?? 'FISICA',
         fechaAlta: toIsoOrNull(this.cliente.fechaAlta),
       };
 

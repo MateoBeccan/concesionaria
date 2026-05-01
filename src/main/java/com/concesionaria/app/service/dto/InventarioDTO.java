@@ -1,8 +1,12 @@
 package com.concesionaria.app.service.dto;
 
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import com.concesionaria.app.domain.enumeration.EstadoOperativoDocumental;
+import com.concesionaria.app.domain.enumeration.OrigenVehiculo;
+import com.concesionaria.app.domain.enumeration.TipoTenenciaInventario;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
@@ -17,13 +21,36 @@ public class InventarioDTO implements Serializable {
     @NotNull
     private Instant fechaIngreso;
 
+    @Size(max = 30)
+    private String codigoInternoStock;
+
+    @DecimalMin(value = "0")
+    private BigDecimal costoAdquisicion;
+
+    private Instant fechaEgreso;
+
+    @Size(max = 50)
+    private String tipoOrigenIngreso;
+
+    private OrigenVehiculo origenVehiculo;
+
+    private TipoTenenciaInventario tipoTenencia;
+
+    private EstadoOperativoDocumental estadoOperativoDocumental;
+
+    @Size(max = 100)
+    private String proveedorReferencia;
+
+    @Size(max = 30)
+    private String numeroInternoStock;
+
     @Size(max = 100)
     private String ubicacion;
 
+    private UbicacionStockDTO ubicacionStock;
+
     @NotNull
     private EstadoInventario estadoInventario;
-
-    private Boolean disponible;
 
     @Size(max = 255)
     private String observaciones;
@@ -36,13 +63,7 @@ public class InventarioDTO implements Serializable {
 
     private String lastModifiedBy;
 
-    private Instant fechaReserva;
-
-    private Instant fechaVencimientoReserva;
-
     private VehiculoDTO vehiculo;
-
-    private ClienteDTO clienteReserva;
 
     public Long getId() {
         return id;
@@ -60,12 +81,92 @@ public class InventarioDTO implements Serializable {
         this.fechaIngreso = fechaIngreso;
     }
 
+    public String getCodigoInternoStock() {
+        return codigoInternoStock;
+    }
+
+    public void setCodigoInternoStock(String codigoInternoStock) {
+        this.codigoInternoStock = codigoInternoStock;
+    }
+
+    public BigDecimal getCostoAdquisicion() {
+        return costoAdquisicion;
+    }
+
+    public void setCostoAdquisicion(BigDecimal costoAdquisicion) {
+        this.costoAdquisicion = costoAdquisicion;
+    }
+
+    public Instant getFechaEgreso() {
+        return fechaEgreso;
+    }
+
+    public void setFechaEgreso(Instant fechaEgreso) {
+        this.fechaEgreso = fechaEgreso;
+    }
+
+    public String getTipoOrigenIngreso() {
+        return tipoOrigenIngreso;
+    }
+
+    public void setTipoOrigenIngreso(String tipoOrigenIngreso) {
+        this.tipoOrigenIngreso = tipoOrigenIngreso;
+    }
+
+    public OrigenVehiculo getOrigenVehiculo() {
+        return origenVehiculo;
+    }
+
+    public void setOrigenVehiculo(OrigenVehiculo origenVehiculo) {
+        this.origenVehiculo = origenVehiculo;
+    }
+
+    public TipoTenenciaInventario getTipoTenencia() {
+        return tipoTenencia;
+    }
+
+    public void setTipoTenencia(TipoTenenciaInventario tipoTenencia) {
+        this.tipoTenencia = tipoTenencia;
+    }
+
+    public EstadoOperativoDocumental getEstadoOperativoDocumental() {
+        return estadoOperativoDocumental;
+    }
+
+    public void setEstadoOperativoDocumental(EstadoOperativoDocumental estadoOperativoDocumental) {
+        this.estadoOperativoDocumental = estadoOperativoDocumental;
+    }
+
+    public String getProveedorReferencia() {
+        return proveedorReferencia;
+    }
+
+    public void setProveedorReferencia(String proveedorReferencia) {
+        this.proveedorReferencia = proveedorReferencia;
+    }
+
+    public String getNumeroInternoStock() {
+        return numeroInternoStock;
+    }
+
+    public void setNumeroInternoStock(String numeroInternoStock) {
+        this.numeroInternoStock = numeroInternoStock;
+    }
+
     public String getUbicacion() {
         return ubicacion;
     }
 
     public void setUbicacion(String ubicacion) {
         this.ubicacion = ubicacion;
+    }
+
+    public UbicacionStockDTO getUbicacionStock() {
+        return ubicacionStock;
+    }
+
+    public void setUbicacionStock(UbicacionStockDTO ubicacionStock) {
+        this.ubicacionStock = ubicacionStock;
     }
 
     public EstadoInventario getEstadoInventario() {
@@ -82,14 +183,6 @@ public class InventarioDTO implements Serializable {
 
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
-    }
-
-    public Boolean getDisponible() {
-        return disponible;
-    }
-
-    public void setDisponible(Boolean disponible) {
-        this.disponible = disponible;
     }
 
     public Instant getCreatedDate() {
@@ -124,36 +217,12 @@ public class InventarioDTO implements Serializable {
         this.lastModifiedBy = lastModifiedBy;
     }
 
-    public Instant getFechaReserva() {
-        return fechaReserva;
-    }
-
-    public void setFechaReserva(Instant fechaReserva) {
-        this.fechaReserva = fechaReserva;
-    }
-
-    public Instant getFechaVencimientoReserva() {
-        return fechaVencimientoReserva;
-    }
-
-    public void setFechaVencimientoReserva(Instant fechaVencimientoReserva) {
-        this.fechaVencimientoReserva = fechaVencimientoReserva;
-    }
-
     public VehiculoDTO getVehiculo() {
         return vehiculo;
     }
 
     public void setVehiculo(VehiculoDTO vehiculo) {
         this.vehiculo = vehiculo;
-    }
-
-    public ClienteDTO getClienteReserva() {
-        return clienteReserva;
-    }
-
-    public void setClienteReserva(ClienteDTO clienteReserva) {
-        this.clienteReserva = clienteReserva;
     }
 
     @Override
@@ -183,18 +252,23 @@ public class InventarioDTO implements Serializable {
         return "InventarioDTO{" +
             "id=" + getId() +
             ", fechaIngreso='" + getFechaIngreso() + "'" +
+            ", codigoInternoStock='" + getCodigoInternoStock() + "'" +
+            ", costoAdquisicion='" + getCostoAdquisicion() + "'" +
+            ", fechaEgreso='" + getFechaEgreso() + "'" +
+            ", tipoOrigenIngreso='" + getTipoOrigenIngreso() + "'" +
+            ", origenVehiculo='" + getOrigenVehiculo() + "'" +
+            ", tipoTenencia='" + getTipoTenencia() + "'" +
+            ", estadoOperativoDocumental='" + getEstadoOperativoDocumental() + "'" +
+            ", proveedorReferencia='" + getProveedorReferencia() + "'" +
+            ", numeroInternoStock='" + getNumeroInternoStock() + "'" +
             ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
-            ", disponible='" + getDisponible() + "'" +
             ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
-            ", fechaReserva='" + getFechaReserva() + "'" +
-            ", fechaVencimientoReserva='" + getFechaVencimientoReserva() + "'" +
             ", vehiculo=" + getVehiculo() +
-            ", clienteReserva=" + getClienteReserva() +
             "}";
     }
 }

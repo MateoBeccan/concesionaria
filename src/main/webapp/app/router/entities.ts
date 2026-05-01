@@ -33,10 +33,9 @@ const CondicionIvaDetails = () => import('@/entities/condicion-iva/condicion-iva
 
 const Venta = () => import('@/entities/venta/venta-list.vue');
 const VentaDetails = () => import('@/entities/venta/venta-details.vue');
-
-const DetalleVenta = () => import('@/entities/detalle-venta/detalle-venta.vue');
-const DetalleVentaUpdate = () => import('@/entities/detalle-venta/detalle-venta-update.vue');
-const DetalleVentaDetails = () => import('@/entities/detalle-venta/detalle-venta-details.vue');
+const Reserva = () => import('@/entities/reserva/reserva.vue');
+const ReservaCreate = () => import('@/entities/reserva/reserva-create.vue');
+const ReservaDetails = () => import('@/entities/reserva/reserva-details.vue');
 
 const Comprobante = () => import('@/entities/comprobante/comprobante.vue');
 const ComprobanteUpdate = () => import('@/entities/comprobante/comprobante-update.vue');
@@ -90,6 +89,9 @@ const InventarioDetails = () => import('@/entities/inventario/inventario-details
 const TipoDocumento = () => import('@/entities/tipo-documento/tipo-documento.vue');
 const TipoDocumentoUpdate = () => import('@/entities/tipo-documento/tipo-documento-update.vue');
 const TipoDocumentoDetails = () => import('@/entities/tipo-documento/tipo-documento-details.vue');
+const TasacionUsado = () => import('@/entities/tasacion-usado/tasacion-usado.vue');
+const TasacionUsadoUpdate = () => import('@/entities/tasacion-usado/tasacion-usado-update.vue');
+const TasacionUsadoDetails = () => import('@/entities/tasacion-usado/tasacion-usado-details.vue');
 
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
@@ -290,28 +292,22 @@ export default {
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: 'detalle-venta',
-      name: 'DetalleVenta',
-      component: DetalleVenta,
-      meta: { authorities: ADMIN_ONLY },
+      path: 'reserva',
+      name: 'Reserva',
+      component: Reserva,
+      meta: { authorities: OPERATIONAL },
     },
     {
-      path: 'detalle-venta/new',
-      name: 'DetalleVentaCreate',
-      component: DetalleVentaUpdate,
-      meta: { authorities: ADMIN_ONLY },
+      path: 'reserva/new',
+      name: 'ReservaCreate',
+      component: ReservaCreate,
+      meta: { authorities: OPERATIONAL },
     },
     {
-      path: 'detalle-venta/:detalleVentaId/edit',
-      name: 'DetalleVentaEdit',
-      component: DetalleVentaUpdate,
-      meta: { authorities: ADMIN_ONLY },
-    },
-    {
-      path: 'detalle-venta/:detalleVentaId/view',
-      name: 'DetalleVentaView',
-      component: DetalleVentaDetails,
-      meta: { authorities: ADMIN_ONLY },
+      path: 'reserva/:reservaId/view',
+      name: 'ReservaView',
+      component: ReservaDetails,
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'comprobante',
@@ -624,6 +620,30 @@ export default {
       name: 'TipoDocumentoView',
       component: TipoDocumentoDetails,
       meta: { authorities: ADMIN_ONLY },
+    },
+    {
+      path: 'tasacion-usados',
+      name: 'TasacionUsado',
+      component: TasacionUsado,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'tasacion-usados/new',
+      name: 'TasacionUsadoCreate',
+      component: TasacionUsadoUpdate,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'tasacion-usados/:tasacionUsadoId/edit',
+      name: 'TasacionUsadoEdit',
+      component: TasacionUsadoUpdate,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'tasacion-usados/:tasacionUsadoId/view',
+      name: 'TasacionUsadoView',
+      component: TasacionUsadoDetails,
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: '/vehiculo/buscar',

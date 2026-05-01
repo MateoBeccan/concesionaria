@@ -37,11 +37,6 @@
         <strong class="summary-value">{{ inventorySummary.vendido }}</strong>
         <small class="summary-copy">Ya cerrados</small>
       </article>
-      <article class="summary-card tone-expired">
-        <span class="summary-label">Vencidas</span>
-        <strong class="summary-value">{{ inventorySummary.vencidas }}</strong>
-        <small class="summary-copy">Reservas a revisar</small>
-      </article>
     </section>
 
     <section class="card-shell filter-card">
@@ -56,15 +51,6 @@
             <option value="DISPONIBLE">Disponible</option>
             <option value="RESERVADO">Reservado</option>
             <option value="VENDIDO">Vendido</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <select v-model="filtroReserva" class="form-select">
-            <option value="">Todas las reservas</option>
-            <option value="activas">Reservas activas</option>
-            <option value="vencidas">Reservas vencidas</option>
-            <option value="sin-reserva">Sin reserva</option>
           </select>
         </div>
 
@@ -87,7 +73,6 @@
               <th>Disponibilidad</th>
               <th @click="changeOrder('ubicacion')">Ubicacion</th>
               <th @click="changeOrder('fechaIngreso')">Ingreso</th>
-              <th>Reserva</th>
               <th class="text-end">Acciones</th>
             </tr>
           </thead>
@@ -123,19 +108,6 @@
               <td>{{ inventario.ubicacion || 'Sin definir' }}</td>
               <td>{{ formatDateShort(inventario.fechaIngreso) || '-' }}</td>
 
-              <td>
-                <div v-if="inventario.estadoInventario === 'RESERVADO'" class="cell-main">
-                  <span class="cell-title text-body">{{ clienteLabel(inventario) }}</span>
-                  <span class="badge align-self-start mb-1" :class="isReservaVencida(inventario) ? 'bg-danger-subtle text-danger-emphasis' : 'bg-info-subtle text-info-emphasis'">
-                    {{ isReservaVencida(inventario) ? 'Reserva vencida (pendiente de actualizacion)' : 'Reserva activa' }}
-                  </span>
-                  <small :class="isReservaVencida(inventario) ? 'text-danger' : 'cell-copy'">
-                    {{ isReservaVencida(inventario) ? 'Reserva vencida' : `Vence ${formatDateShort(inventario.fechaVencimientoReserva) || '-'}` }}
-                  </small>
-                </div>
-                <span v-else class="text-muted">Sin reserva</span>
-              </td>
-
               <td class="text-end">
                 <div class="action-stack">
                   <router-link :to="{ name: 'InventarioView', params: { inventarioId: inventario.id } }" class="btn btn-sm btn-outline-info">Ver</router-link>
@@ -148,17 +120,49 @@
                     Unidad
                   </router-link>
                   <router-link
-                    v-if="inventario.vehiculo?.id && inventario.estadoInventario !== 'VENDIDO'"
+                    v-if="inventario.vehiculo?.id && inventario.estadoInventario === 'DISPONIBLE'"
                     :to="{
                       name: 'VentaEditor',
                       query: {
                         vehiculoId: inventario.vehiculo.id,
-                        clienteId: !isReservaVencida(inventario) ? (inventario.clienteReserva?.id ?? undefined) : undefined,
                       },
                     }"
                     class="btn btn-sm btn-success"
                   >
                     Vender
+                  </router-link>
+                  <router-link
+                    v-if="inventario.estadoInventario === 'RESERVADO' && reservaActivaId(inventario.id)"
+                    :to="{
+                      name: 'VentaEditor',
+                      query: {
+                        reservaId: reservaActivaId(inventario.id),
+                        inventarioId: inventario.id,
+                        vehiculoId: inventario.vehiculo?.id ?? undefined,
+                      },
+                    }"
+                    class="btn btn-sm btn-success"
+                  >
+                    Convertir venta
+                  </router-link>
+                  <router-link
+                    v-if="inventario.estadoInventario === 'DISPONIBLE'"
+                    :to="{
+                      name: 'ReservaCreate',
+                      query: {
+                        inventarioId: inventario.id,
+                      },
+                    }"
+                    class="btn btn-sm btn-outline-warning"
+                  >
+                    Reservar
+                  </router-link>
+                  <router-link
+                    v-if="inventario.estadoInventario === 'RESERVADO'"
+                    :to="reservaActivaId(inventario.id) ? { name: 'ReservaView', params: { reservaId: reservaActivaId(inventario.id) } } : { name: 'Reserva', query: { q: inventario.vehiculo?.patente ?? '', estado: 'ACTIVA' } }"
+                    class="btn btn-sm btn-outline-warning"
+                  >
+                    Reserva
                   </router-link>
                   <button @click="prepareRemove(inventario)" class="btn btn-sm btn-outline-danger">Eliminar</button>
                 </div>
@@ -241,7 +245,7 @@
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.85rem;
 }
 

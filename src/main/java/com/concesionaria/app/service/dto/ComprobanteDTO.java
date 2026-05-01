@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.dto;
 
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import jakarta.validation.constraints.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -14,26 +15,29 @@ public class ComprobanteDTO implements Serializable {
 
     private Long id;
 
-    @NotNull
     @Size(min = 3, max = 50)
     private String numeroComprobante;
 
-    @NotNull
     private Instant fechaEmision;
 
-    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal importeNeto;
 
-    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal impuesto;
 
-    @NotNull
     @DecimalMin(value = "0")
     private BigDecimal total;
 
     private Instant createdDate;
+
+    private String createdBy;
+
+    private Instant lastModifiedDate;
+
+    private String lastModifiedBy;
+
+    private EstadoComprobante estado;
 
     private VentaDTO venta;
 
@@ -97,6 +101,38 @@ public class ComprobanteDTO implements Serializable {
         this.createdDate = createdDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    public EstadoComprobante getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoComprobante estado) {
+        this.estado = estado;
+    }
+
     public VentaDTO getVenta() {
         return venta;
     }
@@ -153,6 +189,10 @@ public class ComprobanteDTO implements Serializable {
             ", impuesto=" + getImpuesto() +
             ", total=" + getTotal() +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", estado='" + getEstado() + "'" +
             ", venta=" + getVenta() +
             ", tipoComprobante=" + getTipoComprobante() +
             ", moneda=" + getMoneda() +

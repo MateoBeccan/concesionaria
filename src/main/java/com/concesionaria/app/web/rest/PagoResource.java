@@ -168,6 +168,12 @@ public class PagoResource {
         return ResponseEntity.ok(pagoService.findByVentaId(ventaId));
     }
 
+    @GetMapping("/by-reserva/{reservaId}")
+    public ResponseEntity<List<PagoDTO>> getPagosByReserva(@PathVariable("reservaId") Long reservaId) {
+        LOG.debug("REST request to get Pagos by Reserva : {}", reservaId);
+        return ResponseEntity.ok(pagoService.findByReservaId(reservaId));
+    }
+
     /**
      * {@code DELETE  /pagos/:id} : delete the "id" pago.
      *
@@ -186,16 +192,35 @@ public class PagoResource {
 
     @PostMapping("/registrar")
     public ResponseEntity<PagoDTO> registrarPago(
-        @RequestParam Long ventaId,
+        @RequestParam(required = false) Long ventaId,
+        @RequestParam(required = false) Long reservaId,
         @Valid @RequestBody PagoDTO pagoDTO
     ) throws URISyntaxException {
 
-        LOG.debug("REST request para registrar pago venta {}", ventaId);
-
-        PagoDTO result = pagoService.registrarPago(ventaId, pagoDTO);
+        LOG.debug("REST request para registrar pago. ventaId={}, reservaId={}", ventaId, reservaId);
+        PagoDTO result;
+        if (ventaId != null && reservaId != null) {
+            throw new BadRequestAlertException("Debe enviar ventaId o reservaId, no ambos", ENTITY_NAME, "paraminvalid");
+        }
+        if (ventaId != null) {
+            result = pagoService.registrarPago(ventaId, pagoDTO);
+        } else if (reservaId != null) {
+            result = pagoService.registrarPagoReserva(reservaId, pagoDTO);
+        } else {
+            throw new BadRequestAlertException("Debe informar ventaId o reservaId", ENTITY_NAME, "parammissing");
+        }
 
         return ResponseEntity.created(new URI("/api/pagos/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
+            .body(result);
+    }
+
+    @PostMapping("/{id}/anular")
+    public ResponseEntity<PagoDTO> anularPago(@PathVariable("id") Long id) {
+        LOG.debug("REST request para anular pago {}", id);
+        PagoDTO result = pagoService.anularPago(id);
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .body(result);
     }
 }

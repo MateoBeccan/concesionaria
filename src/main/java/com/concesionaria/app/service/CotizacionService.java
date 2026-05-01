@@ -1,6 +1,9 @@
 package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.CotizacionDTO;
+import com.concesionaria.app.service.dto.CotizacionConversionDTO;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -55,4 +58,6 @@ public interface CotizacionService {
      * @param id the id of the entity.
      */
     void delete(Long id);
+
+    CotizacionConversionDTO convertirMonto(BigDecimal monto, Long monedaOrigenId, Long monedaDestinoId, Instant fechaOperacion);
 }

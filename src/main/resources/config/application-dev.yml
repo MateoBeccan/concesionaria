@@ -41,8 +41,13 @@ spring:
     compose:
       enabled: false
   liquibase:
-    # Remove 'faker' if you do not want the sample data to be loaded automatically
+    # En dev debe estar habilitado para mantener el esquema alineado con las entidades.
+    enabled: true
     contexts: dev, faker
+  jpa:
+    hibernate:
+      # No modificar esquema en runtime; validar que el backend este alineado con la DB existente.
+      ddl-auto: validate
   mail:
     host: localhost
     port: 25
@@ -100,3 +105,6 @@ jhipster:
 # ===================================================================
 
 # application:
+application:
+  liquibase:
+    async-start: false

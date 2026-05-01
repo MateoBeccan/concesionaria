@@ -16,14 +16,14 @@ public interface VehiculoMapper extends EntityMapper<VehiculoDTO, Vehiculo> {
     @Mapping(target = "version", source = "version", qualifiedByName = "versionBasic")
     @Mapping(target = "motor", source = "motor", qualifiedByName = "motorBasic")
     @Mapping(target = "tipoVehiculo", source = "tipoVehiculo", qualifiedByName = "tipoVehiculoBasic")
-    @Mapping(target = "condicion", source = "condicion") //
+    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaBasic")
+    @Mapping(target = "estadoInventario", source = "inventario.estadoInventario")
     VehiculoDTO toDto(Vehiculo s);
 
     // ======================
     // TO ENTITY
     // ======================
     @Mapping(target = "inventario", ignore = true)
-    @Mapping(target = "condicion", source = "condicion")
     Vehiculo toEntity(VehiculoDTO dto);
 
     // ======================
@@ -55,6 +55,17 @@ public interface VehiculoMapper extends EntityMapper<VehiculoDTO, Vehiculo> {
     @Mapping(target = "id", source = "id")
     @Mapping(target = "nombre", source = "nombre")
     TipoVehiculoDTO toDtoTipoVehiculoBasic(TipoVehiculo tipoVehiculo);
+
+    // ======================
+    // MONEDA
+    // ======================
+    @Named("monedaBasic")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    @Mapping(target = "simbolo", source = "simbolo")
+    MonedaDTO toDtoMonedaBasic(Moneda moneda);
 
     // ======================
     // MODELO

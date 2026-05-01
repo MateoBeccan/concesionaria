@@ -25,7 +25,7 @@
         <div class="card-header">
           <div>
             <div class="section-title">1. Catalogo tecnico y datos comerciales</div>
-            <div class="section-copy">Primero definí qué unidad es y después completá los datos que el negocio necesita para venderla.</div>
+            <div class="section-copy">Primero defini que unidad es y despues completa los datos que el negocio necesita para venderla.</div>
           </div>
         </div>
         <div class="card-body">
@@ -67,15 +67,6 @@
               </div>
             </div>
 
-            <div class="col-md-3">
-              <label class="form-label">Condicion comercial</label>
-              <div class="form-control d-flex align-items-center justify-content-between bg-light">
-                <span>{{ condicionComercialLabel }}</span>
-                <span class="badge" :class="condicionComercialBadge">{{ vehiculo.condicion }}</span>
-              </div>
-              <small class="text-muted">Se gestiona desde ventas e inventario para evitar inconsistencias.</small>
-            </div>
-
             <div class="col-md-6">
               <label class="form-label">Fecha de fabricacion <span class="text-danger">*</span></label>
               <input
@@ -107,9 +98,22 @@
             </div>
 
             <div class="col-md-3">
+              <label class="form-label">Moneda del precio <span class="text-danger">*</span></label>
+              <select class="form-select" v-model="v$.moneda.$model" :class="{ 'is-invalid': v$.moneda.$dirty && v$.moneda.$invalid }">
+                <option :value="null">Seleccionar</option>
+                <option v-for="moneda in monedas" :key="moneda.id" :value="moneda">
+                  {{ moneda.simbolo ?? '' }} {{ moneda.codigo }} - {{ moneda.descripcion }}
+                </option>
+              </select>
+              <div class="invalid-feedback">
+                <span v-for="error of v$.moneda.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-3">
               <label class="form-label">Precio publicado <span class="text-danger">*</span></label>
               <div class="input-group">
-                <span class="input-group-text">$</span>
+                <span class="input-group-text">{{ vehiculo.moneda?.simbolo || '$' }}</span>
                 <input
                   v-model.number="v$.precio.$model"
                   type="number"
@@ -122,6 +126,54 @@
               <div class="invalid-feedback d-block" v-if="v$.precio.$dirty && v$.precio.$invalid">
                 <span v-for="error of v$.precio.$errors" :key="error.$uid">{{ error.$message }}</span>
               </div>
+              <small v-if="vehiculo.moneda?.codigo" class="text-muted d-block">Precio expresado en {{ vehiculo.moneda.codigo }}.</small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">VIN / Chasis</label>
+              <input
+                v-model.trim="v$.vinChasis.$model"
+                type="text"
+                class="form-control text-uppercase"
+                :class="{ 'is-invalid': v$.vinChasis.$dirty && v$.vinChasis.$invalid }"
+                maxlength="30"
+                placeholder="Codigo VIN o numero de chasis"
+                @input="v$.vinChasis.$model = (v$.vinChasis.$model ?? '').toUpperCase().replace(/[\s-]/g, '')"
+              />
+              <div class="invalid-feedback">
+                <span v-for="error of v$.vinChasis.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
+              <small class="text-muted d-block">Si informas VIN de 17 caracteres, validamos formato internacional y digito verificador.</small>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Color</label>
+              <input
+                v-model.trim="v$.color.$model"
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid': v$.color.$dirty && v$.color.$invalid }"
+                maxlength="50"
+                placeholder="Ej: Blanco perlado"
+              />
+              <div class="invalid-feedback">
+                <span v-for="error of v$.color.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">Observaciones</label>
+              <textarea
+                v-model.trim="v$.observaciones.$model"
+                class="form-control"
+                :class="{ 'is-invalid': v$.observaciones.$dirty && v$.observaciones.$invalid }"
+                rows="3"
+                maxlength="500"
+                placeholder="Notas tecnicas o comerciales internas"
+              />
+              <div class="invalid-feedback">
+                <span v-for="error of v$.observaciones.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -131,7 +183,7 @@
         <div class="card-header">
           <div>
             <div class="section-title">2. Configuracion tecnica</div>
-            <div class="section-copy">Seguí el orden marca → modelo → version → motor para evitar combinaciones invalidas.</div>
+            <div class="section-copy">Segui el orden marca -> modelo -> version -> motor para evitar combinaciones invalidas.</div>
           </div>
         </div>
         <div class="card-body">
@@ -188,7 +240,7 @@
                 <option :value="null">
                   {{
                     !vehiculo.version
-                      ? 'Seleccioná una versión primero'
+                      ? 'Selecciona una version primero'
                       : loadingMotores
                         ? 'Cargando motores compatibles...'
                         : motoresCompatibles.length === 0
@@ -204,13 +256,13 @@
                 <span v-if="motorValidationMessage">{{ motorValidationMessage }}</span>
                 <span v-else v-for="error of v$.motor.$errors" :key="error.$uid">{{ error.$message }}</span>
               </div>
-              <small v-if="loadingMotores" class="text-muted">Buscando motores compatibles para la versión seleccionada...</small>
+              <small v-if="loadingMotores" class="text-muted">Buscando motores compatibles para la version seleccionada...</small>
               <small v-else-if="motorHint" class="text-muted">{{ motorHint }}</small>
             </div>
 
             <div class="col-md-12" v-if="vehiculo.version && !loadingMotores && motoresCompatibles.length === 0">
               <div class="alert alert-warning mb-0 py-2">
-                Esta versión no tiene motores configurados. Cargá compatibilidades en Administración antes de guardar la unidad.
+                Esta version no tiene motores configurados. Carga compatibilidades en administracion antes de guardar la unidad.
               </div>
             </div>
 
@@ -248,7 +300,7 @@
         <div class="card-header">
           <div>
             <div class="section-title">3. Inventario asociado</div>
-            <div class="section-copy">Revisá si la unidad ya esta operativa en inventario y si su estado coincide con la condicion comercial.</div>
+            <div class="section-copy">Revisa si la unidad ya esta operativa en inventario. El estado comercial se administra desde inventario y ventas.</div>
           </div>
         </div>
         <div class="card-body">
@@ -270,10 +322,7 @@
               Revisar inventario
             </router-link>
           </div>
-          <div v-else class="text-muted">
-            No encontramos un registro de inventario asociado a esta unidad. La condicion comercial quedara en estado seguro hasta que se
-            registre.
-          </div>
+          <div v-else class="text-muted">No encontramos un registro de inventario asociado a esta unidad. Podes crear el inventario cuando completes esta carga.</div>
         </div>
       </div>
 

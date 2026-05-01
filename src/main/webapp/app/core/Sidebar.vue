@@ -67,6 +67,8 @@ const USER_SECTIONS: SidebarSection[] = [
     items: [
       { name: 'VentaEditor', label: 'Nueva venta', icon: 'NV' },
       { name: 'VentaList', label: 'Ventas', icon: 'VT' },
+      { name: 'Reserva', label: 'Reservas', icon: 'RS' },
+      { name: 'TasacionUsado', label: 'Tasaciones', icon: 'TS' },
       { name: 'VehiculoSearch', label: 'Buscar vehiculo', icon: 'BV' },
     ],
   },
@@ -89,6 +91,8 @@ const ADMIN_SECTIONS: SidebarSection[] = [
     items: [
       { name: 'VentaEditor', label: 'Nueva venta', icon: 'NV' },
       { name: 'VentaList', label: 'Historial de ventas', icon: 'VT' },
+      { name: 'Reserva', label: 'Reservas', icon: 'RS' },
+      { name: 'TasacionUsado', label: 'Tasaciones', icon: 'TS' },
       { name: 'VehiculoSearch', label: 'Buscar vehiculo', icon: 'BV' },
       { name: 'Cliente', label: 'Clientes', icon: 'CL' },
       { name: 'Vehiculo', label: 'Catalogo de vehiculos', icon: 'VH' },

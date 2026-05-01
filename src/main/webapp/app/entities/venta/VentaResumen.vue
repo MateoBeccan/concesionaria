@@ -1,14 +1,11 @@
 <template>
   <div class="venta-resumen">
-
     <div class="resumen-header">
       <span class="fw-semibold">Resumen de venta</span>
       <span class="badge ms-2" :class="badgeEstado(estado)">{{ labelEstado(estado) }}</span>
     </div>
 
     <div class="resumen-body">
-
-      <!-- CLIENTE -->
       <div class="resumen-row" v-if="cliente">
         <span class="resumen-label">Cliente</span>
         <span class="resumen-value fw-semibold">{{ cliente.nombre }} {{ cliente.apellido }}</span>
@@ -19,76 +16,63 @@
 
       <hr class="my-2" />
 
-      <!-- VEHÍCULOS -->
       <div class="resumen-row">
-        <span class="resumen-label">Vehículos</span>
+        <span class="resumen-label">Vehiculos</span>
         <span class="resumen-value">{{ cantidadVehiculos }}</span>
       </div>
 
       <div class="resumen-row">
         <span class="resumen-label">Subtotal</span>
-        <span class="resumen-value">$ {{ fmt(sumaSubtotales) }}</span>
+        <span class="resumen-value">{{ moneda?.simbolo ?? '$' }} {{ fmt(sumaSubtotales) }} {{ moneda?.codigo ?? '' }}</span>
       </div>
 
       <div class="resumen-row" v-if="porcentajeImpuesto">
         <span class="resumen-label">IVA ({{ porcentajeImpuesto }}%)</span>
-        <span class="resumen-value">$ {{ fmt(impuesto) }}</span>
+        <span class="resumen-value">{{ moneda?.simbolo ?? '$' }} {{ fmt(impuesto) }} {{ moneda?.codigo ?? '' }}</span>
       </div>
 
       <hr class="my-2" />
 
-      <!-- TOTAL -->
       <div class="resumen-row resumen-total">
         <span>Total</span>
-        <span>$ {{ fmt(total) }}</span>
+        <span>{{ moneda?.simbolo ?? '$' }} {{ fmt(total) }} {{ moneda?.codigo ?? '' }}</span>
       </div>
 
-      <!-- MONEDA / COTIZACIÓN -->
       <div class="resumen-row text-muted small" v-if="moneda">
         <span>Moneda</span>
         <span>{{ moneda.simbolo ?? '' }} {{ moneda.codigo }}</span>
       </div>
       <div class="resumen-row text-muted small" v-if="cotizacion && cotizacion !== 1">
-        <span>Cotización</span>
+        <span>Cotizacion</span>
         <span>{{ cotizacion }}</span>
       </div>
 
       <hr class="my-2" />
 
-      <!-- PAGOS -->
       <div class="resumen-row">
         <span class="resumen-label">Pagado</span>
-        <span class="resumen-value text-success fw-semibold">$ {{ fmt(totalPagado) }}</span>
+        <span class="resumen-value text-success fw-semibold">{{ moneda?.simbolo ?? '$' }} {{ fmt(totalPagado) }} {{ moneda?.codigo ?? '' }}</span>
       </div>
 
-      <!-- SALDO -->
       <div class="resumen-row resumen-saldo" :class="saldo > 0 ? 'saldo-pendiente' : 'saldo-ok'">
         <span>Saldo pendiente</span>
-        <span>$ {{ fmt(saldo) }}</span>
+        <span>{{ moneda?.simbolo ?? '$' }} {{ fmt(saldo) }} {{ moneda?.codigo ?? '' }}</span>
       </div>
 
-      <!-- BARRA DE PROGRESO -->
       <div class="mt-2" v-if="total > 0">
         <div class="d-flex justify-content-between small text-muted mb-1">
-          <span>Progreso de pago</span>
+          <span>Porcentaje cubierto</span>
           <span>{{ porcentajePagado }}%</span>
         </div>
         <div class="progress" style="height:6px">
-          <div
-            class="progress-bar"
-            :class="saldo === 0 ? 'bg-success' : 'bg-primary'"
-            :style="{ width: `${porcentajePagado}%` }"
-          />
+          <div class="progress-bar" :class="saldo === 0 ? 'bg-success' : 'bg-primary'" :style="{ width: `${porcentajePagado}%` }" />
         </div>
       </div>
-
     </div>
 
-    <!-- ACCIONES -->
     <div class="resumen-footer">
       <slot name="acciones" />
     </div>
-
   </div>
 </template>
 
@@ -124,20 +108,22 @@ function fmt(n?: number | null) {
 
 function badgeEstado(e?: string | null) {
   return {
-    [EstadoVenta.PENDIENTE]:  'bg-warning text-dark',
-    [EstadoVenta.PAGADA]:     'bg-success',
-    [EstadoVenta.CANCELADA]:  'bg-danger',
-    [EstadoVenta.RESERVADA]:  'bg-info',
+    [EstadoVenta.PENDIENTE]: 'bg-warning text-dark',
+    [EstadoVenta.PAGADA]: 'bg-success',
+    [EstadoVenta.CANCELADA]: 'bg-danger',
+    [EstadoVenta.RESERVADA]: 'bg-info',
+    [EstadoVenta.FINALIZADA]: 'bg-primary',
   }[e ?? ''] ?? 'bg-light text-dark border';
 }
 
 function labelEstado(e?: string | null) {
   return {
-    [EstadoVenta.PENDIENTE]:  'Pendiente',
-    [EstadoVenta.PAGADA]:     'Pagada',
-    [EstadoVenta.CANCELADA]:  'Cancelada',
-
-  }[e ?? ''] ?? e ?? '—';
+    [EstadoVenta.PENDIENTE]: 'Pendiente',
+    [EstadoVenta.PAGADA]: 'Pagada',
+    [EstadoVenta.CANCELADA]: 'Cancelada',
+    [EstadoVenta.RESERVADA]: 'Reservada',
+    [EstadoVenta.FINALIZADA]: 'Finalizada',
+  }[e ?? ''] ?? e ?? '-';
 }
 </script>
 
@@ -155,8 +141,8 @@ function labelEstado(e?: string | null) {
 .resumen-header {
   background: var(--color-primary);
   color: #fff;
-  padding: .85rem 1.25rem;
-  font-size: .9rem;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.9rem;
 }
 
 .resumen-body {
@@ -167,26 +153,31 @@ function labelEstado(e?: string | null) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: .25rem 0;
-  font-size: .85rem;
+  padding: 0.25rem 0;
+  font-size: 0.85rem;
 }
 
-.resumen-label { color: var(--color-text-muted); }
-.resumen-value { font-weight: 500; }
+.resumen-label {
+  color: var(--color-text-muted);
+}
+
+.resumen-value {
+  font-weight: 500;
+}
 
 .resumen-total {
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-primary);
-  padding: .4rem 0;
+  padding: 0.4rem 0;
 }
 
 .resumen-saldo {
-  font-size: .9rem;
+  font-size: 0.9rem;
   font-weight: 600;
-  padding: .35rem .75rem;
+  padding: 0.35rem 0.75rem;
   border-radius: var(--radius-sm);
-  margin-top: .25rem;
+  margin-top: 0.25rem;
 }
 
 .saldo-pendiente {
@@ -204,6 +195,6 @@ function labelEstado(e?: string | null) {
   border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: 0.5rem;
 }
 </style>

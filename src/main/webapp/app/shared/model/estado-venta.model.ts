@@ -3,4 +3,5 @@ export enum EstadoVenta {
   PAGADA = 'PAGADA',
   CANCELADA = 'CANCELADA',
   RESERVADA = 'RESERVADA',
+  FINALIZADA = 'FINALIZADA',
 }

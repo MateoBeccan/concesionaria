@@ -59,7 +59,11 @@ public interface PagoService {
 
     PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO);
 
+    PagoDTO registrarPagoReserva(Long reservaId, PagoDTO pagoDTO);
+
     List<PagoDTO> findByVentaId(Long ventaId);
 
+    List<PagoDTO> findByReservaId(Long reservaId);
 
+    PagoDTO anularPago(Long pagoId);
 }

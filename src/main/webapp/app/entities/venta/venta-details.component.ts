@@ -4,13 +4,14 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
 import { type IVenta } from '@/shared/model/venta.model';
-import { type IDetalleVenta } from '@/shared/model/detalle-venta.model';
 import { type IPago } from '@/shared/model/pago.model';
+import { EstadoPago } from '@/shared/model/estado-pago.model';
+import { EstadoComprobante } from '@/shared/model/estado-comprobante.model';
 import { type IComprobante } from '@/shared/model/comprobante.model';
 import { EstadoVenta } from '@/shared/model/estado-venta.model';
+import type { IVentaHistorial } from '@/shared/model/venta-historial.model';
 
 import VentaService from './venta.service';
-import DetalleVentaService from '@/entities/detalle-venta/detalle-venta.service';
 import PagoService from '@/entities/pago/pago.service';
 import ComprobanteService from '@/entities/comprobante/comprobante.service';
 import OperationalTraceCard from '@/shared/components/OperationalTraceCard.vue';
@@ -30,7 +31,6 @@ export default defineComponent({
       return new Date(value).toLocaleString('es-AR');
     };
     const ventaService       = inject('ventaService',       () => new VentaService());
-    const detalleVentaService = inject('detalleVentaService', () => new DetalleVentaService());
     const pagoService        = inject('pagoService',        () => new PagoService());
     const comprobanteService = inject('comprobanteService', () => new ComprobanteService());
     const alertService       = inject('alertService',       () => useAlertService(), true);
@@ -40,16 +40,18 @@ export default defineComponent({
     const previousState = () => router.go(-1);
 
     const venta: Ref<IVenta>              = ref({});
-    const detalles: Ref<IDetalleVenta[]>  = ref([]);
+    const detalles: Ref<Array<{ id: number | string; vehiculo: any; precioUnitario: number; subtotal: number }>> = ref([]);
     const pagos: Ref<IPago[]>             = ref([]);
     const comprobantes: Ref<IComprobante[]> = ref([]);
+    const historial: Ref<IVentaHistorial[]> = ref([]);
 
-    const loadingDetalles    = ref(false);
+    const loadingDetalles = ref(false);
     const loadingPagos       = ref(false);
     const loadingComprobantes = ref(false);
+    const loadingHistorial = ref(false);
 
     const totalPagado = computed(() =>
-      pagos.value.reduce((sum, p) => sum + Number(p.monto ?? 0), 0),
+      pagos.value.filter(p => p.estado !== EstadoPago.ANULADO).reduce((sum, p) => sum + Number(p.monto ?? 0), 0),
     );
 
     const ventaStatusLabel = computed(() => labelEstado(venta.value.estado));
@@ -67,6 +69,7 @@ export default defineComponent({
       if (comprobantes.value.length > 0) return 'Comprobante emitido';
       if (pagos.value.length > 0) return 'Pago registrado';
       if (venta.value.estado === EstadoVenta.PAGADA) return 'Venta confirmada';
+      if (venta.value.estado === EstadoVenta.FINALIZADA) return 'Venta finalizada';
       if (venta.value.estado === EstadoVenta.RESERVADA) return 'Venta reservada';
       if (venta.value.lastModifiedDate && venta.value.createdDate && venta.value.lastModifiedDate !== venta.value.createdDate) {
         return 'Venta actualizada';
@@ -91,22 +94,22 @@ export default defineComponent({
     const retrieveVenta = async (ventaId: any) => {
       try {
         venta.value = await ventaService().find(ventaId);
+        detalles.value = venta.value.vehiculo
+          ? [{
+              id: `vehiculo-${venta.value.vehiculo.id}`,
+              vehiculo: venta.value.vehiculo,
+              precioUnitario: Number(venta.value.precioBaseVehiculo ?? venta.value.vehiculo.precio ?? 0),
+              subtotal: Number(venta.value.importeConvertido ?? venta.value.importeNeto ?? 0),
+            }]
+          : [];
         await Promise.all([
-          cargarDetalles(ventaId),
           cargarPagos(ventaId),
           cargarComprobantes(ventaId),
+          cargarHistorial(ventaId),
         ]);
       } catch (error: any) {
         alertService.showHttpError(error.response);
       }
-    };
-
-    const cargarDetalles = async (ventaId: any) => {
-      loadingDetalles.value = true;
-      try {
-        detalles.value = await detalleVentaService().findByVentaId(Number(ventaId));
-      } catch { detalles.value = []; }
-      finally { loadingDetalles.value = false; }
     };
 
     const cargarPagos = async (ventaId: any) => {
@@ -125,6 +128,27 @@ export default defineComponent({
       finally { loadingComprobantes.value = false; }
     };
 
+    const cargarHistorial = async (ventaId: any) => {
+      loadingHistorial.value = true;
+      try {
+        historial.value = await ventaService().historial(Number(ventaId));
+      } catch {
+        historial.value = [];
+      } finally {
+        loadingHistorial.value = false;
+      }
+    };
+
+    const anularComprobante = async (comprobanteId: number) => {
+      if (!venta.value.id) return;
+      try {
+        await comprobanteService().anular(comprobanteId);
+        await cargarComprobantes(venta.value.id);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
     if (route.params?.ventaId) {
       retrieveVenta(route.params.ventaId);
     }
@@ -133,9 +157,21 @@ export default defineComponent({
       return Number(valor ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function formatCotizacion(cotizacion?: number | null): string {
+      return Number(cotizacion ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
+    }
+
     function formatFecha(fecha?: Date | string | null): string {
       if (!fecha) return '—';
       return new Date(fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function labelEstadoComprobante(estado?: string | null): string {
+      const map: Record<string, string> = {
+        [EstadoComprobante.EMITIDO]: 'Emitido',
+        [EstadoComprobante.ANULADO]: 'Anulado',
+      };
+      return map[estado as string] ?? estado ?? '-';
     }
 
     function badgeEstado(estado?: string | null): string {
@@ -144,6 +180,7 @@ export default defineComponent({
         [EstadoVenta.PAGADA]:     'bg-success',
         [EstadoVenta.CANCELADA]:  'bg-danger',
         [EstadoVenta.RESERVADA]:  'bg-info',
+        [EstadoVenta.FINALIZADA]: 'bg-primary',
       };
       return map[estado as string] ?? 'bg-light text-dark border';
     }
@@ -154,6 +191,7 @@ export default defineComponent({
         [EstadoVenta.PAGADA]:     'Pagada',
         [EstadoVenta.CANCELADA]:  'Cancelada',
         [EstadoVenta.RESERVADA]:  'Reservada',
+        [EstadoVenta.FINALIZADA]: 'Finalizada',
       };
       return map[estado as string] ?? estado ?? '—';
     }
@@ -166,6 +204,7 @@ export default defineComponent({
       detalles,
       pagos,
       comprobantes,
+      historial,
       totalPagado,
       ventaStatusLabel,
       ventaMonedaDisplay,
@@ -176,11 +215,15 @@ export default defineComponent({
       loadingDetalles,
       loadingPagos,
       loadingComprobantes,
+      loadingHistorial,
       previousState,
       formatPrecio,
+      formatCotizacion,
       formatFecha,
       badgeEstado,
       labelEstado,
+      labelEstadoComprobante,
+      anularComprobante,
     };
   },
 });

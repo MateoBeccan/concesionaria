@@ -34,9 +34,16 @@ export default class VehiculoService {
     return res.data;
   }
 
-  async findByPatente(patente: string): Promise<IVehiculo> {
-    const res = await axios.get<IVehiculo>(`${baseApiUrl}/patente/${patente}`);
-    return res.data;
+  async findByPatente(patente: string): Promise<IVehiculo | null> {
+    try {
+      const res = await axios.get<IVehiculo>(`${baseApiUrl}/patente/${patente}`);
+      return res.data;
+    } catch (error: any) {
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async buscar(q: string): Promise<IVehiculo> {

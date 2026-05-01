@@ -3,38 +3,80 @@ import axios from 'axios';
 
 import type { ICliente } from '@/shared/model/cliente.model';
 import type { IComprobante } from '@/shared/model/comprobante.model';
-import type { ICotizacion } from '@/shared/model/cotizacion.model';
-import type { IDetalleVenta } from '@/shared/model/detalle-venta.model';
 import { EstadoVenta } from '@/shared/model/estado-venta.model';
 import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
 import type { IPago } from '@/shared/model/pago.model';
+import { EstadoPago } from '@/shared/model/estado-pago.model';
+import { EstadoTasacionUsado } from '@/shared/model/enumerations/estado-tasacion-usado.model';
+import { EstadoComprobante } from '@/shared/model/estado-comprobante.model';
 import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
+import type { ITasacionUsado } from '@/shared/model/tasacion-usado.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 import type { IVenta } from '@/shared/model/venta.model';
+import type { ICotizacion } from '@/shared/model/cotizacion.model';
 
 export interface DetalleLocal {
   _key: string;
-  id?: number;
   vehiculo: IVehiculo;
   precioUnitario: number;
-  cantidad: number;
   subtotal: number;
-  guardado: boolean;
 }
 
 export interface PagoLocal {
   _key: string;
   id?: number;
   monto: number;
+  montoAplicadoMonedaVenta: number;
   fecha: Date;
   referencia: string;
   metodoPago: IMetodoPago | null;
   moneda: IMoneda | null;
+  cotizacionUsada: number;
+  tasacionUsadoId?: number | null;
+  tasacionUsado?: ITasacionUsado | null;
+  estado: EstadoPago;
   guardado: boolean;
 }
 
+interface ICotizacionConversion {
+  montoOriginal: number;
+  montoConvertido: number;
+  monedaOrigenId: number;
+  monedaOrigenCodigo: string;
+  monedaDestinoId: number;
+  monedaDestinoCodigo: string;
+  fechaOperacion: string;
+  cotizacionAplicada: number;
+  cotizacionOrigenId?: number | null;
+  cotizacionDestinoId?: number | null;
+  fechaCotizacionUsada?: string | null;
+  detalleReglaAplicada?: string | null;
+}
+
 const EPSILON = 0.0001;
+const MONEDA_BASE_CODIGO = 'ARS';
+
+function normalizarMoneda(value?: string | null): string {
+  return (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+}
+
+function esMonedaBase(moneda?: IMoneda | null): boolean {
+  const codigo = normalizarMoneda(moneda?.codigo);
+  const descripcion = normalizarMoneda(moneda?.descripcion);
+  return (
+    codigo.includes('ARS') ||
+    codigo.includes('ARG') ||
+    codigo.includes('PESO') ||
+    descripcion.includes('ARS') ||
+    descripcion.includes('ARG') ||
+    descripcion.includes('PESO')
+  );
+}
 
 export function useVentaEditor() {
   const venta = ref<Partial<IVenta>>({
@@ -53,17 +95,70 @@ export function useVentaEditor() {
   const pagos = ref<PagoLocal[]>([]);
   const guardando = ref(false);
   const error = ref<string | null>(null);
+  const comprobantes = ref<IComprobante[]>([]);
+  const cargandoVenta = ref(false);
 
   const clientes = ref<ICliente[]>([]);
   const monedas = ref<IMoneda[]>([]);
   const metodoPagos = ref<IMetodoPago[]>([]);
   const tipoComprobantes = ref<ITipoComprobante[]>([]);
-  const cotizacionActiva = ref<ICotizacion | null>(null);
+  const cotizacionActiva = ref<ICotizacionConversion | null>(null);
+  const cotizacionesDisponibles = ref<ICotizacion[]>([]);
+  const tasacionesUsadoDisponibles = ref<ITasacionUsado[]>([]);
+  const cotizacionSeleccionadaId = ref<number | null>(null);
+  const cargandoCotizaciones = ref(false);
   const porcentajeMinimoReserva = ref(0.1);
 
-  const sumaSubtotales = computed(() => detalles.value.reduce((acc, detalle) => acc + detalle.subtotal, 0));
-  const sumaPagos = computed(() => pagos.value.reduce((acc, pago) => acc + pago.monto, 0));
+  const vehiculoSeleccionado = computed(() => detalles.value[0]?.vehiculo ?? venta.value.vehiculo ?? null);
+  const monedaVehiculo = computed(() => vehiculoSeleccionado.value?.moneda ?? null);
+  const monedasCoinciden = computed(() => {
+    const monedaVentaId = venta.value.moneda?.id;
+    const monedaVehiculoId = monedaVehiculo.value?.id;
+    if (!monedaVentaId || !monedaVehiculoId) {
+      return false;
+    }
+    return monedaVentaId === monedaVehiculoId;
+  });
+  const requiereCotizacion = computed(() => {
+    const monedaVentaId = venta.value.moneda?.id;
+    const monedaVehiculoId = monedaVehiculo.value?.id;
+    if (!monedaVentaId || !monedaVehiculoId) {
+      return false;
+    }
+    return monedaVentaId !== monedaVehiculoId;
+  });
+  const requiereSeleccionCotizacion = computed(() => {
+    if (!requiereCotizacion.value) {
+      return false;
+    }
+    return esMonedaBase(venta.value.moneda) || esMonedaBase(monedaVehiculo.value);
+  });
+  const precioBaseVehiculo = computed(() => Number(vehiculoSeleccionado.value?.precio ?? 0));
+  const cotizacionAplicada = computed(() => {
+    if (monedasCoinciden.value) {
+      return 1;
+    }
+    return Number(venta.value.cotizacion ?? 0);
+  });
+  const importeConvertidoPreview = computed(() => {
+    if (!requiereCotizacion.value) {
+      return precioBaseVehiculo.value;
+    }
+    if (!Number.isFinite(cotizacionAplicada.value) || cotizacionAplicada.value <= 0) {
+      return 0;
+    }
+    return precioBaseVehiculo.value * cotizacionAplicada.value;
+  });
+  const sumaSubtotales = computed(() => importeConvertidoPreview.value);
+  const sumaPagos = computed(() =>
+    pagos.value
+      .filter(pago => pago.estado !== EstadoPago.ANULADO)
+      .reduce((acc, pago) => acc + Number(pago.montoAplicadoMonedaVenta ?? pago.monto ?? 0), 0),
+  );
   const montoMinimoReserva = computed(() => Math.max(0, sumaSubtotales.value * porcentajeMinimoReserva.value));
+  const tieneComprobanteActivo = computed(() =>
+    comprobantes.value.some(comprobante => comprobante.estado === EstadoComprobante.EMITIDO),
+  );
   const cumpleMinimoReserva = computed(() => sumaPagos.value + EPSILON >= montoMinimoReserva.value && montoMinimoReserva.value > 0);
   const estadoCalculado = computed(() => {
     if (detalles.value.length === 0) {
@@ -81,8 +176,8 @@ export function useVentaEditor() {
     return EstadoVenta.PENDIENTE;
   });
 
-  watch([sumaSubtotales, () => venta.value.porcentajeImpuesto], () => {
-    const neto = sumaSubtotales.value;
+  watch([importeConvertidoPreview, () => venta.value.porcentajeImpuesto], () => {
+    const neto = importeConvertidoPreview.value;
     const porcentaje = Number(venta.value.porcentajeImpuesto ?? 0) / 100;
     const impuesto = neto * porcentaje;
 
@@ -97,8 +192,32 @@ export function useVentaEditor() {
   watch(
     () => venta.value.moneda,
     moneda => {
-      if (moneda?.id) {
-        cargarCotizacionActiva(moneda.id);
+      if (cargandoVenta.value) {
+        return;
+      }
+      if (moneda?.id && monedaVehiculo.value?.id && moneda.id === monedaVehiculo.value.id) {
+        venta.value.cotizacion = 1;
+        cotizacionActiva.value = null;
+        cotizacionSeleccionadaId.value = null;
+        cotizacionesDisponibles.value = [];
+        return;
+      }
+      if (moneda?.id && requiereCotizacion.value) {
+        void cargarOpcionesCotizacion();
+        void cargarCotizacionActiva({ forzarValor: true });
+      }
+    },
+  );
+
+  watch(
+    () => venta.value.fecha,
+    () => {
+      if (cargandoVenta.value) {
+        return;
+      }
+      if (requiereCotizacion.value) {
+        void cargarOpcionesCotizacion();
+        void cargarCotizacionActiva({ forzarValor: true });
       }
     },
   );
@@ -117,28 +236,169 @@ export function useVentaEditor() {
     recalcularSaldo();
   }
 
-  async function cargarCotizacionActiva(monedaId: number) {
+  async function cargarCotizacionActiva(options?: { forzarValor?: boolean }) {
+    const monedaOrigenId = monedaVehiculo.value?.id;
+    const monedaDestinoId = venta.value.moneda?.id;
+    if (!monedaOrigenId || !monedaDestinoId || monedaOrigenId === monedaDestinoId) {
+      cotizacionActiva.value = null;
+      return;
+    }
     try {
-      const res = await axios.get('api/cotizacions', {
-        params: { 'monedaId.equals': monedaId, 'activo.equals': true, page: 0, size: 1, sort: 'fecha,desc' },
+      const res = await axios.get<ICotizacionConversion>('api/cotizacions/conversion', {
+        params: {
+          monedaOrigenId,
+          monedaDestinoId,
+          fecha: venta.value.fecha ? new Date(venta.value.fecha as Date).toISOString() : undefined,
+        },
       });
-
-      cotizacionActiva.value = res.data?.[0] ?? null;
-      if (cotizacionActiva.value) {
-        venta.value.cotizacion = cotizacionActiva.value.valorVenta;
+      cotizacionActiva.value = res.data ?? null;
+      if (
+        cotizacionActiva.value?.cotizacionAplicada &&
+        (options?.forzarValor || !venta.value.cotizacion || Number(venta.value.cotizacion) <= 0)
+      ) {
+        venta.value.cotizacion = Number(cotizacionActiva.value.cotizacionAplicada);
       }
     } catch {
       cotizacionActiva.value = null;
     }
   }
 
+  function monedaCotizableId(): number | null {
+    const monedaVenta = venta.value.moneda;
+    const monedaUnidad = monedaVehiculo.value;
+    if (!monedaVenta?.id || !monedaUnidad?.id || monedaVenta.id === monedaUnidad.id) {
+      return null;
+    }
+
+    const unidadEsBase = esMonedaBase(monedaUnidad);
+    const ventaEsBase = esMonedaBase(monedaVenta);
+    if (unidadEsBase) {
+      return monedaVenta.id ?? null;
+    }
+    if (ventaEsBase) {
+      return monedaUnidad.id ?? null;
+    }
+    return null;
+  }
+
+  async function cargarOpcionesCotizacion(options?: { aplicarPorDefecto?: boolean }) {
+    if (!requiereCotizacion.value) {
+      cotizacionesDisponibles.value = [];
+      cotizacionSeleccionadaId.value = null;
+      return;
+    }
+    const monedaId = monedaCotizableId();
+    if (!monedaId) {
+      cotizacionesDisponibles.value = [];
+      cotizacionSeleccionadaId.value = null;
+      return;
+    }
+    cargandoCotizaciones.value = true;
+    try {
+      const res = await axios.get<ICotizacion[]>('api/cotizacions', {
+        params: {
+          'monedaId.equals': monedaId,
+          'activo.equals': true,
+          sort: 'fecha,desc',
+          page: 0,
+          size: 50,
+        },
+      });
+      cotizacionesDisponibles.value = Array.isArray(res.data) ? res.data : [];
+      const seleccionActual = cotizacionesDisponibles.value.find(item => item.id === cotizacionSeleccionadaId.value);
+      const aplicarPorDefecto = options?.aplicarPorDefecto ?? true;
+      if (!aplicarPorDefecto && !seleccionActual && Number(venta.value.cotizacion ?? 0) > 0) {
+        const cotizacionGuardada = Number(venta.value.cotizacion ?? 0);
+        const coincidencia = cotizacionesDisponibles.value.find(item => {
+          const aplicada = cotizacionAplicadaDesdeRegistro(item);
+          return aplicada != null && Math.abs(aplicada - cotizacionGuardada) < 0.0000001;
+        });
+        if (coincidencia?.id) {
+          cotizacionSeleccionadaId.value = coincidencia.id;
+        }
+      }
+      if (aplicarPorDefecto && !seleccionActual && cotizacionesDisponibles.value.length > 0) {
+        aplicarCotizacionSeleccionada(cotizacionesDisponibles.value[0].id ?? null);
+      }
+    } catch {
+      cotizacionesDisponibles.value = [];
+      cotizacionSeleccionadaId.value = null;
+    } finally {
+      cargandoCotizaciones.value = false;
+    }
+  }
+
+  function aplicarCotizacionSeleccionada(cotizacionId: number | null) {
+    cotizacionSeleccionadaId.value = cotizacionId;
+    const cotizacion = cotizacionesDisponibles.value.find(item => item.id === cotizacionId);
+    if (!cotizacion) {
+      return;
+    }
+    const cotizacionAplicada = cotizacionAplicadaDesdeRegistro(cotizacion);
+    if (cotizacionAplicada != null) {
+      venta.value.cotizacion = cotizacionAplicada;
+    }
+  }
+
+  function cotizacionAplicadaDesdeRegistro(cotizacion: ICotizacion): number | null {
+    const valorVenta = Number(cotizacion.valorVenta ?? 0);
+    if (!Number.isFinite(valorVenta) || valorVenta <= 0) {
+      return null;
+    }
+    const monedaVenta = venta.value.moneda;
+    const monedaUnidad = monedaVehiculo.value;
+    if (!monedaVenta?.id || !monedaUnidad?.id) {
+      return null;
+    }
+    const unidadEsBase = esMonedaBase(monedaUnidad);
+    const ventaEsBase = esMonedaBase(monedaVenta);
+
+    if (unidadEsBase && cotizacion.moneda?.id === monedaVenta.id) {
+      return Number(valorVenta.toFixed(8));
+    }
+    if (ventaEsBase && cotizacion.moneda?.id === monedaUnidad.id) {
+      return Number((1 / valorVenta).toFixed(8));
+    }
+    if (cotizacion.moneda?.id === monedaVenta.id) {
+      return Number(valorVenta.toFixed(8));
+    }
+    return null;
+  }
+
+  function resolverMonedaBaseVenta(): IMoneda | null {
+    return monedas.value.find(item => esMonedaBase(item)) ?? null;
+  }
+
+  async function resolverCotizacionPagoEnMonedaVenta(monedaPago: IMoneda | null): Promise<number> {
+    const monedaVentaId = venta.value.moneda?.id;
+    if (!monedaVentaId) {
+      throw new Error('No se pudo resolver la moneda de la venta');
+    }
+    if (!monedaPago?.id || monedaPago.id === monedaVentaId) {
+      return 1;
+    }
+
+    const res = await axios.get<ICotizacionConversion>('api/cotizacions/conversion', {
+      params: {
+        monedaOrigenId: monedaPago.id,
+        monedaDestinoId: monedaVentaId,
+        fecha: venta.value.fecha ? new Date(venta.value.fecha as Date).toISOString() : undefined,
+      },
+    });
+    const cotizacion = Number(res.data?.cotizacionAplicada ?? 0);
+    if (!Number.isFinite(cotizacion) || cotizacion <= 0) {
+      throw new Error('No existe cotizacion valida para convertir el pago a la moneda de la venta');
+    }
+    return cotizacion;
+  }
+
   function agregarVehiculo(vehiculo: IVehiculo) {
-    if (detalles.value.some(detalle => detalle.vehiculo.id === vehiculo.id)) {
-      error.value = `El vehiculo ${vehiculo.patente} ya esta agregado en la venta`;
+    if (detalles.value.length > 0) {
+      error.value = 'Cada venta solo puede tener un vehiculo. Quita el actual antes de seleccionar otro.';
       return;
     }
 
-    if (vehiculo.condicion === 'VENDIDO') {
+    if (vehiculo.estadoInventario === 'VENDIDO') {
       error.value = `El vehiculo ${vehiculo.patente} ya fue vendido`;
       return;
     }
@@ -148,41 +408,67 @@ export function useVentaEditor() {
       error.value = `El vehiculo ${vehiculo.patente} no tiene un precio valido`;
       return;
     }
-
-    error.value = null;
-    detalles.value.push({
-      _key: `tmp-${Date.now()}-${vehiculo.id}`,
-      vehiculo,
-      precioUnitario: precio,
-      cantidad: 1,
-      subtotal: precio,
-      guardado: false,
-    });
-  }
-
-  function actualizarPrecioDetalle(key: string, nuevoPrecio: number) {
-    const detalle = detalles.value.find(item => item._key === key);
-    if (!detalle) return;
-
-    if (!Number.isFinite(nuevoPrecio) || nuevoPrecio <= 0) {
-      error.value = 'El precio del vehiculo debe ser mayor a 0';
+    if (!vehiculo.moneda?.id) {
+      error.value = `El vehiculo ${vehiculo.patente} no tiene moneda configurada`;
       return;
     }
 
-    detalle.precioUnitario = nuevoPrecio;
-    detalle.subtotal = nuevoPrecio * detalle.cantidad;
-    detalle.guardado = false;
+    error.value = null;
+    detalles.value = [{
+      _key: `vehiculo-${vehiculo.id ?? Date.now()}`,
+      vehiculo,
+      precioUnitario: precio,
+      subtotal: precio,
+    }];
+    venta.value.vehiculo = vehiculo;
+    if (!venta.value.moneda?.id) {
+      venta.value.moneda = resolverMonedaBaseVenta() ?? vehiculo.moneda;
+      venta.value.cotizacion = 1;
+    } else if (venta.value.moneda.id === vehiculo.moneda.id) {
+      venta.value.cotizacion = 1;
+      cotizacionActiva.value = null;
+      cotizacionSeleccionadaId.value = null;
+      cotizacionesDisponibles.value = [];
+    } else {
+      void cargarOpcionesCotizacion();
+      void cargarCotizacionActiva({ forzarValor: true });
+    }
+  }
+
+  function actualizarPrecioDetalle(_key: string, nuevoPrecio: number) {
+    void _key;
+    void nuevoPrecio;
+    error.value = 'El precio base se toma del vehiculo y no puede editarse en la venta.';
+  }
+
+  function quitarDetalle(_key: string) {
+    detalles.value = [];
+    venta.value.vehiculo = null;
+    cotizacionActiva.value = null;
+    cotizacionSeleccionadaId.value = null;
+    cotizacionesDisponibles.value = [];
     error.value = null;
   }
 
-  function quitarDetalle(key: string) {
-    detalles.value = detalles.value.filter(detalle => detalle._key !== key);
-    error.value = null;
-  }
-
-  function agregarPago(monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia = '') {
+  async function agregarPago(monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia = '') {
+    const esEntregaUsado = (metodoPago?.codigo ?? '').toUpperCase() === 'ENTREGA_USADO';
+    let tasacionSeleccionada: ITasacionUsado | null = null;
+    if (esEntregaUsado) {
+      const tasacionId = Number(referencia);
+      tasacionSeleccionada = tasacionesUsadoDisponibles.value.find(item => item.id === tasacionId) ?? null;
+      if (!tasacionSeleccionada) {
+        error.value = 'Debes seleccionar una tasacion aceptada para ENTREGA_USADO';
+        return;
+      }
+      if (tasacionSeleccionada.estado !== EstadoTasacionUsado.ACEPTADA) {
+        error.value = 'La tasacion debe estar aceptada para aplicarse como pago';
+        return;
+      }
+      monto = Number(tasacionSeleccionada.montoTasacion ?? 0);
+      moneda = venta.value.moneda ?? moneda ?? null;
+      referencia = '';
+    }
     const montoNormalizado = Number(monto ?? 0);
-    const saldoActual = Number(venta.value.saldo ?? 0);
     const referenciaNormalizada = referencia.trim();
 
     if (!Number.isFinite(montoNormalizado) || montoNormalizado <= 0) {
@@ -190,22 +476,34 @@ export function useVentaEditor() {
       return;
     }
 
+    const monedaPago = moneda ?? venta.value.moneda ?? null;
+    let cotizacionUsada = 1;
+    let montoAplicadoMonedaVenta = montoNormalizado;
+    try {
+      cotizacionUsada = await resolverCotizacionPagoEnMonedaVenta(monedaPago);
+      montoAplicadoMonedaVenta = Number((montoNormalizado * cotizacionUsada).toFixed(2));
+    } catch (e: any) {
+      error.value = e?.message ?? 'No se pudo convertir el pago a la moneda de la venta';
+      return;
+    }
+
+    const saldoActual = Number(venta.value.saldo ?? 0);
     if (saldoActual <= EPSILON) {
       error.value = 'No hay saldo pendiente para registrar pagos';
       return;
     }
 
-    if (montoNormalizado - saldoActual > EPSILON) {
-      error.value = 'El pago no puede superar el saldo pendiente';
+    if (montoAplicadoMonedaVenta - saldoActual > EPSILON) {
+      error.value = 'El pago convertido no puede superar el saldo pendiente';
       return;
     }
-    const totalProyectado = sumaPagos.value + montoNormalizado;
+    const totalProyectado = sumaPagos.value + montoAplicadoMonedaVenta;
     if (totalProyectado > EPSILON && totalProyectado + EPSILON < montoMinimoReserva.value) {
       error.value = `La seña minima requerida es $ ${fmt(montoMinimoReserva.value)}`;
       return;
     }
 
-    if (metodoPago?.requiereReferencia && !referenciaNormalizada) {
+    if (!esEntregaUsado && metodoPago?.requiereReferencia && !referenciaNormalizada) {
       error.value = `La referencia es obligatoria para ${metodoPago.descripcion ?? metodoPago.codigo ?? 'el metodo de pago seleccionado'}`;
       return;
     }
@@ -214,10 +512,15 @@ export function useVentaEditor() {
     pagos.value.push({
       _key: `tmp-pago-${Date.now()}`,
       monto: montoNormalizado,
+      montoAplicadoMonedaVenta,
       fecha: new Date(),
       referencia: referenciaNormalizada,
       metodoPago,
-      moneda,
+      moneda: monedaPago,
+      cotizacionUsada,
+      tasacionUsadoId: tasacionSeleccionada?.id ?? null,
+      tasacionUsado: tasacionSeleccionada,
+      estado: EstadoPago.REGISTRADO,
       guardado: false,
     });
   }
@@ -241,14 +544,27 @@ export function useVentaEditor() {
     }
 
     if (detalles.value.some(detalle => !detalle.vehiculo?.id)) {
-      throw new Error('Todos los detalles deben tener un vehiculo asociado');
+      throw new Error('Debe seleccionar un vehiculo valido');
+    }
+    if (detalles.value.some(detalle => !detalle.vehiculo?.moneda?.id)) {
+      throw new Error('El vehiculo seleccionado no tiene moneda configurada');
+    }
+    if (!venta.value.moneda?.id) {
+      throw new Error('Debe seleccionar la moneda de la venta');
     }
 
-    if (detalles.value.some((detalle, index) => detalles.value.findIndex(item => item.vehiculo.id === detalle.vehiculo.id) !== index)) {
-      throw new Error('No se puede registrar el mismo vehiculo mas de una vez');
+    const monedaVehiculoId = detalles.value[0]?.vehiculo?.moneda?.id;
+    const monedaVentaId = venta.value.moneda.id;
+      if (monedaVehiculoId && monedaVentaId === monedaVehiculoId) {
+        venta.value.cotizacion = 1;
+      } else {
+        const cotizacion = Number(venta.value.cotizacion ?? 0);
+        if (!Number.isFinite(cotizacion) || cotizacion <= 0) {
+        throw new Error('La cotizacion es obligatoria cuando la moneda de la venta difiere de la moneda del vehiculo');
+      }
     }
 
-    if (detalles.value.some(detalle => detalle.vehiculo.condicion === 'VENDIDO')) {
+    if (detalles.value.some(detalle => detalle.vehiculo.estadoInventario === 'VENDIDO')) {
       throw new Error('No se puede confirmar una venta con vehiculos ya vendidos');
     }
 
@@ -261,7 +577,7 @@ export function useVentaEditor() {
           Number(detalle.subtotal) <= 0,
       )
     ) {
-      throw new Error('Todos los detalles deben tener importes validos');
+      throw new Error('El vehiculo seleccionado debe tener importes validos');
     }
 
     const importeNeto = Number(venta.value.importeNeto ?? 0);
@@ -278,7 +594,7 @@ export function useVentaEditor() {
       throw new Error('El total debe coincidir con importe neto + impuesto');
     }
 
-    for (const pago of pagos.value) {
+    for (const pago of pagos.value.filter(item => item.estado !== EstadoPago.ANULADO)) {
       if (!Number.isFinite(Number(pago.monto)) || Number(pago.monto) <= 0) {
         throw new Error('Todos los pagos deben tener un monto mayor a 0');
       }
@@ -320,6 +636,12 @@ export function useVentaEditor() {
       observaciones: venta.value.observaciones,
       cliente: venta.value.cliente ? { id: venta.value.cliente.id } : null,
       moneda: venta.value.moneda ? { id: venta.value.moneda.id } : null,
+      reserva: venta.value.reserva ? { id: venta.value.reserva.id } : null,
+      vehiculo: detalles.value[0]?.vehiculo?.id
+        ? { id: detalles.value[0].vehiculo.id }
+        : venta.value.vehiculo?.id
+          ? { id: venta.value.vehiculo.id }
+          : null,
     };
 
     const res = venta.value.id
@@ -330,59 +652,39 @@ export function useVentaEditor() {
     return res.data;
   }
 
-  async function guardarDetalles(ventaId: number) {
-    for (const detalle of detalles.value.filter(item => !item.guardado)) {
-      const payload = {
-        id: detalle.id,
-        precioUnitario: detalle.precioUnitario,
-        cantidad: detalle.cantidad,
-        subtotal: detalle.subtotal,
-        venta: { id: ventaId },
-        vehiculo: { id: detalle.vehiculo.id },
-      };
-
-      const res = detalle.id
-        ? await axios.put(`api/detalle-ventas/${detalle.id}`, payload)
-        : await axios.post('api/detalle-ventas', payload);
-
-      detalle.id = res.data.id;
-      detalle.guardado = true;
-    }
-  }
-
   async function guardarPagos(ventaId: number) {
-    for (const pago of pagos.value.filter(item => !item.guardado)) {
+    for (const pago of pagos.value.filter(item => !item.guardado && item.estado !== EstadoPago.ANULADO)) {
       const payload = {
         id: pago.id,
         monto: pago.monto,
         fecha: pago.fecha,
         referencia: pago.referencia || null,
+        cotizacionUsada: pago.cotizacionUsada,
+        tasacionUsadoId: pago.tasacionUsadoId ?? null,
         venta: { id: ventaId },
         metodoPago: pago.metodoPago ? { id: pago.metodoPago.id } : null,
         moneda: pago.moneda ? { id: pago.moneda.id } : null,
       };
 
-      const res = pago.id ? await axios.put(`api/pagos/${pago.id}`, payload) : await axios.post(`api/pagos`, payload);
+      const res = await axios.post(`api/pagos/registrar?ventaId=${ventaId}`, payload);
       pago.id = res.data.id;
       pago.guardado = true;
+      pago.estado = res.data.estado ?? EstadoPago.REGISTRADO;
     }
   }
 
-  async function generarComprobante(ventaId: number, tipoComprobante: ITipoComprobante, moneda: IMoneda | null): Promise<IComprobante> {
-    const numero = `0001-${String(ventaId).padStart(8, '0')}`;
-    const payload: Partial<IComprobante> = {
-      numeroComprobante: numero,
-      fechaEmision: new Date(),
-      importeNeto: venta.value.importeNeto,
-      impuesto: venta.value.impuesto,
-      total: venta.value.total,
-      venta: { id: ventaId } as IComprobante['venta'],
-      tipoComprobante: { id: tipoComprobante.id } as IComprobante['tipoComprobante'],
-      moneda: moneda ? ({ id: moneda.id } as IComprobante['moneda']) : null,
-    };
+  async function generarComprobante(ventaId: number, tipoComprobante: ITipoComprobante): Promise<IComprobante> {
+    if (!tipoComprobante?.id) {
+      throw new Error('Debe seleccionar un tipo de comprobante');
+    }
+    if (tieneComprobanteActivo.value) {
+      throw new Error('La venta ya tiene un comprobante activo emitido. Debes anularlo antes de emitir otro.');
+    }
 
-    const res = await axios.post<IComprobante>('api/comprobantes', payload);
-    return res.data;
+    const res = await axios.post<IComprobante>(`api/comprobantes/emitir?ventaId=${ventaId}&tipoComprobanteId=${tipoComprobante.id}`);
+    const emitido = res.data;
+    comprobantes.value = [emitido, ...comprobantes.value.filter(item => item.id !== emitido.id)];
+    return emitido;
   }
 
   async function confirmar(tipoComprobante?: ITipoComprobante): Promise<{ venta: IVenta; comprobante?: IComprobante }> {
@@ -392,12 +694,11 @@ export function useVentaEditor() {
     try {
       validarVentaAntesDeGuardar();
       const ventaGuardada = await guardarVenta();
-      await guardarDetalles(ventaGuardada.id!);
       await guardarPagos(ventaGuardada.id!);
 
       let comprobante: IComprobante | undefined;
       if (tipoComprobante) {
-        comprobante = await generarComprobante(ventaGuardada.id!, tipoComprobante, venta.value.moneda ?? null);
+        comprobante = await generarComprobante(ventaGuardada.id!, tipoComprobante);
       }
 
       return { venta: ventaGuardada, comprobante };
@@ -407,36 +708,103 @@ export function useVentaEditor() {
   }
 
   async function cargarVenta(ventaId: number) {
-    const [ventaRes, detallesRes, pagosRes] = await Promise.all([
-      axios.get<IVenta>(`api/ventas/${ventaId}`),
-      axios.get(`api/detalle-ventas?ventaId.equals=${ventaId}&page=0&size=50`),
-      axios.get(`api/pagos?ventaId.equals=${ventaId}&page=0&size=50`),
-    ]);
+    cargandoVenta.value = true;
+    try {
+      const [ventaRes, pagosRes, comprobantesRes] = await Promise.all([
+        axios.get<IVenta>(`api/ventas/${ventaId}`),
+        axios.get(`api/pagos/by-venta/${ventaId}`),
+        axios.get(`api/comprobantes/by-venta/${ventaId}`),
+      ]);
 
-    venta.value = ventaRes.data;
+      venta.value = ventaRes.data;
+      if (ventaRes.data.vehiculo?.id) {
+        detalles.value = [{
+          _key: `vehiculo-${ventaRes.data.vehiculo.id}`,
+          vehiculo: ventaRes.data.vehiculo,
+          precioUnitario: Number(ventaRes.data.vehiculo.precio ?? ventaRes.data.importeNeto ?? 0),
+          subtotal: Number(ventaRes.data.importeConvertido ?? ventaRes.data.importeNeto ?? 0),
+        }];
+        await cargarOpcionesCotizacion({ aplicarPorDefecto: false });
+      } else {
+        detalles.value = [];
+      }
 
-    detalles.value = (detallesRes.data as IDetalleVenta[]).map(detalle => ({
-      _key: `loaded-${detalle.id}`,
-      id: detalle.id,
-      vehiculo: detalle.vehiculo!,
-      precioUnitario: Number(detalle.precioUnitario),
-      cantidad: detalle.cantidad ?? 1,
-      subtotal: Number(detalle.subtotal),
-      guardado: true,
-    }));
+      pagos.value = (pagosRes.data as IPago[]).map(pago => ({
+        _key: `loaded-${pago.id}`,
+        id: pago.id,
+        monto: Number(pago.monto),
+      montoAplicadoMonedaVenta: Number(pago.montoAplicadoVenta ?? pago.monto ?? 0),
+        fecha: new Date(pago.fecha!),
+        referencia: pago.referencia ?? '',
+        metodoPago: pago.metodoPago ?? null,
+        moneda: pago.moneda ?? null,
+        cotizacionUsada: Number(pago.cotizacionUsada ?? 1),
+        tasacionUsadoId: pago.tasacionUsadoId ?? pago.tasacionUsado?.id ?? null,
+        tasacionUsado: pago.tasacionUsado ?? null,
+        estado: pago.estado ?? EstadoPago.REGISTRADO,
+        guardado: true,
+      }));
 
-    pagos.value = (pagosRes.data as IPago[]).map(pago => ({
-      _key: `loaded-${pago.id}`,
-      id: pago.id,
-      monto: Number(pago.monto),
-      fecha: new Date(pago.fecha!),
-      referencia: pago.referencia ?? '',
-      metodoPago: pago.metodoPago ?? null,
-      moneda: pago.moneda ?? null,
-      guardado: true,
-    }));
+      comprobantes.value = comprobantesRes.data as IComprobante[];
+
+      recalcularSaldo();
+    } finally {
+      cargandoVenta.value = false;
+    }
+  }
+
+  async function anularPago(key: string) {
+    const pago = pagos.value.find(item => item._key === key);
+    if (!pago) {
+      return;
+    }
+
+    if (!pago.guardado) {
+      quitarPago(key);
+      return;
+    }
+
+    if (!pago.id || pago.estado === EstadoPago.ANULADO) {
+      return;
+    }
+
+    await axios.post(`api/pagos/${pago.id}/anular`);
+    pago.estado = EstadoPago.ANULADO;
+
+    if (venta.value.id) {
+      const [ventaRes, pagosRes] = await Promise.all([
+        axios.get<IVenta>(`api/ventas/${venta.value.id}`),
+        axios.get(`api/pagos/by-venta/${venta.value.id}`),
+      ]);
+      venta.value = ventaRes.data;
+      pagos.value = (pagosRes.data as IPago[]).map(item => ({
+        _key: `loaded-${item.id}`,
+        id: item.id,
+        monto: Number(item.monto),
+      montoAplicadoMonedaVenta: Number(item.montoAplicadoVenta ?? item.monto ?? 0),
+        fecha: new Date(item.fecha!),
+        referencia: item.referencia ?? '',
+        metodoPago: item.metodoPago ?? null,
+        moneda: item.moneda ?? null,
+        cotizacionUsada: Number(item.cotizacionUsada ?? 1),
+        tasacionUsadoId: item.tasacionUsadoId ?? item.tasacionUsado?.id ?? null,
+        tasacionUsado: item.tasacionUsado ?? null,
+        estado: item.estado ?? EstadoPago.REGISTRADO,
+        guardado: true,
+      }));
+    }
 
     recalcularSaldo();
+  }
+
+  async function cargarTasacionesUsadoCliente() {
+    const clienteId = venta.value.cliente?.id;
+    if (!clienteId) {
+      tasacionesUsadoDisponibles.value = [];
+      return;
+    }
+    const res = await axios.get<ITasacionUsado[]>('api/tasacion-usados/aceptadas-disponibles', { params: { clienteId } });
+    tasacionesUsadoDisponibles.value = Array.isArray(res.data) ? res.data : [];
   }
 
   const fmt = (n?: number | null) => Number(n ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -452,21 +820,38 @@ export function useVentaEditor() {
     metodoPagos,
     tipoComprobantes,
     cotizacionActiva,
+    cotizacionesDisponibles,
+    tasacionesUsadoDisponibles,
+    cotizacionSeleccionadaId,
+    cargandoCotizaciones,
     porcentajeMinimoReserva,
     montoMinimoReserva,
+    tieneComprobanteActivo,
     cumpleMinimoReserva,
     estadoCalculado,
     sumaSubtotales,
     sumaPagos,
+    vehiculoSeleccionado,
+    monedaVehiculo,
+    precioBaseVehiculo,
+    importeConvertidoPreview,
+    cotizacionAplicada,
+    requiereCotizacion,
+    requiereSeleccionCotizacion,
+    monedasCoinciden,
     agregarVehiculo,
     actualizarPrecioDetalle,
     quitarDetalle,
     agregarPago,
     quitarPago,
+    anularPago,
     confirmar,
     cargarVenta,
     cargarCotizacionActiva,
+    cargarOpcionesCotizacion,
+    aplicarCotizacionSeleccionada,
     setPorcentajeMinimoReserva,
+    cargarTasacionesUsadoCliente,
     validarVentaAntesDeGuardar,
     fmt,
   };

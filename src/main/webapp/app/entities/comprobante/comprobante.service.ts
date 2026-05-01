@@ -41,6 +41,24 @@ export default class ComprobanteService {
     });
   }
 
+  emitir(ventaId: number, tipoComprobanteId: number): Promise<IComprobante> {
+    return new Promise<IComprobante>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/emitir?ventaId=${ventaId}&tipoComprobanteId=${tipoComprobanteId}`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
+  anular(id: number): Promise<IComprobante> {
+    return new Promise<IComprobante>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/${id}/anular`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
   delete(id: number): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       axios

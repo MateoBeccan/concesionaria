@@ -41,6 +41,42 @@ export default class PagoService {
     });
   }
 
+  findByReservaId(reservaId: number): Promise<IPago[]> {
+    return new Promise<IPago[]>((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/by-reserva/${reservaId}`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
+  registrar(ventaId: number, entity: IPago): Promise<IPago> {
+    return new Promise<IPago>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/registrar?ventaId=${ventaId}`, entity)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
+  registrarReserva(reservaId: number, entity: IPago): Promise<IPago> {
+    return new Promise<IPago>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/registrar?reservaId=${reservaId}`, entity)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
+  anular(id: number): Promise<IPago> {
+    return new Promise<IPago>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/${id}/anular`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
   delete(id: number): Promise<any> {
     return new Promise<any>((resolve, reject) => {
       axios

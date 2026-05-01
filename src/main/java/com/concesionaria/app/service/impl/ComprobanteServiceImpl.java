@@ -1,15 +1,18 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Comprobante;
+import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.Venta;
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.TipoComprobanteRepository;
 import com.concesionaria.app.repository.VentaRepository;
+import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.ComprobanteService;
 import com.concesionaria.app.service.dto.ComprobanteDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.ComprobanteMapper;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -35,52 +38,38 @@ public class ComprobanteServiceImpl implements ComprobanteService {
 
     private final VentaRepository ventaRepository;
 
+    private final TipoComprobanteRepository tipoComprobanteRepository;
+
     public ComprobanteServiceImpl(
         ComprobanteRepository comprobanteRepository,
         ComprobanteMapper comprobanteMapper,
-        VentaRepository ventaRepository
+        VentaRepository ventaRepository,
+        TipoComprobanteRepository tipoComprobanteRepository
     ) {
         this.comprobanteRepository = comprobanteRepository;
         this.comprobanteMapper = comprobanteMapper;
         this.ventaRepository = ventaRepository;
+        this.tipoComprobanteRepository = tipoComprobanteRepository;
     }
 
     @Override
     public ComprobanteDTO save(ComprobanteDTO comprobanteDTO) {
-        LOG.debug("Request to save Comprobante : {}", comprobanteDTO);
-        Venta venta = validarComprobante(comprobanteDTO);
-        Comprobante comprobante = comprobanteMapper.toEntity(comprobanteDTO);
-        comprobante.setVenta(venta);
-        comprobante.setCreatedDate(Instant.now());
-        comprobante = comprobanteRepository.save(comprobante);
-        return comprobanteMapper.toDto(comprobante);
+        Long ventaId = comprobanteDTO.getVenta() != null ? comprobanteDTO.getVenta().getId() : null;
+        Long tipoComprobanteId = comprobanteDTO.getTipoComprobante() != null ? comprobanteDTO.getTipoComprobante().getId() : null;
+        if (ventaId == null || tipoComprobanteId == null) {
+            throw new BadRequestException("Debe informar venta y tipo de comprobante para emitir");
+        }
+        return emitirComprobante(ventaId, tipoComprobanteId);
     }
 
     @Override
     public ComprobanteDTO update(ComprobanteDTO comprobanteDTO) {
-        LOG.debug("Request to update Comprobante : {}", comprobanteDTO);
-        Venta venta = validarComprobante(comprobanteDTO);
-        Comprobante comprobante = comprobanteMapper.toEntity(comprobanteDTO);
-        comprobante.setVenta(venta);
-        comprobante = comprobanteRepository.save(comprobante);
-        return comprobanteMapper.toDto(comprobante);
+        throw new BadRequestException("No se permite editar comprobantes emitidos. Solo se permite emitir o anular.");
     }
 
     @Override
     public Optional<ComprobanteDTO> partialUpdate(ComprobanteDTO comprobanteDTO) {
-        LOG.debug("Request to partially update Comprobante : {}", comprobanteDTO);
-
-        return comprobanteRepository
-            .findById(comprobanteDTO.getId())
-            .map(existingComprobante -> {
-                comprobanteMapper.partialUpdate(existingComprobante, comprobanteDTO);
-                ComprobanteDTO mergedDto = comprobanteMapper.toDto(existingComprobante);
-                Venta venta = validarComprobante(mergedDto);
-                existingComprobante.setVenta(venta);
-                return existingComprobante;
-            })
-            .map(comprobanteRepository::save)
-            .map(comprobanteMapper::toDto);
+        throw new BadRequestException("No se permite editar comprobantes emitidos. Solo se permite emitir o anular.");
     }
 
     @Override
@@ -105,43 +94,92 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     }
 
     @Override
-    public void delete(Long id) {
-        LOG.debug("Request to delete Comprobante : {}", id);
-        comprobanteRepository.deleteById(id);
-    }
-
-    private Venta validarComprobante(ComprobanteDTO comprobanteDTO) {
-        Long ventaId = comprobanteDTO.getVenta() != null ? comprobanteDTO.getVenta().getId() : null;
-        if (ventaId == null) {
-            throw new BadRequestException("Debe informar la venta asociada al comprobante");
-        }
+    public ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId) {
+        LOG.debug("Request to emitir comprobante para venta {} y tipo {}", ventaId, tipoComprobanteId);
 
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta informada no existe"));
-        if (venta.getEstado() == EstadoVenta.CANCELADA) {
-            throw new BadRequestException("No se puede emitir comprobante para una venta cancelada");
+        validarVentaCompletada(venta);
+        validarPoliticaUnicoComprobanteActivo(ventaId);
+
+        TipoComprobante tipoComprobante = tipoComprobanteRepository
+            .findById(tipoComprobanteId)
+            .orElseThrow(() -> new BadRequestException("El tipo de comprobante no existe"));
+
+        if (venta.getMoneda() == null) {
+            throw new BadRequestException("La venta no tiene moneda asociada. No se puede emitir comprobante");
         }
 
-        if (comprobanteDTO.getMoneda() == null || comprobanteDTO.getMoneda().getId() == null) {
-            throw new BadRequestException("La moneda del comprobante es obligatoria");
-        }
-        if (venta.getMoneda() != null && !venta.getMoneda().getId().equals(comprobanteDTO.getMoneda().getId())) {
-            throw new BadRequestException("La moneda del comprobante debe coincidir con la moneda de la venta");
-        }
+        Long siguienteCorrelativo = (comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(tipoComprobanteId) + 1);
+        String numeroComprobante = generarNumeroComprobante(tipoComprobante, siguienteCorrelativo);
 
-        validarImportes(comprobanteDTO, venta);
-        return venta;
+        Instant now = Instant.now();
+        String currentUser = currentUserLogin();
+
+        Comprobante comprobante = new Comprobante();
+        comprobante.setNumeroComprobante(numeroComprobante);
+        comprobante.setFechaEmision(now);
+        comprobante.setImporteNeto(venta.getImporteNeto());
+        comprobante.setImpuesto(venta.getImpuesto());
+        comprobante.setTotal(venta.getTotal());
+        comprobante.setMoneda(venta.getMoneda());
+        comprobante.setVenta(venta);
+        comprobante.setTipoComprobante(tipoComprobante);
+        comprobante.setEstado(EstadoComprobante.EMITIDO);
+        comprobante.setCreatedDate(now);
+        comprobante.setCreatedBy(currentUser);
+        comprobante.setLastModifiedDate(now);
+        comprobante.setLastModifiedBy(currentUser);
+
+        Comprobante saved = comprobanteRepository.save(comprobante);
+        return comprobanteMapper.toDto(saved);
     }
 
-    private void validarImportes(ComprobanteDTO comprobanteDTO, Venta venta) {
-        if (comprobanteDTO.getImporteNeto() == null || comprobanteDTO.getImpuesto() == null || comprobanteDTO.getTotal() == null) {
-            throw new BadRequestException("El comprobante debe incluir importe neto, impuesto y total");
+    @Override
+    public ComprobanteDTO anularComprobante(Long comprobanteId) {
+        LOG.debug("Request to anular comprobante : {}", comprobanteId);
+        Comprobante comprobante = comprobanteRepository
+            .findById(comprobanteId)
+            .orElseThrow(() -> new BadRequestException("El comprobante no existe"));
+        if (comprobante.getEstado() == EstadoComprobante.ANULADO) {
+            throw new BadRequestException("El comprobante ya se encuentra anulado");
         }
-        BigDecimal totalCalculado = comprobanteDTO.getImporteNeto().add(comprobanteDTO.getImpuesto());
-        if (totalCalculado.compareTo(comprobanteDTO.getTotal()) != 0) {
-            throw new BadRequestException("El total del comprobante debe coincidir con importe neto + impuesto");
+
+        comprobante.setEstado(EstadoComprobante.ANULADO);
+        comprobante.setLastModifiedDate(Instant.now());
+        comprobante.setLastModifiedBy(currentUserLogin());
+        Comprobante saved = comprobanteRepository.save(comprobante);
+        return comprobanteMapper.toDto(saved);
+    }
+
+    @Override
+    public void delete(Long id) {
+        throw new BadRequestException("No se permite borrar comprobantes. Debe anularse para mantener trazabilidad.");
+    }
+
+    private void validarVentaCompletada(Venta venta) {
+        if (venta.getEstado() == EstadoVenta.CANCELADA || venta.getEstado() == EstadoVenta.RESERVADA || venta.getEstado() == EstadoVenta.PENDIENTE) {
+            throw new BadRequestException("Solo se puede emitir comprobante para ventas completadas");
         }
-        if (venta.getTotal() != null && comprobanteDTO.getTotal().compareTo(venta.getTotal()) != 0) {
-            throw new BadRequestException("El total del comprobante debe coincidir con el total de la venta");
+        if (venta.getEstado() != EstadoVenta.PAGADA && venta.getEstado() != EstadoVenta.FINALIZADA) {
+            throw new BadRequestException("Solo se puede emitir comprobante para ventas completadas");
         }
+    }
+
+    private void validarPoliticaUnicoComprobanteActivo(Long ventaId) {
+        if (comprobanteRepository.existsByVentaIdAndEstado(ventaId, EstadoComprobante.EMITIDO)) {
+            throw new BadRequestException("La venta ya posee un comprobante EMITIDO activo");
+        }
+    }
+
+    private String generarNumeroComprobante(TipoComprobante tipoComprobante, Long correlativo) {
+        String codigo = tipoComprobante.getCodigo();
+        if (codigo == null || codigo.isBlank()) {
+            throw new BadRequestException("El tipo de comprobante debe tener un codigo para numerar");
+        }
+        return codigo.trim().toUpperCase() + "-" + String.format("%08d", correlativo);
+    }
+
+    private String currentUserLogin() {
+        return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }

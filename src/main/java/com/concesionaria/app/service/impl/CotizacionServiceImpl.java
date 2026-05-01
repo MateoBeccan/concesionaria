@@ -3,10 +3,13 @@ package com.concesionaria.app.service.impl;
 import com.concesionaria.app.domain.Cotizacion;
 import com.concesionaria.app.repository.CotizacionRepository;
 import com.concesionaria.app.security.SecurityUtils;
+import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.CotizacionService;
+import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.CotizacionDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.CotizacionMapper;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -28,10 +31,16 @@ public class CotizacionServiceImpl implements CotizacionService {
     private final CotizacionRepository cotizacionRepository;
 
     private final CotizacionMapper cotizacionMapper;
+    private final CurrencyConversionService currencyConversionService;
 
-    public CotizacionServiceImpl(CotizacionRepository cotizacionRepository, CotizacionMapper cotizacionMapper) {
+    public CotizacionServiceImpl(
+        CotizacionRepository cotizacionRepository,
+        CotizacionMapper cotizacionMapper,
+        CurrencyConversionService currencyConversionService
+    ) {
         this.cotizacionRepository = cotizacionRepository;
         this.cotizacionMapper = cotizacionMapper;
+        this.currencyConversionService = currencyConversionService;
     }
 
     @Override
@@ -104,6 +113,12 @@ public class CotizacionServiceImpl implements CotizacionService {
     public void delete(Long id) {
         LOG.debug("Request to delete Cotizacion : {}", id);
         cotizacionRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CotizacionConversionDTO convertirMonto(BigDecimal monto, Long monedaOrigenId, Long monedaDestinoId, Instant fechaOperacion) {
+        return currencyConversionService.convertir(monto, monedaOrigenId, monedaDestinoId, fechaOperacion);
     }
 
     private String currentUserLogin() {

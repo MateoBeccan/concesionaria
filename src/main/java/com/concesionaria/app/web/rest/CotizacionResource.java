@@ -2,12 +2,15 @@ package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.CotizacionRepository;
 import com.concesionaria.app.service.CotizacionService;
+import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.CotizacionDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -160,6 +163,22 @@ public class CotizacionResource {
         LOG.debug("REST request to get Cotizacion : {}", id);
         Optional<CotizacionDTO> cotizacionDTO = cotizacionService.findOne(id);
         return ResponseUtil.wrapOrNotFound(cotizacionDTO);
+    }
+
+    @GetMapping("/conversion")
+    public ResponseEntity<CotizacionConversionDTO> getCotizacionConversion(
+        @RequestParam("monedaOrigenId") Long monedaOrigenId,
+        @RequestParam("monedaDestinoId") Long monedaDestinoId,
+        @RequestParam(value = "fecha", required = false) Instant fecha,
+        @RequestParam(value = "monto", required = false) BigDecimal monto
+    ) {
+        LOG.debug(
+            "REST request to get conversion quote from moneda {} to {} at {}",
+            monedaOrigenId,
+            monedaDestinoId,
+            fecha
+        );
+        return ResponseEntity.ok(cotizacionService.convertirMonto(monto, monedaOrigenId, monedaDestinoId, fecha));
     }
 
     /**

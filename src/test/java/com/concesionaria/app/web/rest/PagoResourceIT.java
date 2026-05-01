@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.concesionaria.app.IntegrationTest;
 import com.concesionaria.app.domain.Pago;
+import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.mapper.PagoMapper;
@@ -38,7 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @WithMockUser
 class PagoResourceIT {
 
-    private static final BigDecimal DEFAULT_MONTO = new BigDecimal(0);
+    private static final BigDecimal DEFAULT_MONTO = new BigDecimal(1);
     private static final BigDecimal UPDATED_MONTO = new BigDecimal(1);
 
     private static final Instant DEFAULT_FECHA = Instant.ofEpochMilli(0L);
@@ -49,6 +50,9 @@ class PagoResourceIT {
 
     private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+    private static final EstadoPago DEFAULT_ESTADO = EstadoPago.REGISTRADO;
+    private static final EstadoPago UPDATED_ESTADO = EstadoPago.ANULADO;
 
     private static final String ENTITY_API_URL = "/api/pagos";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -82,7 +86,7 @@ class PagoResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Pago createEntity() {
-        return new Pago().monto(DEFAULT_MONTO).fecha(DEFAULT_FECHA).referencia(DEFAULT_REFERENCIA).createdDate(DEFAULT_CREATED_DATE);
+        return new Pago().monto(DEFAULT_MONTO).fecha(DEFAULT_FECHA).referencia(DEFAULT_REFERENCIA).createdDate(DEFAULT_CREATED_DATE).estado(DEFAULT_ESTADO);
     }
 
     /**
@@ -92,7 +96,7 @@ class PagoResourceIT {
      * if they test an entity which requires the current entity.
      */
     public static Pago createUpdatedEntity() {
-        return new Pago().monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA).createdDate(UPDATED_CREATED_DATE);
+        return new Pago().monto(UPDATED_MONTO).fecha(UPDATED_FECHA).referencia(UPDATED_REFERENCIA).createdDate(UPDATED_CREATED_DATE).estado(UPDATED_ESTADO);
     }
 
     @BeforeEach

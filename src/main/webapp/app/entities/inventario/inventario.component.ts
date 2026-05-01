@@ -1,10 +1,9 @@
 import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
-import dayjs from 'dayjs';
-
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
 import { type IInventario } from '@/shared/model/inventario.model';
+import ReservaService from '@/entities/reserva/reserva.service';
 
 import InventarioService from './inventario.service';
 
@@ -13,6 +12,7 @@ export default defineComponent({
   setup() {
     const dateFormat = useDateFormat();
     const inventarioService = inject('inventarioService', () => new InventarioService());
+    const reservaService = new ReservaService();
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const itemsPerPage = ref(20);
@@ -23,22 +23,16 @@ export default defineComponent({
     const totalItems = ref(0);
 
     const inventarios: Ref<IInventario[]> = ref([]);
+    const reservasActivasByInventario: Ref<Record<number, number>> = ref({});
     const isFetching = ref(false);
 
     const search = ref('');
     const filtroEstado = ref('');
-    const filtroReserva = ref('');
-
-    const isReservaVencida = (inventario: IInventario) =>
-      inventario.estadoInventario === 'RESERVADO' &&
-      !!inventario.fechaVencimientoReserva &&
-      dayjs(inventario.fechaVencimientoReserva).isBefore(dayjs());
 
     const inventorySummary = computed(() => ({
       disponible: inventarios.value.filter(item => item.estadoInventario === 'DISPONIBLE').length,
       reservado: inventarios.value.filter(item => item.estadoInventario === 'RESERVADO').length,
       vendido: inventarios.value.filter(item => item.estadoInventario === 'VENDIDO').length,
-      vencidas: inventarios.value.filter(item => isReservaVencida(item)).length,
     }));
 
     const filteredInventarios = computed(() => {
@@ -49,24 +43,13 @@ export default defineComponent({
           inventario.vehiculo?.version?.modelo?.nombre ?? '',
           inventario.vehiculo?.version?.nombre ?? '',
           inventario.ubicacion ?? '',
-          inventario.clienteReserva ? `${inventario.clienteReserva.apellido ?? ''} ${inventario.clienteReserva.nombre ?? ''}` : '',
         ]
           .join(' ')
           .toLowerCase();
 
         const matchSearch = !search.value || texto.includes(search.value.toLowerCase());
         const matchEstado = !filtroEstado.value || inventario.estadoInventario === filtroEstado.value;
-
-        let matchReserva = true;
-        if (filtroReserva.value === 'activas') {
-          matchReserva = inventario.estadoInventario === 'RESERVADO' && !isReservaVencida(inventario);
-        } else if (filtroReserva.value === 'vencidas') {
-          matchReserva = inventario.estadoInventario === 'RESERVADO' && isReservaVencida(inventario);
-        } else if (filtroReserva.value === 'sin-reserva') {
-          matchReserva = inventario.estadoInventario !== 'RESERVADO';
-        }
-
-        return matchSearch && matchEstado && matchReserva;
+        return matchSearch && matchEstado;
       });
     });
 
@@ -77,7 +60,6 @@ export default defineComponent({
     const resetFiltros = () => {
       search.value = '';
       filtroEstado.value = '';
-      filtroReserva.value = '';
     };
 
     const sort = (): Array<any> => {
@@ -100,11 +82,36 @@ export default defineComponent({
         totalItems.value = Number(res.headers['x-total-count']);
         queryCount.value = totalItems.value;
         inventarios.value = res.data;
+        await cargarReservasActivas(inventarios.value);
       } catch (err: any) {
         alertService.showHttpError(err.response);
       } finally {
         isFetching.value = false;
       }
+    };
+
+    const cargarReservasActivas = async (items: IInventario[]) => {
+      const reservados = items.filter(i => i.id && i.estadoInventario === 'RESERVADO') as Array<IInventario & { id: number }>;
+      if (reservados.length === 0) {
+        reservasActivasByInventario.value = {};
+        return;
+      }
+      const rows = await Promise.all(
+        reservados.map(async inventario => {
+          try {
+            const reserva = await reservaService.findActivaByInventarioId(inventario.id);
+            return [inventario.id, reserva?.id ?? null] as const;
+          } catch {
+            return [inventario.id, null] as const;
+          }
+        }),
+      );
+      reservasActivasByInventario.value = rows.reduce<Record<number, number>>((acc, row) => {
+        if (row[1]) {
+          acc[row[0]] = row[1];
+        }
+        return acc;
+      }, {});
     };
 
     const handleSyncList = () => {
@@ -162,10 +169,7 @@ export default defineComponent({
       return `${patente} · ${version}`;
     };
 
-    const clienteLabel = (inventario: IInventario) => {
-      if (!inventario.clienteReserva) return 'Sin cliente';
-      return `${inventario.clienteReserva.apellido ?? ''}, ${inventario.clienteReserva.nombre ?? ''}`.replace(/^, |, $/g, '');
-    };
+    const reservaActivaId = (inventarioId?: number | null) => (inventarioId ? reservasActivasByInventario.value[inventarioId] ?? null : null);
 
     watch([propOrder, reverse], async () => {
       if (page.value === 1) {
@@ -185,7 +189,6 @@ export default defineComponent({
       filteredInventarios,
       search,
       filtroEstado,
-      filtroReserva,
       resetFiltros,
       handleSyncList,
       isFetching,
@@ -206,9 +209,8 @@ export default defineComponent({
       changeOrder,
       badgeEstado,
       badgeDisponibilidad,
-      isReservaVencida,
       vehiculoLabel,
-      clienteLabel,
+      reservaActivaId,
     };
   },
 });

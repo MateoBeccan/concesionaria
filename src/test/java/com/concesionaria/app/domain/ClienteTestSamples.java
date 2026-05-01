@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.TipoPersona;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -20,7 +21,8 @@ public class ClienteTestSamples {
             .direccion("direccion1")
             .ciudad("ciudad1")
             .provincia("provincia1")
-            .pais("pais1");
+            .pais("pais1")
+            .tipoPersona(TipoPersona.FISICA);
     }
 
     public static Cliente getClienteSample2() {
@@ -34,7 +36,8 @@ public class ClienteTestSamples {
             .direccion("direccion2")
             .ciudad("ciudad2")
             .provincia("provincia2")
-            .pais("pais2");
+            .pais("pais2")
+            .tipoPersona(TipoPersona.JURIDICA);
     }
 
     public static Cliente getClienteRandomSampleGenerator() {
@@ -48,6 +51,7 @@ public class ClienteTestSamples {
             .direccion(UUID.randomUUID().toString())
             .ciudad(UUID.randomUUID().toString())
             .provincia(UUID.randomUUID().toString())
-            .pais(UUID.randomUUID().toString());
+            .pais(UUID.randomUUID().toString())
+            .tipoPersona(TipoPersona.FISICA);
     }
 }

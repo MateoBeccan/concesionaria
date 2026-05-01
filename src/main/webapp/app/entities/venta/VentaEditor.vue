@@ -76,13 +76,21 @@
 
               <div class="col-md-4">
                 <label class="form-label">Moneda</label>
-                <select class="form-select" v-model="venta.moneda">
-                  <option :value="null">Seleccionar</option>
+                <select class="form-select" v-model="venta.moneda" disabled>
                   <option v-for="moneda in monedas" :key="moneda.id" :value="moneda">
                     {{ moneda.simbolo ?? '' }} {{ moneda.codigo }} - {{ moneda.descripcion }}
                   </option>
                 </select>
-                <small v-if="cotizacionActiva" class="text-muted">Cotizacion activa: {{ cotizacionActiva.valorVenta }}</small>
+                <small class="text-muted">La venta se registra siempre en ARS.</small>
+              </div>
+
+              <div class="col-md-4">
+                <label class="form-label">Cotización aplicada</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" v-model.number="venta.cotizacion" readonly />
+                  <span class="input-group-text">auto</span>
+                </div>
+                <small class="text-muted">Se obtiene desde la entidad Cotización usando valor de venta.</small>
               </div>
 
               <div class="col-md-4">
@@ -90,6 +98,43 @@
                 <div class="input-group">
                   <input type="number" class="form-control" v-model.number="venta.porcentajeImpuesto" min="0" max="100" step="0.5" />
                   <span class="input-group-text">%</span>
+                </div>
+              </div>
+
+              <div class="col-12" v-if="vehiculoSeleccionado && false">
+                <div class="alert alert-light border mb-0 py-2">
+                  <strong>Precio base vehículo:</strong>
+                  {{ vehiculoSeleccionado.moneda?.simbolo ?? '$' }} {{ fmt(vehiculoSeleccionado.precio) }} {{ vehiculoSeleccionado.moneda?.codigo ?? '' }}
+                  · <strong>Moneda venta:</strong> {{ venta.moneda?.codigo ?? '-' }}
+                  <span v-if="requiereCotizacion">
+                    · <strong>Ejemplo:</strong> Vehículo en {{ vehiculoSeleccionado.moneda?.codigo ?? '-' }}, venta en
+                    {{ venta.moneda?.codigo ?? '-' }}, cotización {{ venta.cotizacion ?? cotizacionActiva?.cotizacionAplicada ?? '-' }}.
+                  </span>
+                </div>
+              </div>
+
+              <div class="col-12" v-if="vehiculoSeleccionado">
+                <div class="alert alert-light border mb-0 py-2 d-flex flex-wrap gap-3 align-items-center">
+                  <span>
+                    <strong>Precio vehiculo:</strong>
+                    {{ vehiculoSeleccionado.moneda?.simbolo ?? '$' }} {{ fmt(vehiculoSeleccionado.precio) }} {{ vehiculoSeleccionado.moneda?.codigo ?? '' }}
+                  </span>
+                  <span>
+                    <strong>Moneda venta:</strong>
+                    {{ venta.moneda?.simbolo ?? '' }} {{ venta.moneda?.codigo ?? '-' }}
+                  </span>
+                  <span>
+                    <strong>Cotizacion aplicada:</strong>
+                    {{ cotizacionAplicada }}
+                  </span>
+                  <span>
+                    <strong>Importe convertido:</strong>
+                    {{ venta.moneda?.simbolo ?? '$' }} {{ fmt(importeConvertidoPreview) }} {{ venta.moneda?.codigo ?? '' }}
+                  </span>
+                </div>
+                <div v-if="requiereCotizacion" class="small text-muted mt-1">
+                  Ejemplo: Vehiculo en {{ vehiculoSeleccionado.moneda?.codigo ?? '-' }}, venta en
+                  {{ venta.moneda?.codigo ?? '-' }}, cotizacion {{ cotizacionAplicada }}.
                 </div>
               </div>
 
@@ -106,7 +151,7 @@
                 <label class="form-label">Regla de reserva con seña</label>
                 <div class="form-control bg-light">
                   Para reservar este vehiculo se requiere una seña minima de
-                  <strong>$ {{ fmt(montoMinimoReserva) }}</strong>
+                  <strong>{{ venta.moneda?.simbolo ?? '$' }} {{ fmt(montoMinimoReserva) }} {{ venta.moneda?.codigo ?? '' }}</strong>
                   (<strong>{{ porcentajeMinimoReservaLabel }}%</strong> del valor del vehiculo).
                 </div>
                 <small :class="cumpleMinimoReserva ? 'text-success' : 'text-danger'">
@@ -134,6 +179,7 @@
             <DetalleVentaInline
               :detalles="detalles"
               :suma-subtotales="sumaSubtotales"
+              :moneda-venta="venta.moneda ?? null"
               @agregar="agregarVehiculo"
               @quitar="quitarDetalle"
               @actualizar-precio="actualizarPrecioDetalle"
@@ -148,7 +194,7 @@
               <div class="section-copy">Registrá anticipos o medios de cobro sin superar el saldo pendiente.</div>
             </div>
             <span class="badge" :class="Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'bg-success' : 'bg-warning text-dark'">
-              {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: $ ${fmt(venta.saldo)}` }}
+              {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: ${venta.moneda?.simbolo ?? '$'} ${fmt(venta.saldo)} ${venta.moneda?.codigo ?? ''}` }}
             </span>
           </div>
           <div class="card-body">
@@ -158,9 +204,12 @@
               :saldo-pendiente="Number(venta.saldo ?? 0)"
               :metodo-pagos="metodoPagos"
               :monedas="monedas"
+              :tasaciones-usado="tasacionesUsadoDisponibles"
               :moneda-default="venta.moneda ?? null"
               @agregar="agregarPago"
               @quitar="quitarPago"
+              @anular="anularPago"
+              @crear-tasacion="crearTasacionDesdeVenta"
             />
           </div>
         </div>
@@ -176,7 +225,7 @@
             <div class="row g-3 align-items-center">
               <div class="col-md-6">
                 <label class="form-label">Tipo de comprobante</label>
-                <select class="form-select" v-model="tipoComprobanteSeleccionado">
+                <select class="form-select" v-model="tipoComprobanteSeleccionado" :disabled="tieneComprobanteActivo">
                   <option :value="null">No generar comprobante</option>
                   <option v-for="tipo in tipoComprobantes" :key="tipo.id" :value="tipo">{{ tipo.codigo }} - {{ tipo.descripcion }}</option>
                 </select>
@@ -184,6 +233,11 @@
               <div class="col-md-6" v-if="tipoComprobanteSeleccionado">
                 <div class="alert alert-info py-2 mb-0 small">
                   Se generara el comprobante <strong>{{ tipoComprobanteSeleccionado.codigo }}</strong> al confirmar la venta.
+                </div>
+              </div>
+              <div class="col-12" v-if="tieneComprobanteActivo">
+                <div class="alert alert-warning py-2 mb-0 small">
+                  La venta ya tiene un comprobante activo emitido. Debes anularlo antes de emitir uno nuevo.
                 </div>
               </div>
             </div>
@@ -237,13 +291,14 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import type { ICliente } from '@/shared/model/cliente.model';
 import type { IInventario } from '@/shared/model/inventario.model';
+import type { IReserva } from '@/shared/model/reserva.model';
 import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 
@@ -266,20 +321,27 @@ const {
   monedas,
   metodoPagos,
   tipoComprobantes,
-  cotizacionActiva,
   porcentajeMinimoReserva,
   montoMinimoReserva,
+  tieneComprobanteActivo,
   cumpleMinimoReserva,
   estadoCalculado,
   sumaSubtotales,
   sumaPagos,
+  tasacionesUsadoDisponibles,
+  vehiculoSeleccionado,
+  cotizacionAplicada,
+  importeConvertidoPreview,
+  requiereCotizacion,
   agregarVehiculo,
   actualizarPrecioDetalle,
   quitarDetalle,
   agregarPago,
   quitarPago,
+  anularPago,
   confirmar,
   cargarVenta,
+  cargarTasacionesUsadoCliente,
   fmt,
   setPorcentajeMinimoReserva,
   validarVentaAntesDeGuardar,
@@ -313,6 +375,7 @@ function seleccionarCliente(cliente: ICliente) {
   venta.value.cliente = cliente;
   busquedaCliente.value = '';
   resultadosCliente.value = [];
+  void cargarTasacionesUsadoCliente();
 }
 
 const fechaLocal = computed({
@@ -365,7 +428,7 @@ const flowSteps = computed(() => [
   {
     number: '03',
     title: 'Condiciones',
-    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Definí moneda, fecha e impuestos.',
+    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Definí fecha e impuestos.',
     done: Number(venta.value.total ?? 0) > 0,
     current: detalles.value.length > 0 && Number(venta.value.total ?? 0) === 0,
   },
@@ -390,13 +453,63 @@ onMounted(async () => {
   ]);
 
   monedas.value = monedasRes.data;
+  const normalizarMoneda = (value?: string | null) =>
+    (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '');
+  const esMonedaBase = (codigo?: string | null, descripcion?: string | null) => {
+    const c = normalizarMoneda(codigo);
+    const d = normalizarMoneda(descripcion);
+    return c.includes('ARS') || c.includes('ARG') || c.includes('PESO') || d.includes('ARS') || d.includes('ARG') || d.includes('PESO');
+  };
+  const monedaBase = monedas.value.find(m => esMonedaBase(m.codigo, m.descripcion)) ?? null;
+  if (monedaBase) {
+    venta.value.moneda = monedaBase;
+  }
   metodoPagos.value = metodosRes.data;
   tipoComprobantes.value = tiposRes.data;
   setPorcentajeMinimoReserva(Number(reservaConfigRes.data?.porcentajeMinimo ?? 0.1));
 
   if (route.params?.ventaId) {
     await cargarVenta(Number(route.params.ventaId));
+    if (monedaBase) {
+      venta.value.moneda = monedaBase;
+    }
     return;
+  }
+
+  const reservaId = Number(route.query.reservaId);
+  if (Number.isFinite(reservaId) && reservaId > 0) {
+    try {
+      const reservaRes = await axios.get<IReserva>(`api/reservas/${reservaId}`);
+      const reserva = reservaRes.data;
+      if (reserva.estado !== 'ACTIVA') {
+        throw new Error(`La reserva #${reservaId} no esta activa`);
+      }
+
+      venta.value.reserva = { id: reserva.id } as IReserva;
+      if (!venta.value.cliente?.id && reserva.cliente?.id) {
+        venta.value.cliente = reserva.cliente;
+      }
+      if (!venta.value.observaciones && reserva.observaciones) {
+        venta.value.observaciones = `Convertida desde reserva #${reserva.id}. ${reserva.observaciones}`;
+      } else if (!venta.value.observaciones) {
+        venta.value.observaciones = `Convertida desde reserva #${reserva.id}`;
+      }
+
+      const vehiculoReservaId = reserva.inventario?.vehiculo?.id;
+      if (Number.isFinite(vehiculoReservaId) && vehiculoReservaId > 0 && detalles.value.length === 0) {
+        const vehiculo = await vehiculoService.find(Number(vehiculoReservaId));
+        agregarVehiculo(vehiculo);
+      }
+    } catch (e: any) {
+      const msg = e?.message ?? `No se pudo preparar la venta desde la reserva #${reservaId}`;
+      alertService.showError(msg);
+      await router.replace({ name: 'ReservaView', params: { reservaId } });
+      return;
+    }
   }
 
   const vehiculoId = Number(route.query.vehiculoId);
@@ -406,11 +519,17 @@ onMounted(async () => {
       agregarVehiculo(vehiculo);
 
       const inventarioRes = await axios.get<IInventario>(`api/inventarios/vehiculo/${vehiculoId}`);
-      const clienteReserva = inventarioRes.data?.clienteReserva;
-      const vencimiento = inventarioRes.data?.fechaVencimientoReserva ? new Date(inventarioRes.data.fechaVencimientoReserva).getTime() : null;
-      const reservaVencida = inventarioRes.data?.estadoInventario === 'RESERVADO' && !!vencimiento && vencimiento < Date.now();
-      if (inventarioRes.data?.estadoInventario === 'RESERVADO' && !reservaVencida && clienteReserva?.id && !venta.value.cliente?.id) {
-        venta.value.cliente = clienteReserva;
+      if (inventarioRes.data?.id && inventarioRes.data?.estadoInventario === 'RESERVADO' && !venta.value.cliente?.id) {
+        try {
+          const reservaRes = await axios.get<IReserva>(`api/reservas/inventario/${inventarioRes.data.id}/activa`);
+          if (reservaRes.data?.cliente?.id) {
+            venta.value.cliente = reservaRes.data.cliente;
+          }
+        } catch (reservaError: any) {
+          if (reservaError?.response?.status !== 404) {
+            alertService.showHttpError(reservaError.response);
+          }
+        }
       }
     } catch (e: any) {
       if (e?.response?.status !== 404) {
@@ -424,11 +543,31 @@ onMounted(async () => {
     try {
       const clienteRes = await axios.get<ICliente>(`api/clientes/${clienteId}`);
       venta.value.cliente = clienteRes.data;
+      await cargarTasacionesUsadoCliente();
     } catch {
       // Si no se puede precargar por query se mantiene seleccion manual.
     }
   }
 });
+
+watch(
+  () => venta.value.cliente?.id,
+  () => {
+    void cargarTasacionesUsadoCliente();
+  },
+);
+
+watch(
+  () => route.query.refreshTasaciones,
+  async value => {
+    if (!value) return;
+    await cargarTasacionesUsadoCliente();
+    const query = { ...route.query };
+    delete query.refreshTasaciones;
+    await router.replace({ query });
+  },
+  { immediate: true },
+);
 
 async function confirmarVenta() {
   try {
@@ -464,6 +603,20 @@ async function confirmarReserva() {
   }
 }
 
+async function crearTasacionDesdeVenta() {
+  if (!venta.value.cliente?.id) {
+    alertService.showError('Primero debes seleccionar un cliente para crear una tasacion.');
+    return;
+  }
+  await router.push({
+    name: 'TasacionUsadoCreate',
+    query: {
+      clienteId: venta.value.cliente.id,
+      returnTo: route.fullPath,
+    },
+  });
+}
+
 function labelEstado(estado: string) {
   return (
     {
@@ -471,6 +624,7 @@ function labelEstado(estado: string) {
       PAGADA: 'Pagada',
       CANCELADA: 'Cancelada',
       RESERVADA: 'Reservada',
+      FINALIZADA: 'Finalizada',
     }[estado] ?? estado
   );
 }
@@ -482,6 +636,7 @@ function badgeEstado(estado: string) {
       PAGADA: 'bg-success',
       CANCELADA: 'bg-danger',
       RESERVADA: 'bg-info text-dark',
+      FINALIZADA: 'bg-primary',
     }[estado] ?? 'bg-light text-dark border'
   );
 }

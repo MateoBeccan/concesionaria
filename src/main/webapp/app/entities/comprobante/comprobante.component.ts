@@ -74,9 +74,9 @@ export default defineComponent({
     };
     const removeComprobante = async () => {
       try {
-        await comprobanteService().delete(removeId.value);
-        const message = `A Comprobante is deleted with identifier ${removeId.value}`;
-        alertService.showInfo(message, { variant: 'danger' });
+        await comprobanteService().anular(removeId.value);
+        const message = `Comprobante ${removeId.value} anulado correctamente`;
+        alertService.showInfo(message, { variant: 'warning' });
         removeId.value = null;
         retrieveComprobantes();
         closeDialog();

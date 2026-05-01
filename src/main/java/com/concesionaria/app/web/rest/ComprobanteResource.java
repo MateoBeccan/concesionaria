@@ -182,4 +182,25 @@ public class ComprobanteResource {
             .headers(HeaderUtil.createEntityDeletionAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .build();
     }
+
+    @PostMapping("/emitir")
+    public ResponseEntity<ComprobanteDTO> emitirComprobante(
+        @RequestParam("ventaId") Long ventaId,
+        @RequestParam("tipoComprobanteId") Long tipoComprobanteId
+    ) throws URISyntaxException {
+        LOG.debug("REST request para emitir comprobante. ventaId={}, tipoComprobanteId={}", ventaId, tipoComprobanteId);
+        ComprobanteDTO result = comprobanteService.emitirComprobante(ventaId, tipoComprobanteId);
+        return ResponseEntity.created(new URI("/api/comprobantes/" + result.getId()))
+            .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
+            .body(result);
+    }
+
+    @PostMapping("/{id}/anular")
+    public ResponseEntity<ComprobanteDTO> anularComprobante(@PathVariable("id") Long id) {
+        LOG.debug("REST request para anular comprobante {}", id);
+        ComprobanteDTO result = comprobanteService.anularComprobante(id);
+        return ResponseEntity.ok()
+            .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, id.toString()))
+            .body(result);
+    }
 }

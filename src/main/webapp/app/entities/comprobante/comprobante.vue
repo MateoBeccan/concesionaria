@@ -54,6 +54,10 @@
               <span>Created Date</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'createdDate'"></jhi-sort-indicator>
             </th>
+            <th scope="col" @click="changeOrder('estado')">
+              <span>Estado</span>
+              <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'estado'"></jhi-sort-indicator>
+            </th>
             <th scope="col" @click="changeOrder('venta.id')">
               <span>Venta</span>
               <jhi-sort-indicator :current-order="propOrder" :reverse="reverse" :field-name="'venta.id'"></jhi-sort-indicator>
@@ -81,6 +85,11 @@
             <td>{{ comprobante.total }}</td>
             <td>{{ formatDateShort(comprobante.createdDate) || '' }}</td>
             <td>
+              <span class="badge" :class="comprobante.estado === 'ANULADO' ? 'bg-secondary' : 'bg-success'">
+                {{ comprobante.estado ?? '-' }}
+              </span>
+            </td>
+            <td>
               <div v-if="comprobante.venta">
                 <router-link :to="{ name: 'VentaView', params: { ventaId: comprobante.venta.id } }">{{ comprobante.venta.id }}</router-link>
               </div>
@@ -107,13 +116,8 @@
                     <span class="d-none d-md-inline">Vista</span>
                   </button>
                 </router-link>
-                <router-link :to="{ name: 'ComprobanteEdit', params: { comprobanteId: comprobante.id } }" custom v-slot="{ navigate }">
-                  <button @click="navigate" class="btn btn-primary btn-sm edit" data-cy="entityEditButton">
-                    <font-awesome-icon icon="pencil-alt"></font-awesome-icon>
-                    <span class="d-none d-md-inline">Editar</span>
-                  </button>
-                </router-link>
                 <b-button
+                  v-if="comprobante.estado !== 'ANULADO'"
                   @click="prepareRemove(comprobante)"
                   variant="danger"
                   class="btn btn-sm"
@@ -121,7 +125,7 @@
                   v-b-modal.removeEntity
                 >
                   <font-awesome-icon icon="times"></font-awesome-icon>
-                  <span class="d-none d-md-inline">Eliminar</span>
+                  <span class="d-none d-md-inline">Anular</span>
                 </b-button>
               </div>
             </td>

@@ -32,7 +32,7 @@
         </div>
         <div class="d-flex gap-2">
           <span class="badge text-bg-secondary">{{ vehiculo.estado ?? 'Sin estado' }}</span>
-          <span class="badge" :class="badgeCondicion(vehiculo.condicion)">{{ labelCondicion(vehiculo.condicion) }}</span>
+          <span class="badge" :class="badgeStock(vehiculo.estadoInventario)">{{ labelStock(vehiculo.estadoInventario) }}</span>
         </div>
       </div>
 
@@ -58,7 +58,7 @@
       </div>
 
       <div class="d-flex flex-wrap gap-2 mt-4">
-        <button v-if="vehiculo.condicion !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">Vender</button>
+        <button v-if="vehiculo.estadoInventario !== 'VENDIDO'" class="btn btn-success" @click="irAVenta">Vender</button>
         <button class="btn btn-outline-primary" @click="editar">Editar</button>
       </div>
       <div class="alert alert-info mt-4 mb-0 py-2">
@@ -149,22 +149,22 @@ function editar() {
   router.push({ name: 'VehiculoEdit', params: { vehiculoId: vehiculo.value.id } });
 }
 
-function badgeCondicion(condicion?: string) {
+function badgeStock(estadoInventario?: string) {
   const map: Record<string, string> = {
-    EN_VENTA: 'text-bg-primary',
+    DISPONIBLE: 'text-bg-primary',
     RESERVADO: 'text-bg-warning',
     VENDIDO: 'text-bg-danger',
   };
-  return map[condicion ?? ''] ?? 'text-bg-light';
+  return map[estadoInventario ?? ''] ?? 'text-bg-light';
 }
 
-function labelCondicion(condicion?: string) {
+function labelStock(estadoInventario?: string) {
   const map: Record<string, string> = {
-    EN_VENTA: 'En venta',
+    DISPONIBLE: 'Disponible',
     RESERVADO: 'Reservado',
     VENDIDO: 'Vendido',
   };
-  return map[condicion ?? ''] ?? 'Sin condicion';
+  return map[estadoInventario ?? ''] ?? 'Sin estado de stock';
 }
 
 function formatPrecio(precio?: number | null) {

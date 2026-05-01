@@ -52,6 +52,10 @@ public interface ComprobanteService {
 
     List<ComprobanteDTO> findByVentaId(Long ventaId);
 
+    ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId);
+
+    ComprobanteDTO anularComprobante(Long comprobanteId);
+
     /**
      * Delete the "id" comprobante.
      *

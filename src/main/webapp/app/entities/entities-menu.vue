@@ -8,9 +8,17 @@
       <font-awesome-icon icon="asterisk" />
       <span>Inventario</span>
     </b-dropdown-item>
+    <b-dropdown-item to="/reserva" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Reservas</span>
+    </b-dropdown-item>
     <b-dropdown-item to="/cotizacion" active-class="active">
       <font-awesome-icon icon="asterisk" />
       <span>Cotizaciones</span>
+    </b-dropdown-item>
+    <b-dropdown-item to="/tasacion-usados" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Tasaciones</span>
     </b-dropdown-item>
     <b-dropdown-item to="/metodo-pago" active-class="active">
       <font-awesome-icon icon="asterisk" />

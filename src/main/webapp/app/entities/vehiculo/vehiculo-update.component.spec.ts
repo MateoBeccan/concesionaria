@@ -25,12 +25,10 @@ vitest.mock('vue-router', () => ({
 }));
 
 import { EstadoVehiculo } from '@/shared/model/enumerations/estado-vehiculo.model';
-import { CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
 
 const vehiculoSample = {
   id: 123,
   estado: EstadoVehiculo.NUEVO,
-  condicion: CondicionVehiculo.EN_VENTA,
   km: 0,
   patente: 'AAA123',
   precio: 0,

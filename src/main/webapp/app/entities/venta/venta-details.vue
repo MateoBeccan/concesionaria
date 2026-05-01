@@ -10,9 +10,7 @@
           <h1 class="page-title mb-0">Venta #{{ venta.id }}</h1>
           <div class="mt-1 d-flex align-items-center gap-2">
             <span class="text-muted small">{{ formatFecha(venta.fecha) }}</span>
-            <span class="badge" :class="badgeEstado(venta.estado)">
-              {{ labelEstado(venta.estado) }}
-            </span>
+            <span class="badge" :class="badgeEstado(venta.estado)">{{ labelEstado(venta.estado) }}</span>
             <span v-if="ventaMonedaDisplay" class="badge border bg-light text-dark">
               {{ ventaMonedaDisplay.simbolo ?? '' }} {{ ventaMonedaDisplay.codigo }}
             </span>
@@ -20,9 +18,7 @@
         </div>
         <div class="d-flex flex-wrap gap-2">
           <button class="btn btn-sm btn-outline-secondary" @click="previousState()">Volver</button>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary"
-            >Editar venta</router-link
-          >
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary">Editar venta</router-link>
         </div>
       </div>
 
@@ -31,23 +27,25 @@
           <div class="row g-3 align-items-center">
             <div class="col-sm-3 text-center">
               <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Total</div>
-              <div class="fw-bold" style="font-size: 1.5rem; color: var(--color-primary)">$ {{ formatPrecio(venta.total) }}</div>
+              <div class="fw-bold" style="font-size: 1.5rem; color: var(--color-primary)">
+                {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(venta.total) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
+              </div>
             </div>
             <div class="col-sm-3 text-center">
               <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Pagado</div>
-              <div class="fw-bold text-success" style="font-size: 1.3rem">$ {{ formatPrecio(venta.totalPagado) }}</div>
+              <div class="fw-bold text-success" style="font-size: 1.3rem">
+                {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(venta.totalPagado) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
+              </div>
             </div>
             <div class="col-sm-3 text-center">
               <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Saldo</div>
               <div class="fw-bold" :class="(venta.saldo ?? 0) > 0 ? 'text-danger' : 'text-success'" style="font-size: 1.3rem">
-                $ {{ formatPrecio(venta.saldo) }}
+                {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(venta.saldo) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
               </div>
             </div>
             <div class="col-sm-3 text-center">
               <div class="text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em">Estado</div>
-              <span class="badge fs-6" :class="badgeEstado(venta.estado)">
-                {{ labelEstado(venta.estado) }}
-              </span>
+              <span class="badge fs-6" :class="badgeEstado(venta.estado)">{{ labelEstado(venta.estado) }}</span>
             </div>
           </div>
         </div>
@@ -74,20 +72,14 @@
                 <p class="mb-2 fw-semibold" style="font-size: 1rem">{{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</p>
                 <dl class="detail-list">
                   <dt>Documento</dt>
-                  <dd>{{ venta.cliente.nroDocumento ?? '—' }}</dd>
+                  <dd>{{ venta.cliente.nroDocumento ?? '-' }}</dd>
                   <dt>Email</dt>
-                  <dd>{{ venta.cliente.email ?? '—' }}</dd>
+                  <dd>{{ venta.cliente.email ?? '-' }}</dd>
                   <dt>Telefono</dt>
-                  <dd>{{ venta.cliente.telefono ?? '—' }}</dd>
+                  <dd>{{ venta.cliente.telefono ?? '-' }}</dd>
                   <dt>Condicion IVA</dt>
-                  <dd>{{ venta.cliente.condicionIva?.descripcion ?? venta.cliente.condicionIva?.codigo ?? '—' }}</dd>
+                  <dd>{{ venta.cliente.condicionIva?.descripcion ?? venta.cliente.condicionIva?.codigo ?? '-' }}</dd>
                 </dl>
-                <router-link
-                  :to="{ name: 'ClienteView', params: { clienteId: venta.cliente.id } }"
-                  class="btn btn-sm btn-outline-secondary mt-3"
-                >
-                  Ver cliente
-                </router-link>
               </div>
               <p v-else class="mb-0 text-muted">Sin cliente asignado</p>
             </div>
@@ -99,20 +91,22 @@
             <div class="card-header d-flex align-items-center gap-2">Detalle financiero</div>
             <div class="card-body">
               <dl class="detail-list">
-                <dt>Importe neto</dt>
-                <dd>$ {{ formatPrecio(venta.importeNeto) }}</dd>
+                <dt>Precio base vehiculo</dt>
+                <dd>
+                  {{ venta.monedaVehiculo?.simbolo ?? venta.vehiculo?.moneda?.simbolo ?? '$' }}
+                  {{ formatPrecio(venta.precioBaseVehiculo ?? venta.vehiculo?.precio) }}
+                  {{ venta.monedaVehiculo?.codigo ?? venta.vehiculo?.moneda?.codigo ?? '' }}
+                </dd>
+                <dt>Moneda venta</dt>
+                <dd>{{ ventaMonedaDisplay?.simbolo ?? '' }} {{ ventaMonedaDisplay?.codigo ?? '-' }}</dd>
+                <dt>Cotizacion aplicada</dt>
+                <dd>{{ formatCotizacion(venta.cotizacion) }}</dd>
+                <dt>Importe convertido</dt>
+                <dd>{{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(venta.importeConvertido ?? venta.importeNeto) }} {{ ventaMonedaDisplay?.codigo ?? '' }}</dd>
                 <dt>% Impuesto</dt>
-                <dd>{{ venta.porcentajeImpuesto ? `${venta.porcentajeImpuesto}%` : '—' }}</dd>
-                <dt>Impuesto</dt>
-                <dd>$ {{ formatPrecio(venta.impuesto) }}</dd>
+                <dd>{{ venta.porcentajeImpuesto ? `${venta.porcentajeImpuesto}%` : '-' }}</dd>
                 <dt>Total</dt>
-                <dd class="fw-semibold" style="color: var(--color-primary)">$ {{ formatPrecio(venta.total) }}</dd>
-                <dt>Cotizacion</dt>
-                <dd>{{ venta.cotizacion ?? '—' }}</dd>
-                <dt>Moneda</dt>
-                <dd>{{ ventaMonedaDisplay?.simbolo ?? '' }} {{ ventaMonedaDisplay?.codigo ?? '—' }}</dd>
-                <dt>Registrado por</dt>
-                <dd>{{ venta.createdBy ?? venta.user?.login ?? '—' }}</dd>
+                <dd class="fw-semibold" style="color: var(--color-primary)">{{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(venta.total) }} {{ ventaMonedaDisplay?.codigo ?? '' }}</dd>
               </dl>
             </div>
           </div>
@@ -121,25 +115,12 @@
 
       <div class="card mb-3">
         <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Vehiculos de la venta</span>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
-            Gestionar venta
-          </router-link>
+          <span>Vehiculo de la venta</span>
+          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">Gestionar venta</router-link>
         </div>
-
-        <div v-if="loadingDetalles" class="card-body">
-          <div v-for="i in 2" :key="i" class="placeholder-glow mb-2 d-flex gap-3">
-            <span class="placeholder col-2 rounded" /><span class="placeholder col-4 rounded" /><span class="placeholder col-2 rounded" />
-          </div>
+        <div v-if="detalles.length === 0" class="card-body py-4 text-center">
+          <p class="mb-0 text-muted">No hay vehiculo asociado a esta venta.</p>
         </div>
-
-        <div v-else-if="detalles.length === 0" class="card-body py-4 text-center">
-          <p class="mb-2 text-muted">No hay vehiculos asociados a esta venta</p>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-primary"
-            >Editar venta</router-link
-          >
-        </div>
-
         <div v-else class="table-responsive">
           <table class="table mb-0">
             <thead>
@@ -147,44 +128,29 @@
                 <th>Patente</th>
                 <th>Vehiculo</th>
                 <th>Estado</th>
-                <th class="text-end">Precio unitario</th>
-                <th class="text-end">Subtotal</th>
-                <th />
+                <th class="text-end">Precio base</th>
+                <th class="text-end">Importe en venta</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="detalle in detalles" :key="detalle.id">
-                <td class="fw-semibold">{{ detalle.vehiculo?.patente ?? '—' }}</td>
+                <td class="fw-semibold">{{ detalle.vehiculo?.patente ?? '-' }}</td>
                 <td>
                   {{ detalle.vehiculo?.version?.modelo?.marca?.nombre ?? '' }}
                   {{ detalle.vehiculo?.version?.modelo?.nombre ?? '' }}
                   {{ detalle.vehiculo?.version?.nombre ?? '' }}
                 </td>
                 <td>
-                  <span
-                    class="badge"
-                    :class="
-                      detalle.vehiculo?.estadoInventario === 'DISPONIBLE'
-                        ? 'bg-success'
-                        : detalle.vehiculo?.estadoInventario === 'RESERVADO'
-                          ? 'bg-warning text-dark'
-                          : detalle.vehiculo?.estadoInventario === 'VENDIDO'
-                            ? 'bg-danger'
-                            : 'bg-secondary'
-                    "
-                  >
-                    {{ detalle.vehiculo?.estadoInventario ?? detalle.vehiculo?.condicion ?? detalle.vehiculo?.estado ?? '-' }}
+                  <span class="badge" :class="detalle.vehiculo?.estadoInventario === 'DISPONIBLE' ? 'bg-success' : detalle.vehiculo?.estadoInventario === 'RESERVADO' ? 'bg-warning text-dark' : detalle.vehiculo?.estadoInventario === 'VENDIDO' ? 'bg-danger' : 'bg-secondary'">
+                    {{ detalle.vehiculo?.estadoInventario ?? detalle.vehiculo?.estado ?? '-' }}
                   </span>
                 </td>
-                <td class="text-end">$ {{ formatPrecio(detalle.precioUnitario) }}</td>
-                <td class="text-end fw-semibold" style="color: var(--color-primary)">$ {{ formatPrecio(detalle.subtotal) }}</td>
                 <td class="text-end">
-                  <router-link
-                    :to="{ name: 'VehiculoView', params: { vehiculoId: detalle.vehiculo?.id } }"
-                    class="btn btn-sm btn-outline-secondary"
-                  >
-                    Ver
-                  </router-link>
+                  {{ venta.monedaVehiculo?.simbolo ?? detalle.vehiculo?.moneda?.simbolo ?? '$' }} {{ formatPrecio(detalle.precioUnitario) }}
+                  {{ venta.monedaVehiculo?.codigo ?? detalle.vehiculo?.moneda?.codigo ?? '' }}
+                </td>
+                <td class="text-end fw-semibold" style="color: var(--color-primary)">
+                  {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(detalle.subtotal) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
                 </td>
               </tr>
             </tbody>
@@ -193,26 +159,15 @@
       </div>
 
       <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Pagos</span>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-success"
-            >Gestionar pagos</router-link
-          >
-        </div>
-
+        <div class="card-header">Pagos</div>
         <div v-if="loadingPagos" class="card-body">
           <div v-for="i in 2" :key="i" class="placeholder-glow mb-2 d-flex gap-3">
             <span class="placeholder col-2 rounded" /><span class="placeholder col-3 rounded" /><span class="placeholder col-2 rounded" />
           </div>
         </div>
-
         <div v-else-if="pagos.length === 0" class="card-body py-4 text-center">
-          <p class="mb-2 text-muted">No hay pagos registrados</p>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-success"
-            >Editar venta</router-link
-          >
+          <p class="mb-0 text-muted">No hay pagos registrados.</p>
         </div>
-
         <div v-else class="table-responsive">
           <table class="table mb-0">
             <thead>
@@ -222,81 +177,27 @@
                 <th>Moneda</th>
                 <th>Referencia</th>
                 <th class="text-end">Monto</th>
-                <th />
               </tr>
             </thead>
             <tbody>
               <tr v-for="pago in pagos" :key="pago.id">
                 <td>{{ formatFecha(pago.fecha) }}</td>
-                <td>{{ pago.metodoPago?.descripcion ?? pago.metodoPago?.codigo ?? '—' }}</td>
-                <td>{{ pago.moneda?.simbolo ?? '' }} {{ pago.moneda?.codigo ?? '—' }}</td>
-                <td class="text-muted small">{{ pago.referencia ?? '—' }}</td>
-                <td class="text-end fw-semibold text-success">$ {{ formatPrecio(pago.monto) }}</td>
-                <td class="text-end">
-                  <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-secondary">
-                    Editar venta
-                  </router-link>
+                <td>{{ pago.metodoPago?.descripcion ?? pago.metodoPago?.codigo ?? '-' }}</td>
+                <td>{{ pago.moneda?.simbolo ?? '' }} {{ pago.moneda?.codigo ?? '-' }}</td>
+                <td class="text-muted small">{{ pago.referencia ?? '-' }}</td>
+                <td class="text-end fw-semibold text-success">
+                  {{ pago.moneda?.simbolo ?? ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(pago.monto) }} {{ pago.moneda?.codigo ?? ventaMonedaDisplay?.codigo ?? '' }}
                 </td>
               </tr>
             </tbody>
             <tfoot class="table-light">
               <tr>
                 <td colspan="4" class="fw-semibold text-end">Total pagado:</td>
-                <td class="text-end fw-bold text-success">$ {{ formatPrecio(totalPagado) }}</td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      <div class="card mb-3">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <span>Comprobantes</span>
-          <router-link :to="{ name: 'VentaEditorEdit', params: { ventaId: venta.id } }" class="btn btn-sm btn-outline-primary">
-            Editar venta
-          </router-link>
-        </div>
-
-        <div v-if="loadingComprobantes" class="card-body">
-          <div class="placeholder-glow d-flex gap-3">
-            <span class="placeholder col-2 rounded" /><span class="placeholder col-3 rounded" />
-          </div>
-        </div>
-
-        <div v-else-if="comprobantes.length === 0" class="card-body py-3 text-center">
-          <p class="mb-0 small text-muted">Sin comprobantes emitidos</p>
-        </div>
-
-        <div v-else class="table-responsive">
-          <table class="table mb-0">
-            <thead>
-              <tr>
-                <th>Numero</th>
-                <th>Tipo</th>
-                <th>Fecha emision</th>
-                <th>Moneda</th>
-                <th class="text-end">Total</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="comprobante in comprobantes" :key="comprobante.id">
-                <td class="fw-semibold">{{ comprobante.numeroComprobante }}</td>
-                <td>{{ comprobante.tipoComprobante?.codigo ?? '—' }} - {{ comprobante.tipoComprobante?.descripcion ?? '' }}</td>
-                <td>{{ formatFecha(comprobante.fechaEmision) }}</td>
-                <td>{{ comprobante.moneda?.simbolo ?? '' }} {{ comprobante.moneda?.codigo ?? '—' }}</td>
-                <td class="text-end fw-semibold">$ {{ formatPrecio(comprobante.total) }}</td>
-                <td class="text-end">
-                  <router-link
-                    :to="{ name: 'ComprobanteView', params: { comprobanteId: comprobante.id } }"
-                    class="btn btn-sm btn-outline-secondary"
-                  >
-                    Ver
-                  </router-link>
+                <td class="text-end fw-bold text-success">
+                  {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(totalPagado) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
                 </td>
               </tr>
-            </tbody>
+            </tfoot>
           </table>
         </div>
       </div>

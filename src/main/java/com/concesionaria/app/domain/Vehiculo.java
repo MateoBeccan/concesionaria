@@ -1,6 +1,5 @@
     package com.concesionaria.app.domain;
 
-    import com.concesionaria.app.domain.enumeration.CondicionVehiculo;
     import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
     import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
     import jakarta.persistence.*;
@@ -42,12 +41,25 @@
         @Column(name = "km", nullable = false)
         private Integer km;
 
+    @Size(max = 10)
     @Pattern(regexp = "(^[A-Z]{3}[0-9]{3}$)|(^[A-Z]{2}[0-9]{3}[A-Z]{2}$)")
-    @Column(name = "patente")
+    @Column(name = "patente", length = 10)
     private String patente;
 
+    @Size(max = 30)
+    @Column(name = "vin_chasis", length = 30)
+    private String vinChasis;
+
+    @Size(max = 50)
+    @Column(name = "color", length = 50)
+    private String color;
+
+    @Size(max = 500)
+    @Column(name = "observaciones", length = 500)
+    private String observaciones;
+
         @NotNull
-        @DecimalMin(value = "0")
+        @DecimalMin(value = "0.01")
         @Column(name = "precio", precision = 21, scale = 2, nullable = false)
         private BigDecimal precio;
 
@@ -76,14 +88,14 @@
         @ManyToOne(fetch = FetchType.LAZY)
         private TipoVehiculo tipoVehiculo;
 
-    @Deprecated(forRemoval = false)
-    @Enumerated(EnumType.STRING)
-    @Column(name = "condicion")
-    private CondicionVehiculo condicion;
+        @NotNull
+        @ManyToOne(fetch = FetchType.LAZY, optional = false)
+        @JoinColumn(name = "moneda_id", nullable = false)
+        private Moneda moneda;
 
-        @JsonIgnoreProperties(value = { "vehiculo", "clienteReserva" }, allowSetters = true)
-        @OneToOne(fetch = FetchType.LAZY, mappedBy = "vehiculo")
-        private Inventario inventario;
+    @JsonIgnoreProperties(value = { "vehiculo" }, allowSetters = true)
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "vehiculo")
+    private Inventario inventario;
 
         // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -107,14 +119,6 @@
         public Vehiculo estado(EstadoVehiculo estado) {
             this.setEstado(estado);
             return this;
-        }
-
-        public CondicionVehiculo getCondicion() {
-            return condicion;
-        }
-
-        public void setCondicion(CondicionVehiculo condicion) {
-            this.condicion = condicion;
         }
 
         public void setEstado(EstadoVehiculo estado) {
@@ -158,6 +162,45 @@
 
         public void setPatente(String patente) {
             this.patente = patente;
+        }
+
+        public String getVinChasis() {
+            return vinChasis;
+        }
+
+        public void setVinChasis(String vinChasis) {
+            this.vinChasis = vinChasis;
+        }
+
+        public Vehiculo vinChasis(String vinChasis) {
+            this.setVinChasis(vinChasis);
+            return this;
+        }
+
+        public String getColor() {
+            return color;
+        }
+
+        public void setColor(String color) {
+            this.color = color;
+        }
+
+        public Vehiculo color(String color) {
+            this.setColor(color);
+            return this;
+        }
+
+        public String getObservaciones() {
+            return observaciones;
+        }
+
+        public void setObservaciones(String observaciones) {
+            this.observaciones = observaciones;
+        }
+
+        public Vehiculo observaciones(String observaciones) {
+            this.setObservaciones(observaciones);
+            return this;
         }
 
         public BigDecimal getPrecio() {
@@ -264,6 +307,19 @@
             return this;
         }
 
+        public Moneda getMoneda() {
+            return this.moneda;
+        }
+
+        public void setMoneda(Moneda moneda) {
+            this.moneda = moneda;
+        }
+
+        public Vehiculo moneda(Moneda moneda) {
+            this.setMoneda(moneda);
+            return this;
+        }
+
         public Inventario getInventario() {
             return this.inventario;
         }
@@ -311,6 +367,9 @@
                 ", fechaFabricacion='" + getFechaFabricacion() + "'" +
                 ", km=" + getKm() +
                 ", patente='" + getPatente() + "'" +
+                ", vinChasis='" + getVinChasis() + "'" +
+                ", color='" + getColor() + "'" +
+                ", observaciones='" + getObservaciones() + "'" +
                 ", precio=" + getPrecio() +
                 ", createdDate='" + getCreatedDate() + "'" +
                 ", createdBy='" + getCreatedBy() + "'" +

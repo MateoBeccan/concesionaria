@@ -5,11 +5,13 @@
         <div>
           <div class="fw-semibold">{{ vehiculo.patente }}</div>
           <div class="text-muted small">
-            {{ vehiculo.version?.nombre ?? 'Sin versión' }}{{ vehiculo.precio != null ? ` · $ ${formatPrecio(vehiculo.precio)}` : '' }}
+            {{ vehiculo.version?.nombre ?? 'Sin versión' }}{{
+              vehiculo.precio != null ? ` · ${vehiculo.moneda?.simbolo ?? '$'} ${formatPrecio(vehiculo.precio)} ${vehiculo.moneda?.codigo ?? ''}` : ''
+            }}
           </div>
         </div>
         <div class="d-flex gap-2 align-items-center">
-          <span class="badge" :class="badgeCondicion(vehiculo.condicion)">{{ vehiculo.condicion ?? 'N/D' }}</span>
+          <span class="badge" :class="badgeStock(vehiculo.estadoInventario)">{{ vehiculo.estadoInventario ?? 'N/D' }}</span>
           <button class="btn btn-sm btn-outline-secondary" @click="limpiarSeleccion">Cambiar</button>
         </div>
       </div>
@@ -31,7 +33,7 @@
 
     <div class="d-flex justify-content-between gap-2 pt-2">
       <button class="btn btn-outline-secondary" type="button" @click="emit('atras')">Atrás</button>
-      <button class="btn btn-primary" type="button" :disabled="!vehiculo || vehiculo.condicion === 'VENDIDO'" @click="confirmarSeleccion">
+      <button class="btn btn-primary" type="button" :disabled="!vehiculo || vehiculo.estadoInventario === 'VENDIDO'" @click="confirmarSeleccion">
         Continuar
       </button>
     </div>
@@ -74,7 +76,7 @@ function limpiarSeleccion() {
 }
 
 function confirmarSeleccion() {
-  if (!vehiculo.value || vehiculo.value.condicion === 'VENDIDO') return;
+  if (!vehiculo.value || vehiculo.value.estadoInventario === 'VENDIDO') return;
   emit('seleccionado', vehiculo.value);
 }
 
@@ -84,13 +86,13 @@ function onVehiculoGuardado(nuevoVehiculo: IVehiculo) {
   setVehiculo(nuevoVehiculo);
 }
 
-function badgeCondicion(condicion?: string | null) {
+function badgeStock(estadoInventario?: string | null) {
   const map: Record<string, string> = {
-    EN_VENTA: 'bg-primary',
+    DISPONIBLE: 'bg-primary',
     RESERVADO: 'bg-warning text-dark',
     VENDIDO: 'bg-danger',
   };
-  return map[condicion ?? ''] ?? 'bg-light text-dark border';
+  return map[estadoInventario ?? ''] ?? 'bg-light text-dark border';
 }
 
 function formatPrecio(precio?: number | null) {

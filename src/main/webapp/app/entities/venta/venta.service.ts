@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { IVenta } from '@/shared/model/venta.model';
+import type { IVentaHistorial } from '@/shared/model/venta-historial.model';
 import buildPaginationQueryOpts from '@/shared/sort/sorts';
 
 const baseApiUrl = 'api/ventas';
@@ -31,5 +32,10 @@ export default class VentaService {
 
   async delete(id: number): Promise<void> {
     await axios.delete(`${baseApiUrl}/${id}`);
+  }
+
+  async historial(id: number): Promise<IVentaHistorial[]> {
+    const res = await axios.get<IVentaHistorial[]>(`${baseApiUrl}/${id}/historial`);
+    return res.data;
   }
 }

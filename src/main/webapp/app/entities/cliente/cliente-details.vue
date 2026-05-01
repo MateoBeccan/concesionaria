@@ -16,6 +16,11 @@
         <h5 class="border-bottom pb-2 mb-3">Datos personales</h5>
         <div class="row mb-3">
           <div class="col-md-6">
+            <strong>Tipo persona:</strong>
+            <div>{{ cliente.tipoPersona || '-' }}</div>
+          </div>
+
+          <div class="col-md-6">
             <strong>Documento:</strong>
             <div>{{ cliente.nroDocumento }}</div>
           </div>

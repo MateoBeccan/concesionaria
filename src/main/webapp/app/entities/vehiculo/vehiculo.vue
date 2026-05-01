@@ -2,8 +2,8 @@
   <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h3 class="mb-0">Vehículos</h3>
-        <small class="text-muted">Catálogo comercial y operativo de unidades disponibles, reservadas y vendidas.</small>
+        <h3 class="mb-0">Vehiculos</h3>
+        <small class="text-muted">Catalogo comercial y operativo de unidades disponibles, reservadas y vendidas.</small>
       </div>
 
       <div class="d-flex gap-2">
@@ -14,7 +14,7 @@
         <router-link :to="{ name: 'VehiculoCreate' }" custom v-slot="{ navigate }">
           <button @click="navigate" class="btn btn-primary">
             <font-awesome-icon icon="plus" />
-            Nuevo Vehículo
+            Nuevo Vehiculo
           </button>
         </router-link>
       </div>
@@ -23,11 +23,7 @@
     <div class="card shadow-sm p-3 mb-4">
       <div class="row g-3">
         <div class="col-md-4">
-          <input
-            v-model="search"
-            class="form-control"
-            placeholder="Buscar por patente, marca, modelo, versión o motor"
-          />
+          <input v-model="search" class="form-control" placeholder="Buscar por patente, marca, modelo, version o motor" />
         </div>
 
         <div class="col-md-2">
@@ -39,9 +35,9 @@
         </div>
 
         <div class="col-md-2">
-          <select v-model="filtroCondicion" class="form-control">
-            <option value="">Todas las condiciones</option>
-            <option value="EN_VENTA">En venta</option>
+          <select v-model="filtroStock" class="form-control">
+            <option value="">Todo el stock</option>
+            <option value="DISPONIBLE">Disponible</option>
             <option value="RESERVADO">Reservado</option>
             <option value="VENDIDO">Vendido</option>
           </select>
@@ -61,7 +57,7 @@
     </div>
 
     <div class="alert alert-warning" v-if="!isFetching && filteredVehiculos.length === 0">
-      No hay vehículos que coincidan con los filtros aplicados.
+      No hay vehiculos que coincidan con los filtros aplicados.
     </div>
 
     <div class="card shadow-sm" v-if="filteredVehiculos.length > 0">
@@ -72,11 +68,11 @@
               <th @click="changeOrder('id')">#</th>
               <th @click="changeOrder('patente')">Unidad</th>
               <th @click="changeOrder('estado')">Estado</th>
-              <th @click="changeOrder('condicion')">Condición</th>
-              <th>Catálogo</th>
+              <th>Stock</th>
+              <th>Catalogo</th>
               <th @click="changeOrder('km')">Km</th>
               <th @click="changeOrder('precio')">Precio</th>
-              <th @click="changeOrder('fechaFabricacion')">Fabricación</th>
+              <th @click="changeOrder('fechaFabricacion')">Fabricacion</th>
               <th class="text-end">Acciones</th>
             </tr>
           </thead>
@@ -101,8 +97,8 @@
               </td>
 
               <td>
-                <span class="badge" :class="badgeCondicion(vehiculo.condicion)">
-                  {{ vehiculo.condicion || 'Sin condición' }}
+                <span class="badge" :class="badgeStock(vehiculo.estadoInventario)">
+                  {{ vehiculo.estadoInventario || 'Sin estado de stock' }}
                 </span>
               </td>
 
@@ -111,13 +107,13 @@
                   {{ vehiculo.version?.modelo?.marca?.nombre || '-' }} {{ vehiculo.version?.modelo?.nombre || '' }}
                 </div>
                 <small class="text-muted">
-                  {{ vehiculo.version?.nombre || 'Sin versión' }}
+                  {{ vehiculo.version?.nombre || 'Sin version' }}
                   <span v-if="vehiculo.motor?.nombre"> · {{ vehiculo.motor.nombre }}</span>
                 </small>
               </td>
 
               <td>{{ vehiculo.km?.toLocaleString('es-AR') ?? '-' }}</td>
-              <td>{{ formatPrecio(vehiculo.precio) }}</td>
+              <td>{{ formatPrecio(vehiculo) }}</td>
               <td>{{ formatDateShort(vehiculo.fechaFabricacion) || '-' }}</td>
 
               <td class="text-end">
@@ -130,9 +126,7 @@
                     <button class="btn btn-sm btn-outline-primary">Editar</button>
                   </router-link>
 
-                  <button @click="prepareRemove(vehiculo)" class="btn btn-sm btn-outline-danger">
-                    Eliminar
-                  </button>
+                  <button @click="prepareRemove(vehiculo)" class="btn btn-sm btn-outline-danger">Eliminar</button>
                 </div>
               </td>
             </tr>
@@ -142,8 +136,8 @@
     </div>
 
     <b-modal ref="removeEntity">
-      <template #title>Confirmar eliminación</template>
-      <div class="modal-body">¿Eliminar vehículo?</div>
+      <template #title>Confirmar eliminacion</template>
+      <div class="modal-body">¿Eliminar vehiculo?</div>
       <template #footer>
         <button class="btn btn-secondary" @click="closeDialog()">Cancelar</button>
         <button class="btn btn-danger" @click="removeVehiculo">Eliminar</button>

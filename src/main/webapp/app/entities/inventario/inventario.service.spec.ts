@@ -54,8 +54,6 @@ describe('Service Tests', () => {
           fechaIngreso: dayjs(currentDate).format(DATE_TIME_FORMAT),
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaVencimientoReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
         axiosStub.get.resolves({ data: returnedFromService });
@@ -81,16 +79,12 @@ describe('Service Tests', () => {
           fechaIngreso: dayjs(currentDate).format(DATE_TIME_FORMAT),
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaVencimientoReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
         const expected = {
           fechaIngreso: currentDate,
           createdDate: currentDate,
           lastModifiedDate: currentDate,
-          fechaReserva: currentDate,
-          fechaVencimientoReserva: currentDate,
           ...returnedFromService,
         };
 
@@ -119,8 +113,6 @@ describe('Service Tests', () => {
           observaciones: 'BBBBBB',
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaVencimientoReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
 
@@ -128,8 +120,6 @@ describe('Service Tests', () => {
           fechaIngreso: currentDate,
           createdDate: currentDate,
           lastModifiedDate: currentDate,
-          fechaReserva: currentDate,
-          fechaVencimientoReserva: currentDate,
           ...returnedFromService,
         };
         axiosStub.put.resolves({ data: returnedFromService });
@@ -156,7 +146,6 @@ describe('Service Tests', () => {
           estadoInventario: 'BBBBBB',
           observaciones: 'BBBBBB',
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaVencimientoReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...new Inventario(),
         };
         const returnedFromService = Object.assign(patchObject, elemDefault);
@@ -165,8 +154,6 @@ describe('Service Tests', () => {
           fechaIngreso: currentDate,
           createdDate: currentDate,
           lastModifiedDate: currentDate,
-          fechaReserva: currentDate,
-          fechaVencimientoReserva: currentDate,
           ...returnedFromService,
         };
         axiosStub.patch.resolves({ data: returnedFromService });
@@ -195,16 +182,12 @@ describe('Service Tests', () => {
           observaciones: 'BBBBBB',
           createdDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
           lastModifiedDate: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
-          fechaVencimientoReserva: dayjs(currentDate).format(DATE_TIME_FORMAT),
           ...elemDefault,
         };
         const expected = {
           fechaIngreso: currentDate,
           createdDate: currentDate,
           lastModifiedDate: currentDate,
-          fechaReserva: currentDate,
-          fechaVencimientoReserva: currentDate,
           ...returnedFromService,
         };
         axiosStub.get.resolves([returnedFromService]);

@@ -114,7 +114,7 @@
 
         <div v-else-if="isAdmin" class="status-list">
           <div class="status-item">
-            <span>Reservas vencidas</span>
+            <span>Reservas activas</span>
             <strong>{{ adminAlerts.expiredReservations }}</strong>
           </div>
           <div class="status-item">
@@ -326,7 +326,7 @@ const overviewPoints = computed(() =>
 const pulseMetrics = computed(() =>
   isAdmin.value
     ? [
-        { label: 'Reservas vencidas', value: String(adminAlerts.value.expiredReservations), copy: 'necesitan revision o liberacion' },
+        { label: 'Reservas activas', value: String(adminAlerts.value.expiredReservations), copy: 'stock comprometido comercialmente' },
         { label: 'Inventario sin ubicacion', value: String(adminAlerts.value.withoutLocation), copy: 'afecta control operativo' },
         { label: 'Ventas pendientes', value: String(kpiData.value.pendingSales), copy: 'operaciones sin cierre definitivo' },
         { label: 'Cotizacion activa', value: latestCotizacionLabel.value, copy: 'referencia comercial vigente' },
@@ -367,13 +367,8 @@ const adminCatalogLinks = [
 ];
 
 const adminAlerts = computed(() => {
-  const today = startOfDay(new Date());
-
   return {
-    expiredReservations: inventarioItems.value.filter(item => {
-      if (item.estadoInventario !== 'RESERVADO' || !item.fechaVencimientoReserva) return false;
-      return startOfDay(item.fechaVencimientoReserva) < today;
-    }).length,
+    expiredReservations: inventarioItems.value.filter(item => item.estadoInventario === 'RESERVADO').length,
     withoutLocation: inventarioItems.value.filter(item => !String(item.ubicacion ?? '').trim()).length,
   };
 });
@@ -465,11 +460,6 @@ function sameDay(value?: Date | string | null, compareDate = new Date()) {
   return date.toDateString() === compareDate.toDateString();
 }
 
-function startOfDay(value: Date | string) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
 </script>
 
 <style scoped>

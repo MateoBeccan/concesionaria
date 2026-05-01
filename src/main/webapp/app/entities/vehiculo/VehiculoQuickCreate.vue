@@ -34,11 +34,6 @@
             <div class="invalid-feedback">{{ errores.estado }}</div>
           </div>
 
-          <div class="col-md-3">
-            <label class="form-label">Condicion comercial</label>
-            <div class="form-control bg-light">EN_VENTA</div>
-          </div>
-
           <div class="col-md-4">
             <label class="form-label">Fecha fabricacion *</label>
             <input v-model="form.fechaFabricacion" type="date" class="form-control" :class="{ 'is-invalid': errores.fechaFabricacion }" />
@@ -54,7 +49,7 @@
           <div class="col-md-4">
             <label class="form-label">Precio *</label>
             <div class="input-group">
-              <span class="input-group-text">$</span>
+              <span class="input-group-text">{{ form.moneda?.simbolo ?? '$' }}</span>
               <input
                 v-model.number="form.precio"
                 type="number"
@@ -65,6 +60,17 @@
               />
             </div>
             <div class="invalid-feedback d-block" v-if="errores.precio">{{ errores.precio }}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Moneda *</label>
+            <select v-model="form.moneda" class="form-select" :class="{ 'is-invalid': errores.moneda }">
+              <option :value="null">Seleccionar</option>
+              <option v-for="moneda in monedas" :key="moneda.id" :value="moneda">
+                {{ moneda.simbolo ?? '' }} {{ moneda.codigo }} - {{ moneda.descripcion }}
+              </option>
+            </select>
+            <div class="invalid-feedback">{{ errores.moneda }}</div>
           </div>
 
           <div class="col-md-6">
@@ -89,6 +95,15 @@
               <option v-for="modelo in modelosFiltrados" :key="modelo.id" :value="modelo">{{ modelo.nombre }}</option>
             </select>
             <div class="invalid-feedback">{{ errores.modelo }}</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Tipo de vehiculo *</label>
+            <select v-model="form.tipoVehiculo" class="form-select" :class="{ 'is-invalid': errores.tipoVehiculo }">
+              <option :value="null">Seleccionar</option>
+              <option v-for="tipo in tipoVehiculos" :key="tipo.id" :value="tipo">{{ tipo.nombre }}</option>
+            </select>
+            <div class="invalid-feedback">{{ errores.tipoVehiculo }}</div>
           </div>
 
           <div class="col-md-6">
@@ -159,11 +174,13 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 
 import MarcaService from '@/entities/marca/marca.service';
+import MonedaService from '@/entities/moneda/moneda.service';
 import ModeloService from '@/entities/modelo/modelo.service';
 import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
 import VersionService from '@/entities/version/version.service';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 import type { IMotor } from '@/shared/model/motor.model';
+import type { IMoneda } from '@/shared/model/moneda.model';
 import type { ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 import type { IVersion } from '@/shared/model/version.model';
@@ -181,6 +198,7 @@ const marcaService = new MarcaService();
 const modeloService = new ModeloService();
 const versionService = new VersionService();
 const tipoVehiculoService = new TipoVehiculoService();
+const monedaService = new MonedaService();
 
 const PATENTE_REGEX = /^(?:[A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
 
@@ -191,8 +209,9 @@ const formCatalog = useVehiculoForm({
   tipoVehiculoService,
 });
 
-const {
+  const {
   marcas,
+  tipoVehiculos,
   selectedMarca,
   selectedModelo,
   modelosFiltrados,
@@ -210,8 +229,8 @@ const {
 const form = reactive({
   patente: (props.patenteInicial ?? '').toUpperCase(),
   estado: '' as 'NUEVO' | 'USADO' | '',
-  condicion: 'EN_VENTA',
   precio: null as number | null,
+  moneda: null as IMoneda | null,
   km: 0,
   fechaFabricacion: '',
   motor: null as IMotor | null,
@@ -223,16 +242,19 @@ const errores = reactive({
   patente: '',
   estado: '',
   precio: '',
+  moneda: '',
   km: '',
   fechaFabricacion: '',
   marca: '',
   modelo: '',
+  tipoVehiculo: '',
   version: '',
   motor: '',
 });
 
 const errorServidor = ref<string | null>(null);
 const guardando = ref(false);
+const monedas = ref<IMoneda[]>([]);
 const patenteRequerida = computed(() => form.estado === 'USADO');
 const patenteHint = computed(() =>
   patenteRequerida.value ? 'Para unidades usadas la patente es obligatoria.' : 'La patente puede cargarse más adelante.',
@@ -243,7 +265,14 @@ function normalizarPatente(value?: string | null) {
 }
 
 onMounted(async () => {
-  await cargarCatalogos(form);
+  const [, monedasRes] = await Promise.all([
+    cargarCatalogos(form),
+    monedaService.retrieve({ 'activo.equals': true, page: 0, size: 100, sort: ['codigo,asc'] }),
+  ]);
+  monedas.value = monedasRes.data ?? [];
+  if (!form.moneda && monedas.value.length > 0) {
+    form.moneda = monedas.value[0];
+  }
 });
 
 async function handleMarcaChange() {
@@ -263,12 +292,8 @@ async function validarPatenteUnica() {
     return true;
   }
 
-  try {
-    const existente = await vehiculoService.findByPatente(form.patente);
-    return !existente?.id;
-  } catch (e: any) {
-    return e.response?.status === 404;
-  }
+  const existente = await vehiculoService.findByPatente(form.patente);
+  return !existente?.id;
 }
 
 function validarFecha(fecha: string) {
@@ -299,10 +324,12 @@ async function validar(): Promise<boolean> {
 
   errores.estado = form.estado ? '' : 'Selecciona el estado';
   errores.precio = form.precio && form.precio > 0 ? '' : 'El precio debe ser mayor a 0';
+  errores.moneda = form.moneda?.id ? '' : 'Selecciona la moneda del vehiculo';
   errores.km = Number.isInteger(form.km) && form.km >= 0 ? '' : 'Los kilometros no pueden ser negativos';
   errores.fechaFabricacion = validarFecha(form.fechaFabricacion) ? '' : 'La fecha de fabricacion es obligatoria y no puede ser futura';
   errores.marca = selectedMarca.value ? '' : 'Selecciona una marca';
   errores.modelo = selectedModelo.value ? '' : 'Selecciona un modelo';
+  errores.tipoVehiculo = form.tipoVehiculo ? '' : 'Selecciona el tipo de vehiculo';
   errores.version = form.version ? '' : 'Selecciona una version';
 
   if (!form.version) {
@@ -330,8 +357,8 @@ async function guardar() {
     const payload = {
       patente: form.patente || undefined,
       estado: form.estado,
-      condicion: form.condicion,
       precio: form.precio,
+      moneda: form.moneda ? { id: form.moneda.id } : null,
       km: form.km,
       fechaFabricacion: form.fechaFabricacion,
       motor: form.motor ? { id: form.motor.id } : null,
@@ -342,7 +369,13 @@ async function guardar() {
     const vehiculo = await vehiculoService.create(payload as IVehiculo);
     emit('guardado', vehiculo);
   } catch (e: any) {
-    errorServidor.value = e.response?.data?.message ?? 'Error al guardar vehiculo';
+    const detalle = String(e?.response?.data?.detail ?? e?.response?.data?.message ?? '');
+    if (detalle.includes('Field \'disponible\' doesn\'t have a default value') || detalle.includes("constraint [disponible]")) {
+      errorServidor.value =
+        'No se pudo crear el inventario del vehiculo por una inconsistencia de esquema (campo legacy "disponible"). Reinicia backend para aplicar migraciones y vuelve a intentar.';
+    } else {
+      errorServidor.value = e.response?.data?.message ?? 'Error al guardar vehiculo';
+    }
   } finally {
     guardando.value = false;
   }

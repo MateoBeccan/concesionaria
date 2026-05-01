@@ -29,7 +29,7 @@
         <div class="card-header">
           <div>
             <div class="section-title">1. Estado operativo</div>
-            <div class="section-copy">Defini si la unidad esta disponible, reservada o vendida. La disponibilidad se deriva automaticamente del estado.</div>
+            <div class="section-copy">Defini si la unidad esta disponible o vendida. El estado reservado se administra desde Reserva.</div>
           </div>
         </div>
         <div class="card-body">
@@ -61,14 +61,6 @@
             </div>
 
             <div class="col-md-4">
-              <label class="form-label">Resumen</label>
-              <div class="form-control bg-light d-flex align-items-center justify-content-between">
-                <span>{{ stateSummaryLabel }}</span>
-                <span class="badge" :class="stateSummaryClass">{{ inventario.estadoInventario ?? 'SIN_ESTADO' }}</span>
-              </div>
-            </div>
-
-            <div class="col-md-4">
               <label class="form-label">Fecha de ingreso <span class="text-danger">*</span></label>
               <input
                 id="inventario-fechaIngreso"
@@ -80,6 +72,20 @@
               />
               <div class="invalid-feedback">
                 <span v-for="error of v$.fechaIngreso.$errors" :key="error.$uid">{{ error.$message }}</span>
+              </div>
+            </div>
+
+            <div class="col-md-8">
+              <label class="form-label">Codigo interno de stock</label>
+              <input
+                v-model="v$.codigoInternoStock.$model"
+                type="text"
+                class="form-control"
+                :class="{ 'is-invalid': v$.codigoInternoStock.$dirty && v$.codigoInternoStock.$invalid }"
+                placeholder="INV-000123 (si se deja vacio, el backend lo genera)"
+              />
+              <div class="invalid-feedback">
+                <span v-for="error of v$.codigoInternoStock.$errors" :key="error.$uid">{{ error.$message }}</span>
               </div>
             </div>
 
@@ -104,7 +110,7 @@
         <div class="card-header">
           <div>
             <div class="section-title">2. Unidad asociada</div>
-            <div class="section-copy">Elegi la unidad correcta y verifica que la condicion comercial quede alineada con el inventario.</div>
+            <div class="section-copy">Elegi la unidad correcta y verifica que el estado de stock quede alineado con el inventario.</div>
           </div>
         </div>
         <div class="card-body">
@@ -127,19 +133,19 @@
             </div>
 
             <div class="col-md-5">
-              <label class="form-label">Condicion comercial esperada</label>
+              <label class="form-label">Estado de stock esperado</label>
               <div class="form-control bg-light d-flex align-items-center justify-content-between">
-                <span>{{ expectedCondicion ?? 'Sin definir' }}</span>
-                <span class="badge bg-dark">{{ selectedVehiculo?.condicion ?? 'ACTUAL SIN DATO' }}</span>
+                <span>Gestionado por inventario</span>
+                <span class="badge bg-dark">{{ selectedVehiculo?.estadoInventario ?? 'ACTUAL SIN DATO' }}</span>
               </div>
-              <small class="text-muted">Al guardar, el sistema sincroniza la condicion comercial del vehiculo.</small>
+              <small class="text-muted">El stock se controla unicamente desde inventario.</small>
             </div>
 
             <div class="col-md-12" v-if="selectedVehiculo">
               <div class="rounded border bg-light p-3">
                 <div class="fw-semibold mb-1">Unidad seleccionada</div>
                 <div>{{ selectedVehiculo.patente || 'Sin patente asignada' }}</div>
-                <div class="text-muted small">ID {{ selectedVehiculo.id }} · Condicion actual {{ selectedVehiculo.condicion ?? 'Sin condicion' }}</div>
+                <div class="text-muted small">ID {{ selectedVehiculo.id }} · Stock actual {{ selectedVehiculo.estadoInventario ?? 'Sin estado' }}</div>
               </div>
             </div>
           </div>
@@ -150,72 +156,11 @@
         <div class="card-header">
           <div>
             <div class="section-title">3. Reserva</div>
-            <div class="section-copy">Solo cuando el estado sea reservado se solicitan cliente, fecha de reserva y vencimiento.</div>
+            <div class="section-copy">La reserva se administra exclusivamente desde el modulo Reserva, no desde Inventario.</div>
           </div>
         </div>
         <div class="card-body">
-          <div v-if="isReservado" class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label">Cliente de la reserva <span class="text-danger">*</span></label>
-              <select
-                v-model="v$.clienteReserva.$model"
-                class="form-select"
-                :class="{ 'is-invalid': v$.clienteReserva.$dirty && v$.clienteReserva.$invalid }"
-              >
-                <option :value="null">Seleccionar cliente</option>
-                <option
-                  v-for="clienteOption in clientes"
-                  :key="clienteOption.id"
-                  :value="inventario.clienteReserva && clienteOption.id === inventario.clienteReserva.id ? inventario.clienteReserva : clienteOption"
-                >
-                  {{ clienteLabel(clienteOption) }}
-                </option>
-              </select>
-              <div class="invalid-feedback">
-                <span v-for="error of v$.clienteReserva.$errors" :key="error.$uid">{{ error.$message }}</span>
-              </div>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label">Fecha de reserva <span class="text-danger">*</span></label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                :class="{ 'is-invalid': v$.fechaReserva.$dirty && v$.fechaReserva.$invalid }"
-                :value="convertDateTimeFromServer(v$.fechaReserva.$model)"
-                @change="updateInstantField('fechaReserva', $event)"
-              />
-              <div class="invalid-feedback">
-                <span v-for="error of v$.fechaReserva.$errors" :key="error.$uid">{{ error.$message }}</span>
-              </div>
-            </div>
-
-            <div class="col-md-3">
-              <label class="form-label">Vence el <span class="text-danger">*</span></label>
-              <input
-                type="datetime-local"
-                class="form-control"
-                :class="{ 'is-invalid': v$.fechaVencimientoReserva.$dirty && v$.fechaVencimientoReserva.$invalid }"
-                :value="convertDateTimeFromServer(v$.fechaVencimientoReserva.$model)"
-                @change="updateInstantField('fechaVencimientoReserva', $event)"
-              />
-              <div class="invalid-feedback">
-                <span v-for="error of v$.fechaVencimientoReserva.$errors" :key="error.$uid">{{ error.$message }}</span>
-              </div>
-            </div>
-
-            <div class="col-md-12" v-if="selectedCliente">
-              <div class="rounded border bg-light p-3">
-                <div class="fw-semibold mb-1">Reserva asignada</div>
-                <div>{{ clienteLabel(selectedCliente) }}</div>
-                <div class="text-muted small">La unidad permanecera fuera de venta hasta liberar o vencer la reserva.</div>
-              </div>
-            </div>
-          </div>
-
-          <div v-else class="text-muted">
-            Este estado no requiere datos de reserva. Si habia una reserva cargada, se limpiara automaticamente al guardar.
-          </div>
+          <div class="text-muted">Si necesitas reservar una unidad, crea o gestiona la reserva desde el flujo de Venta/Reserva.</div>
         </div>
       </div>
 
@@ -243,11 +188,6 @@
       <div v-if="businessErrors.length" class="alert alert-danger">
         <div class="fw-semibold mb-1">No se puede guardar el inventario</div>
         <div v-for="error in businessErrors" :key="error">{{ error }}</div>
-      </div>
-
-      <div v-if="businessWarnings.length" class="alert alert-warning">
-        <div class="fw-semibold mb-1">Revisa estas alertas</div>
-        <div v-for="warning in businessWarnings" :key="warning">{{ warning }}</div>
       </div>
 
       <div class="d-flex justify-content-end gap-2">

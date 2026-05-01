@@ -1,5 +1,6 @@
 import { type ICondicionIva } from '@/shared/model/condicion-iva.model';
 import { type ITipoDocumento } from '@/shared/model/tipo-documento.model';
+import { type TipoPersona } from '@/shared/model/enumerations/tipo-persona.model';
 
 export interface ICliente {
   id?: number;
@@ -20,6 +21,7 @@ export interface ICliente {
   lastModifiedBy?: string | null;
   condicionIva?: ICondicionIva | null;
   tipoDocumento?: ITipoDocumento | null;
+  tipoPersona?: keyof typeof TipoPersona;
 }
 
 export class Cliente implements ICliente {
@@ -42,7 +44,9 @@ export class Cliente implements ICliente {
     public lastModifiedBy?: string | null,
     public condicionIva?: ICondicionIva | null,
     public tipoDocumento?: ITipoDocumento | null,
+    public tipoPersona?: keyof typeof TipoPersona,
   ) {
     this.activo = this.activo ?? false;
+    this.tipoPersona = this.tipoPersona ?? 'FISICA';
   }
 }

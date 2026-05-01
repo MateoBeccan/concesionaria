@@ -49,20 +49,11 @@ class InventarioResourceIT {
     private static final String DEFAULT_OBSERVACIONES = "AAAAAAAAAA";
     private static final String UPDATED_OBSERVACIONES = "BBBBBBBBBB";
 
-    private static final Boolean DEFAULT_DISPONIBLE = false;
-    private static final Boolean UPDATED_DISPONIBLE = true;
-
     private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private static final Instant DEFAULT_LAST_MODIFIED_DATE = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_LAST_MODIFIED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-
-    private static final Instant DEFAULT_FECHA_RESERVA = Instant.ofEpochMilli(0L);
-    private static final Instant UPDATED_FECHA_RESERVA = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-
-    private static final Instant DEFAULT_FECHA_VENCIMIENTO_RESERVA = Instant.ofEpochMilli(0L);
-    private static final Instant UPDATED_FECHA_VENCIMIENTO_RESERVA = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
     private static final String ENTITY_API_URL = "/api/inventarios";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -101,11 +92,8 @@ class InventarioResourceIT {
             .ubicacion(DEFAULT_UBICACION)
             .estadoInventario(DEFAULT_ESTADO_INVENTARIO)
             .observaciones(DEFAULT_OBSERVACIONES)
-            .disponible(DEFAULT_DISPONIBLE)
             .createdDate(DEFAULT_CREATED_DATE)
-            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE)
-            .fechaReserva(DEFAULT_FECHA_RESERVA)
-            .fechaVencimientoReserva(DEFAULT_FECHA_VENCIMIENTO_RESERVA);
+            .lastModifiedDate(DEFAULT_LAST_MODIFIED_DATE);
     }
 
     /**
@@ -120,11 +108,8 @@ class InventarioResourceIT {
             .ubicacion(UPDATED_UBICACION)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
-            .disponible(UPDATED_DISPONIBLE)
             .createdDate(UPDATED_CREATED_DATE)
-            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE)
-            .fechaReserva(UPDATED_FECHA_RESERVA)
-            .fechaVencimientoReserva(UPDATED_FECHA_VENCIMIENTO_RESERVA);
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
     }
 
     @BeforeEach
@@ -218,23 +203,6 @@ class InventarioResourceIT {
 
     @Test
     @Transactional
-    void checkDisponibleIsRequired() throws Exception {
-        long databaseSizeBeforeTest = getRepositoryCount();
-        // set the field null
-        inventario.setDisponible(null);
-
-        // Create the Inventario, which fails.
-        InventarioDTO inventarioDTO = inventarioMapper.toDto(inventario);
-
-        restInventarioMockMvc
-            .perform(post(ENTITY_API_URL).contentType(MediaType.APPLICATION_JSON).content(om.writeValueAsBytes(inventarioDTO)))
-            .andExpect(status().isBadRequest());
-
-        assertSameRepositoryCount(databaseSizeBeforeTest);
-    }
-
-    @Test
-    @Transactional
     void getAllInventarios() throws Exception {
         // Initialize the database
         insertedInventario = inventarioRepository.saveAndFlush(inventario);
@@ -249,11 +217,8 @@ class InventarioResourceIT {
             .andExpect(jsonPath("$.[*].ubicacion").value(hasItem(DEFAULT_UBICACION)))
             .andExpect(jsonPath("$.[*].estadoInventario").value(hasItem(DEFAULT_ESTADO_INVENTARIO.toString())))
             .andExpect(jsonPath("$.[*].observaciones").value(hasItem(DEFAULT_OBSERVACIONES)))
-            .andExpect(jsonPath("$.[*].disponible").value(hasItem(DEFAULT_DISPONIBLE)))
             .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
-            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())))
-            .andExpect(jsonPath("$.[*].fechaReserva").value(hasItem(DEFAULT_FECHA_RESERVA.toString())))
-            .andExpect(jsonPath("$.[*].fechaVencimientoReserva").value(hasItem(DEFAULT_FECHA_VENCIMIENTO_RESERVA.toString())));
+            .andExpect(jsonPath("$.[*].lastModifiedDate").value(hasItem(DEFAULT_LAST_MODIFIED_DATE.toString())));
     }
 
     @Test
@@ -272,11 +237,8 @@ class InventarioResourceIT {
             .andExpect(jsonPath("$.ubicacion").value(DEFAULT_UBICACION))
             .andExpect(jsonPath("$.estadoInventario").value(DEFAULT_ESTADO_INVENTARIO.toString()))
             .andExpect(jsonPath("$.observaciones").value(DEFAULT_OBSERVACIONES))
-            .andExpect(jsonPath("$.disponible").value(DEFAULT_DISPONIBLE))
             .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
-            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()))
-            .andExpect(jsonPath("$.fechaReserva").value(DEFAULT_FECHA_RESERVA.toString()))
-            .andExpect(jsonPath("$.fechaVencimientoReserva").value(DEFAULT_FECHA_VENCIMIENTO_RESERVA.toString()));
+            .andExpect(jsonPath("$.lastModifiedDate").value(DEFAULT_LAST_MODIFIED_DATE.toString()));
     }
 
     @Test
@@ -303,11 +265,8 @@ class InventarioResourceIT {
             .ubicacion(UPDATED_UBICACION)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
-            .disponible(UPDATED_DISPONIBLE)
             .createdDate(UPDATED_CREATED_DATE)
-            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE)
-            .fechaReserva(UPDATED_FECHA_RESERVA)
-            .fechaVencimientoReserva(UPDATED_FECHA_VENCIMIENTO_RESERVA);
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
         InventarioDTO inventarioDTO = inventarioMapper.toDto(updatedInventario);
 
         restInventarioMockMvc
@@ -400,10 +359,7 @@ class InventarioResourceIT {
         partialUpdatedInventario
             .fechaIngreso(UPDATED_FECHA_INGRESO)
             .observaciones(UPDATED_OBSERVACIONES)
-            .disponible(UPDATED_DISPONIBLE)
-            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE)
-            .fechaReserva(UPDATED_FECHA_RESERVA)
-            .fechaVencimientoReserva(UPDATED_FECHA_VENCIMIENTO_RESERVA);
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restInventarioMockMvc
             .perform(
@@ -439,11 +395,8 @@ class InventarioResourceIT {
             .ubicacion(UPDATED_UBICACION)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
-            .disponible(UPDATED_DISPONIBLE)
             .createdDate(UPDATED_CREATED_DATE)
-            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE)
-            .fechaReserva(UPDATED_FECHA_RESERVA)
-            .fechaVencimientoReserva(UPDATED_FECHA_VENCIMIENTO_RESERVA);
+            .lastModifiedDate(UPDATED_LAST_MODIFIED_DATE);
 
         restInventarioMockMvc
             .perform(

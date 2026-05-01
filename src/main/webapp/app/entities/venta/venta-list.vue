@@ -45,6 +45,7 @@
               <th>Fecha</th>
               <th>Cliente</th>
               <th>Total</th>
+              <th>Cotización</th>
               <th>Estado</th>
               <th class="text-end pe-4">Acciones</th>
             </tr>
@@ -56,7 +57,10 @@
               <td>
                 <span class="fw-semibold">{{ venta.cliente?.nombre }} {{ venta.cliente?.apellido }}</span>
               </td>
-              <td class="fw-semibold text-primary">$ {{ formatPrecio(venta.total) }}</td>
+              <td class="fw-semibold text-primary">
+                {{ venta.moneda?.simbolo ?? '$' }} {{ formatPrecio(venta.total) }} {{ venta.moneda?.codigo ?? '' }}
+              </td>
+              <td>{{ formatCotizacion(venta.cotizacion) }}</td>
               <td>
                 <span class="badge" :class="badgeEstadoVenta(venta.estado)">
                   {{ venta.estado ?? '-' }}
@@ -116,6 +120,8 @@ function badgeEstadoVenta(estado?: EstadoVenta | null) {
     [EstadoVenta.PENDIENTE]: 'bg-warning text-dark',
     [EstadoVenta.PAGADA]: 'bg-success',
     [EstadoVenta.CANCELADA]: 'bg-danger',
+    [EstadoVenta.RESERVADA]: 'bg-info text-dark',
+    [EstadoVenta.FINALIZADA]: 'bg-primary',
   };
   return map[estado ?? ''] ?? 'bg-light text-dark border';
 }
@@ -127,5 +133,10 @@ function formatFecha(fecha?: Date | string) {
 
 function formatPrecio(precio?: number | null) {
   return Number(precio ?? 0).toLocaleString('es-AR');
+}
+
+function formatCotizacion(cotizacion?: number | null) {
+  if (cotizacion == null) return '-';
+  return Number(cotizacion).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
 }
 </script>

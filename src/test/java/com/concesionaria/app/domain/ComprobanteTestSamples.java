@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -10,14 +11,17 @@ public class ComprobanteTestSamples {
     private static final AtomicLong longCount = new AtomicLong(random.nextInt() + (2L * Integer.MAX_VALUE));
 
     public static Comprobante getComprobanteSample1() {
-        return new Comprobante().id(1L).numeroComprobante("numeroComprobante1");
+        return new Comprobante().id(1L).numeroComprobante("numeroComprobante1").estado(EstadoComprobante.EMITIDO);
     }
 
     public static Comprobante getComprobanteSample2() {
-        return new Comprobante().id(2L).numeroComprobante("numeroComprobante2");
+        return new Comprobante().id(2L).numeroComprobante("numeroComprobante2").estado(EstadoComprobante.EMITIDO);
     }
 
     public static Comprobante getComprobanteRandomSampleGenerator() {
-        return new Comprobante().id(longCount.incrementAndGet()).numeroComprobante(UUID.randomUUID().toString());
+        return new Comprobante()
+            .id(longCount.incrementAndGet())
+            .numeroComprobante(UUID.randomUUID().toString())
+            .estado(EstadoComprobante.EMITIDO);
     }
 }

@@ -56,6 +56,7 @@ public class ClienteAsserts {
             .satisfies(a -> assertThat(a.getCiudad()).as("check ciudad").isEqualTo(expected.getCiudad()))
             .satisfies(a -> assertThat(a.getProvincia()).as("check provincia").isEqualTo(expected.getProvincia()))
             .satisfies(a -> assertThat(a.getPais()).as("check pais").isEqualTo(expected.getPais()))
+            .satisfies(a -> assertThat(a.getTipoPersona()).as("check tipoPersona").isEqualTo(expected.getTipoPersona()))
             .satisfies(a -> assertThat(a.getActivo()).as("check activo").isEqualTo(expected.getActivo()))
             .satisfies(a -> assertThat(a.getFechaAlta()).as("check fechaAlta").isEqualTo(expected.getFechaAlta()))
             .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))

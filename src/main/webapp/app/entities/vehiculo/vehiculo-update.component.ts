@@ -6,6 +6,7 @@ import { useVuelidate } from '@vuelidate/core';
 
 import InventarioService from '@/entities/inventario/inventario.service';
 import MarcaService from '@/entities/marca/marca.service';
+import MonedaService from '@/entities/moneda/moneda.service';
 import ModeloService from '@/entities/modelo/modelo.service';
 import TipoVehiculoService from '@/entities/tipo-vehiculo/tipo-vehiculo.service';
 import VersionService from '@/entities/version/version.service';
@@ -13,8 +14,8 @@ import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat, useValidation } from '@/shared/composables';
 import type { IInventario } from '@/shared/model/inventario.model';
 import type { IMotor } from '@/shared/model/motor.model';
+import type { IMoneda } from '@/shared/model/moneda.model';
 import type { ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
-import { CondicionVehiculo } from '@/shared/model/enumerations/condicion-vehiculo.model';
 import { EstadoInventario } from '@/shared/model/enumerations/estado-inventario.model';
 import { EstadoVehiculo } from '@/shared/model/enumerations/estado-vehiculo.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
@@ -25,26 +26,81 @@ import VehiculoService from './vehiculo.service';
 import { useVehiculoForm } from './useVehiculoForm';
 
 const PATENTE_REGEX = /^(?:[A-Z]{3}\d{3}|[A-Z]{2}\d{3}[A-Z]{2})$/;
+const VIN_CHASIS_MIN_LENGTH = 8;
+const VIN_CHASIS_MAX_LENGTH = 30;
+const VIN_STANDARD_LENGTH = 17;
+const VIN_ALPHANUM_REGEX = /^[A-Z0-9]+$/;
+const VIN_STANDARD_REGEX = /^[A-HJ-NPR-Z0-9]{17}$/;
+const VIN_WEIGHTS = [8, 7, 6, 5, 4, 3, 2, 10, 0, 9, 8, 7, 6, 5, 4, 3, 2];
 
 function normalizarPatente(value?: string | null): string | null {
   const patente = (value ?? '').trim().toUpperCase();
   return patente.length > 0 ? patente : null;
 }
 
-function patenteEsObligatoria(estado?: keyof typeof EstadoVehiculo | null): boolean {
-  return estado === EstadoVehiculo.USADO;
+function normalizarVinChasis(value?: string | null): string | null {
+  const vinChasis = (value ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]/g, '');
+  return vinChasis.length > 0 ? vinChasis : null;
 }
 
-function mapearCondicionAInventario(condicion?: keyof typeof CondicionVehiculo | null) {
-  if (condicion === CondicionVehiculo.RESERVADO) {
-    return { estadoInventario: EstadoInventario.RESERVADO };
+function transliterarVin(ch: string): number {
+  if (/^\d$/.test(ch)) return Number(ch);
+  switch (ch) {
+    case 'A':
+    case 'J':
+      return 1;
+    case 'B':
+    case 'K':
+    case 'S':
+      return 2;
+    case 'C':
+    case 'L':
+    case 'T':
+      return 3;
+    case 'D':
+    case 'M':
+    case 'U':
+      return 4;
+    case 'E':
+    case 'N':
+    case 'V':
+      return 5;
+    case 'F':
+    case 'W':
+      return 6;
+    case 'G':
+    case 'P':
+    case 'X':
+      return 7;
+    case 'H':
+    case 'Y':
+      return 8;
+    case 'R':
+    case 'Z':
+      return 9;
+    default:
+      return -1;
   }
+}
 
-  if (condicion === CondicionVehiculo.VENDIDO) {
-    return { estadoInventario: EstadoInventario.VENDIDO };
+function vinCheckDigitValido(vin: string): boolean {
+  if (vin.length !== VIN_STANDARD_LENGTH) return true;
+  let suma = 0;
+  for (let i = 0; i < VIN_STANDARD_LENGTH; i++) {
+    const valor = transliterarVin(vin[i]);
+    if (valor < 0) return false;
+    suma += valor * VIN_WEIGHTS[i];
   }
+  const resto = suma % 11;
+  const esperado = resto === 10 ? 'X' : String(resto);
+  return vin[8] === esperado;
+}
 
-  return { estadoInventario: EstadoInventario.DISPONIBLE };
+function patenteEsObligatoria(estado?: keyof typeof EstadoVehiculo | null): boolean {
+  return estado === EstadoVehiculo.USADO;
 }
 
 export default defineComponent({
@@ -54,6 +110,7 @@ export default defineComponent({
     const vehiculoService = inject('vehiculoService', () => new VehiculoService());
     const inventarioService = inject('inventarioService', () => new InventarioService());
     const marcaService = inject('marcaService', () => new MarcaService());
+    const monedaService = inject('monedaService', () => new MonedaService());
     const modeloService = inject('modeloService', () => new ModeloService());
     const versionService = inject('versionService', () => new VersionService());
     const tipoVehiculoService = inject('tipoVehiculoService', () => new TipoVehiculoService());
@@ -65,7 +122,6 @@ export default defineComponent({
 
     const vehiculo: Ref<IVehiculo> = ref({
       ...new Vehiculo(),
-      condicion: CondicionVehiculo.EN_VENTA,
       km: 0,
     });
 
@@ -75,6 +131,7 @@ export default defineComponent({
     const isSaving = ref(false);
 
     const estadoVehiculoValues: Ref<string[]> = ref(Object.values(EstadoVehiculo));
+    const monedas: Ref<IMoneda[]> = ref([]);
 
     const formCatalog = useVehiculoForm({
       marcaService: marcaService(),
@@ -103,32 +160,11 @@ export default defineComponent({
       isMotorCompatible,
     } = formCatalog;
 
-    const condicionComercialLabel = computed(() => {
-      const labels: Record<string, string> = {
-        [CondicionVehiculo.EN_VENTA]: 'Disponible para vender',
-        [CondicionVehiculo.RESERVADO]: 'Reservado',
-        [CondicionVehiculo.VENDIDO]: 'Vendido',
-      };
-
-      return labels[vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA] ?? 'Sin definir';
-    });
-
-    const condicionComercialBadge = computed(() => {
-      const badges: Record<string, string> = {
-        [CondicionVehiculo.EN_VENTA]: 'bg-primary',
-        [CondicionVehiculo.RESERVADO]: 'bg-warning text-dark',
-        [CondicionVehiculo.VENDIDO]: 'bg-danger',
-      };
-
-      return badges[vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA] ?? 'bg-light text-dark border';
-    });
-
     const inventarioWarning = computed(() => {
       if (!inventarioAsociado.value) return '';
 
-      const esperado = mapearCondicionAInventario(vehiculo.value.condicion);
-      if (inventarioAsociado.value.estadoInventario !== esperado.estadoInventario) {
-        return 'La condicion comercial del vehiculo no coincide con el estado actual del inventario. Revisalo antes de operar.';
+      if (inventarioAsociado.value.estadoInventario && inventarioAsociado.value.estadoInventario !== EstadoInventario.DISPONIBLE) {
+        return `La unidad ya tiene estado comercial ${inventarioAsociado.value.estadoInventario} en inventario. Verificalo antes de operar.`;
       }
 
       return '';
@@ -248,6 +284,35 @@ export default defineComponent({
         required: validation.required('El precio es obligatorio.'),
         min: validation.minValue('El precio debe ser mayor a 0.', 0.01),
       },
+      moneda: {
+        required: validation.required('Selecciona la moneda del precio del vehiculo.'),
+      },
+      vinChasis: {
+        validCharsAndLength: helpers.withMessage('El numero de chasis debe tener entre 8 y 30 caracteres alfanumericos.', value => {
+          const vinChasis = normalizarVinChasis(value);
+          if (!vinChasis) {
+            return true;
+          }
+          return (
+            vinChasis.length >= VIN_CHASIS_MIN_LENGTH &&
+            vinChasis.length <= VIN_CHASIS_MAX_LENGTH &&
+            VIN_ALPHANUM_REGEX.test(vinChasis)
+          );
+        }),
+        validVin17: helpers.withMessage('El VIN de 17 caracteres no es valido (revisa digito verificador y caracteres permitidos).', value => {
+          const vinChasis = normalizarVinChasis(value);
+          if (!vinChasis || vinChasis.length !== VIN_STANDARD_LENGTH) {
+            return true;
+          }
+          return VIN_STANDARD_REGEX.test(vinChasis) && vinCheckDigitValido(vinChasis);
+        }),
+      },
+      color: {
+        maxLength: validation.maxLength('El color no puede superar 50 caracteres.', 50),
+      },
+      observaciones: {
+        maxLength: validation.maxLength('Las observaciones no pueden superar 500 caracteres.', 500),
+      },
       km: {
         required: validation.required('Los kilometros son obligatorios.'),
         integer: validation.integer('Los kilometros deben ser enteros.'),
@@ -337,7 +402,7 @@ export default defineComponent({
       chequeandoPatente.value = true;
       try {
         const existente = await vehiculoService().findByPatente(patenteNormalizada);
-        if (!vehiculo.value.id || existente.id !== vehiculo.value.id) {
+        if (existente && (!vehiculo.value.id || existente.id !== vehiculo.value.id)) {
           patenteDuplicada.value = `La patente ${patenteNormalizada} ya esta registrada.`;
           return false;
         }
@@ -360,10 +425,13 @@ export default defineComponent({
         id: vehiculo.value.id,
         patente: normalizarPatente(vehiculo.value.patente) ?? undefined,
         estado: vehiculo.value.estado,
-        condicion: vehiculo.value.condicion ?? CondicionVehiculo.EN_VENTA,
         fechaFabricacion: vehiculo.value.fechaFabricacion,
         km: vehiculo.value.km,
+        vinChasis: normalizarVinChasis(vehiculo.value.vinChasis) ?? null,
+        color: vehiculo.value.color?.trim() || null,
+        observaciones: vehiculo.value.observaciones?.trim() || null,
         precio: vehiculo.value.precio,
+        moneda: vehiculo.value.moneda ? ({ id: vehiculo.value.moneda.id } as IMoneda) : null,
         version: vehiculo.value.version ? ({ id: vehiculo.value.version.id } as IVersion) : null,
         motor: vehiculo.value.motor ? ({ id: vehiculo.value.motor.id } as IMotor) : null,
         tipoVehiculo: vehiculo.value.tipoVehiculo ? ({ id: vehiculo.value.tipoVehiculo.id } as ITipoVehiculo) : null,
@@ -371,11 +439,19 @@ export default defineComponent({
     }
 
     async function initializeForm() {
-      await cargarCatalogos();
+      const [, monedasResult] = await Promise.all([
+        cargarCatalogos(),
+        monedaService().retrieve({ 'activo.equals': true, page: 0, size: 100, sort: ['codigo,asc'] }),
+      ]);
+      monedas.value = monedasResult.data ?? [];
 
       if (route.params?.vehiculoId) {
         await retrieveVehiculo(Number(route.params.vehiculoId));
         return;
+      }
+
+      if (!vehiculo.value.moneda && monedas.value.length > 0) {
+        vehiculo.value.moneda = monedas.value[0];
       }
 
       await onVersionChange(vehiculo.value, true);
@@ -400,8 +476,7 @@ export default defineComponent({
       loadingMotores,
       motorHint,
       estadoVehiculoValues,
-      condicionComercialLabel,
-      condicionComercialBadge,
+      monedas,
       patenteDuplicada,
       chequeandoPatente,
       isSaving,

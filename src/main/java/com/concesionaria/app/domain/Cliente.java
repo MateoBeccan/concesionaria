@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.TipoPersona;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.io.Serial;
@@ -89,6 +90,11 @@ public class Cliente implements Serializable {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private TipoDocumento tipoDocumento;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_persona", nullable = false)
+    private TipoPersona tipoPersona;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -326,6 +332,26 @@ public class Cliente implements Serializable {
         return this;
     }
 
+    public TipoPersona getTipoPersona() {
+        return tipoPersona;
+    }
+
+    public void setTipoPersona(TipoPersona tipoPersona) {
+        this.tipoPersona = tipoPersona;
+    }
+
+    public Cliente tipoPersona(TipoPersona tipoPersona) {
+        this.setTipoPersona(tipoPersona);
+        return this;
+    }
+
+    @PrePersist
+    public void prePersistDefaults() {
+        if (tipoPersona == null) {
+            tipoPersona = TipoPersona.FISICA;
+        }
+    }
+
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here
 
     @Override
@@ -365,6 +391,7 @@ public class Cliente implements Serializable {
             ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", tipoPersona='" + getTipoPersona() + "'" +
             "}";
     }
 }

@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.concesionaria.app.IntegrationTest;
 import com.concesionaria.app.domain.Comprobante;
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.repository.ComprobanteRepository;
 import com.concesionaria.app.service.dto.ComprobanteDTO;
 import com.concesionaria.app.service.mapper.ComprobanteMapper;
@@ -55,6 +56,8 @@ class ComprobanteResourceIT {
 
     private static final Instant DEFAULT_CREATED_DATE = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_CREATED_DATE = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    private static final EstadoComprobante DEFAULT_ESTADO = EstadoComprobante.EMITIDO;
+    private static final EstadoComprobante UPDATED_ESTADO = EstadoComprobante.ANULADO;
 
     private static final String ENTITY_API_URL = "/api/comprobantes";
     private static final String ENTITY_API_URL_ID = ENTITY_API_URL + "/{id}";
@@ -94,7 +97,8 @@ class ComprobanteResourceIT {
             .importeNeto(DEFAULT_IMPORTE_NETO)
             .impuesto(DEFAULT_IMPUESTO)
             .total(DEFAULT_TOTAL)
-            .createdDate(DEFAULT_CREATED_DATE);
+            .createdDate(DEFAULT_CREATED_DATE)
+            .estado(DEFAULT_ESTADO);
     }
 
     /**
@@ -110,7 +114,8 @@ class ComprobanteResourceIT {
             .importeNeto(UPDATED_IMPORTE_NETO)
             .impuesto(UPDATED_IMPUESTO)
             .total(UPDATED_TOTAL)
-            .createdDate(UPDATED_CREATED_DATE);
+            .createdDate(UPDATED_CREATED_DATE)
+            .estado(UPDATED_ESTADO);
     }
 
     @BeforeEach

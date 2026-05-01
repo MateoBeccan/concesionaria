@@ -12,7 +12,7 @@
         <div class="intro-highlights">
           <div class="highlight-item">
             <strong>Ventas</strong>
-            <span>Flujo guiado para operar rapido.</span>
+            <span>Flujo guiado para operar rapido.</span>a
           </div>
           <div class="highlight-item">
             <strong>Inventario</strong>
@@ -78,10 +78,7 @@
           </div>
 
           <div class="login-form-footer">
-            <div class="form-check">
-              <input id="rememberMe" v-model="rememberMe" type="checkbox" class="form-check-input" />
-              <label class="form-check-label" for="rememberMe">Mantener sesion iniciada</label>
-            </div>
+
           </div>
 
           <button type="submit" class="btn btn-primary btn-lg w-100 login-submit" :disabled="isSubmitDisabled">

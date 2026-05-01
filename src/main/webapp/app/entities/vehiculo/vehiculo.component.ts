@@ -25,7 +25,7 @@ export default defineComponent({
 
     const search = ref('');
     const filtroEstado = ref('');
-    const filtroCondicion = ref('');
+    const filtroStock = ref('');
     const filtroTipo = ref('');
 
     const tipoVehiculoOptions = computed(() => {
@@ -53,10 +53,10 @@ export default defineComponent({
 
         const matchSearch = !search.value || texto.includes(search.value.toLowerCase());
         const matchEstado = !filtroEstado.value || vehiculo.estado === filtroEstado.value;
-        const matchCondicion = !filtroCondicion.value || vehiculo.condicion === filtroCondicion.value;
+        const matchStock = !filtroStock.value || vehiculo.estadoInventario === filtroStock.value;
         const matchTipo = !filtroTipo.value || vehiculo.tipoVehiculo?.nombre === filtroTipo.value;
 
-        return matchSearch && matchEstado && matchCondicion && matchTipo;
+        return matchSearch && matchEstado && matchStock && matchTipo;
       });
     });
 
@@ -67,7 +67,7 @@ export default defineComponent({
     const resetFiltros = () => {
       search.value = '';
       filtroEstado.value = '';
-      filtroCondicion.value = '';
+      filtroStock.value = '';
       filtroTipo.value = '';
     };
 
@@ -139,8 +139,15 @@ export default defineComponent({
       propOrder.value = newOrder;
     };
 
-    const formatPrecio = (value?: number | null) =>
-      typeof value === 'number' ? new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(value) : '-';
+    const formatPrecio = (vehiculo?: IVehiculo | null) => {
+      if (!vehiculo || typeof vehiculo.precio !== 'number') {
+        return '-';
+      }
+      const codigoMoneda = vehiculo.moneda?.codigo ?? 'ARS';
+      const simbolo = vehiculo.moneda?.simbolo ? `${vehiculo.moneda.simbolo} ` : '';
+      const monto = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(vehiculo.precio);
+      return `${simbolo}${monto} ${codigoMoneda}`;
+    };
 
     const badgeEstado = (estado?: string | null) => {
       if (estado === 'NUEVO') return 'bg-success';
@@ -148,10 +155,10 @@ export default defineComponent({
       return 'bg-light text-dark border';
     };
 
-    const badgeCondicion = (condicion?: string | null) => {
-      if (condicion === 'EN_VENTA') return 'bg-primary';
-      if (condicion === 'RESERVADO') return 'bg-warning text-dark';
-      if (condicion === 'VENDIDO') return 'bg-danger';
+    const badgeStock = (estadoInventario?: string | null) => {
+      if (estadoInventario === 'DISPONIBLE') return 'bg-primary';
+      if (estadoInventario === 'RESERVADO') return 'bg-warning text-dark';
+      if (estadoInventario === 'VENDIDO') return 'bg-danger';
       return 'bg-light text-dark border';
     };
 
@@ -172,7 +179,7 @@ export default defineComponent({
       filteredVehiculos,
       search,
       filtroEstado,
-      filtroCondicion,
+      filtroStock,
       filtroTipo,
       tipoVehiculoOptions,
       resetFiltros,
@@ -195,7 +202,7 @@ export default defineComponent({
       changeOrder,
       formatPrecio,
       badgeEstado,
-      badgeCondicion,
+      badgeStock,
     };
   },
 });

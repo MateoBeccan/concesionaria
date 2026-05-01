@@ -1,17 +1,13 @@
 <template>
   <div>
-
-    <!-- BUSCADOR DE VEHÍCULO -->
     <div v-if="!mostrandoSelector" class="mb-3">
-      <button class="btn btn-outline-primary btn-sm" @click="mostrandoSelector = true">
-        + Agregar vehículo
-      </button>
+      <button class="btn btn-outline-primary btn-sm" @click="mostrandoSelector = true">+ Agregar vehiculo</button>
     </div>
 
-    <div v-else class="card mb-3 border-primary" style="border-style:dashed!important">
+    <div v-else class="card mb-3 border-primary" style="border-style: dashed !important">
       <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="fw-semibold small text-primary">Buscar vehículo</span>
+          <span class="fw-semibold small text-primary">Buscar vehiculo</span>
           <button class="btn-close btn-sm" @click="cerrarSelector" />
         </div>
 
@@ -31,12 +27,10 @@
           </button>
         </div>
 
-        <!-- Error búsqueda -->
         <div v-if="errorBusqueda" class="alert alert-warning py-2 small mb-2">
           {{ errorBusqueda }}
         </div>
 
-        <!-- Resultado -->
         <div v-if="vehiculoEncontrado" class="border rounded p-2 bg-light">
           <div class="d-flex justify-content-between align-items-center">
             <div>
@@ -49,29 +43,25 @@
               <span class="badge ms-2" :class="vehiculoEncontrado.estado === 'NUEVO' ? 'bg-success' : 'bg-secondary'">
                 {{ vehiculoEncontrado.estado }}
               </span>
-              <span class="badge ms-1" :class="badgeCondicion(vehiculoEncontrado.condicion)">
-                {{ vehiculoEncontrado.condicion }}
+              <span class="badge ms-1" :class="badgeStock(vehiculoEncontrado.estadoInventario)">
+                {{ vehiculoEncontrado.estadoInventario ?? 'SIN_ESTADO' }}
               </span>
             </div>
             <div class="text-end">
-              <div class="fw-bold text-primary">$ {{ fmt(vehiculoEncontrado.precio) }}</div>
-              <button
-                class="btn btn-success btn-sm mt-1"
-                @click="seleccionarVehiculo"
-                :disabled="vehiculoEncontrado.condicion === 'VENDIDO'"
-              >
+              <div class="fw-bold text-primary">
+                {{ vehiculoEncontrado.moneda?.simbolo ?? '$' }} {{ fmt(vehiculoEncontrado.precio) }} {{ vehiculoEncontrado.moneda?.codigo ?? '' }}
+              </div>
+              <button class="btn btn-success btn-sm mt-1" @click="seleccionarVehiculo" :disabled="vehiculoEncontrado.estadoInventario === 'VENDIDO'">
                 Agregar
               </button>
             </div>
           </div>
         </div>
-
       </div>
     </div>
 
-    <!-- LISTA DE DETALLES -->
     <div v-if="detalles.length === 0" class="text-center py-3 text-muted small border rounded">
-      No hay vehículos agregados. Usá el botón para agregar.
+      No hay vehiculos agregados. Usa el boton para agregar.
     </div>
 
     <div v-else class="table-responsive">
@@ -79,11 +69,11 @@
         <thead class="table-light">
           <tr>
             <th>Patente</th>
-            <th>Vehículo</th>
+            <th>Vehiculo</th>
             <th>Estado</th>
-            <th style="width:160px">Precio unitario</th>
-            <th class="text-end">Subtotal</th>
-            <th></th>
+            <th style="width: 160px">Precio base</th>
+            <th class="text-end">Subtotal base</th>
+            <th />
           </tr>
         </thead>
         <tbody>
@@ -101,35 +91,29 @@
             </td>
             <td>
               <div class="input-group input-group-sm">
-                <span class="input-group-text">$</span>
-                <input
-                  type="number"
-                  class="form-control form-control-sm"
-                  :value="d.precioUnitario"
-                  @change="emit('actualizar-precio', d._key, Number(($event.target as HTMLInputElement).value))"
-                  min="0"
-                  step="0.01"
-                />
+                <span class="input-group-text">{{ d.vehiculo.moneda?.simbolo ?? '$' }}</span>
+                <input type="number" class="form-control form-control-sm" :value="d.precioUnitario" readonly min="0" step="0.01" />
               </div>
             </td>
-            <td class="text-end fw-semibold" style="color:var(--color-primary)">
-              $ {{ fmt(d.subtotal) }}
+            <td class="text-end fw-semibold" style="color: var(--color-primary)">
+              {{ d.vehiculo.moneda?.simbolo ?? '$' }} {{ fmt(d.subtotal) }} {{ d.vehiculo.moneda?.codigo ?? '' }}
             </td>
             <td class="text-end">
-              <button class="btn btn-sm btn-outline-danger" @click="emit('quitar', d._key)" title="Quitar">✕</button>
+              <button class="btn btn-sm btn-outline-danger" @click="emit('quitar', d._key)" title="Quitar">X</button>
             </td>
           </tr>
         </tbody>
         <tfoot class="table-light">
           <tr>
-            <td colspan="4" class="text-end fw-semibold">Subtotal vehículos:</td>
-            <td class="text-end fw-bold" style="color:var(--color-primary)">$ {{ fmt(sumaSubtotales) }}</td>
-            <td></td>
+            <td colspan="4" class="text-end fw-semibold">Subtotal venta (convertido):</td>
+            <td class="text-end fw-bold" style="color: var(--color-primary)">
+              {{ props.monedaVenta?.simbolo ?? '$' }} {{ fmt(props.sumaSubtotales) }} {{ props.monedaVenta?.codigo ?? '' }}
+            </td>
+            <td />
           </tr>
         </tfoot>
       </table>
     </div>
-
   </div>
 </template>
 
@@ -137,11 +121,13 @@
 import { ref } from 'vue';
 import axios from 'axios';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
+import type { IMoneda } from '@/shared/model/moneda.model';
 import type { DetalleLocal } from './useVentaEditor';
 
 const props = defineProps<{
   detalles: DetalleLocal[];
   sumaSubtotales: number;
+  monedaVenta?: IMoneda | null;
 }>();
 
 const emit = defineEmits<{
@@ -151,10 +137,10 @@ const emit = defineEmits<{
 }>();
 
 const mostrandoSelector = ref(false);
-const busquedaPatente   = ref('');
+const busquedaPatente = ref('');
 const vehiculoEncontrado = ref<IVehiculo | null>(null);
-const buscando          = ref(false);
-const errorBusqueda     = ref<string | null>(null);
+const buscando = ref(false);
+const errorBusqueda = ref<string | null>(null);
 
 async function buscarVehiculo() {
   const p = busquedaPatente.value.trim().toUpperCase();
@@ -166,9 +152,7 @@ async function buscarVehiculo() {
     const res = await axios.get<IVehiculo>(`api/vehiculos/patente/${p}`);
     vehiculoEncontrado.value = res.data;
   } catch (e: any) {
-    errorBusqueda.value = e.response?.status === 404
-      ? `No se encontró ningún vehículo con patente "${p}"`
-      : 'Error al buscar el vehículo';
+    errorBusqueda.value = e.response?.status === 404 ? `No se encontro ningun vehiculo con patente "${p}"` : 'Error al buscar el vehiculo';
   } finally {
     buscando.value = false;
   }
@@ -182,14 +166,14 @@ function seleccionarVehiculo() {
 }
 
 function cerrarSelector() {
-  mostrandoSelector.value  = false;
-  busquedaPatente.value    = '';
+  mostrandoSelector.value = false;
+  busquedaPatente.value = '';
   vehiculoEncontrado.value = null;
-  errorBusqueda.value      = null;
+  errorBusqueda.value = null;
 }
 
-function badgeCondicion(c?: string) {
-  return { EN_VENTA: 'bg-primary', RESERVADO: 'bg-warning text-dark', VENDIDO: 'bg-danger' }[c ?? ''] ?? 'bg-light text-dark border';
+function badgeStock(c?: string) {
+  return { DISPONIBLE: 'bg-primary', RESERVADO: 'bg-warning text-dark', VENDIDO: 'bg-danger' }[c ?? ''] ?? 'bg-light text-dark border';
 }
 
 function fmt(n?: number | null) {

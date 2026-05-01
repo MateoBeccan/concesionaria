@@ -3,6 +3,7 @@ package com.concesionaria.app.web.rest;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.VentaDTO;
+import com.concesionaria.app.service.dto.VentaHistorialDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -174,6 +175,21 @@ public class VentaResource {
         LOG.debug("REST request to get Venta : {}", id);
         Optional<VentaDTO> ventaDTO = ventaService.findOne(id);
         return ResponseUtil.wrapOrNotFound(ventaDTO);
+    }
+
+    @GetMapping("/by-reserva/{reservaId}")
+    public ResponseEntity<VentaDTO> getVentaByReserva(@PathVariable("reservaId") Long reservaId) {
+        LOG.debug("REST request to get Venta by Reserva : {}", reservaId);
+        return ResponseUtil.wrapOrNotFound(ventaService.findByReservaId(reservaId));
+    }
+
+    @GetMapping("/{id}/historial")
+    public ResponseEntity<List<VentaHistorialDTO>> getHistorialVenta(@PathVariable("id") Long id) {
+        LOG.debug("REST request to get historial de Venta : {}", id);
+        if (!ventaRepository.existsById(id)) {
+            throw new BadRequestAlertException("Entity not found", ENTITY_NAME, "idnotfound");
+        }
+        return ResponseEntity.ok(ventaService.findHistorialByVentaId(id));
     }
 
     /**

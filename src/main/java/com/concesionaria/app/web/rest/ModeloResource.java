@@ -3,6 +3,7 @@ package com.concesionaria.app.web.rest;
 import com.concesionaria.app.repository.ModeloRepository;
 import com.concesionaria.app.service.ModeloService;
 import com.concesionaria.app.service.dto.ModeloDTO;
+import com.concesionaria.app.service.mapper.ModeloMapper;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -41,10 +42,12 @@ public class ModeloResource {
     private final ModeloService modeloService;
 
     private final ModeloRepository modeloRepository;
+    private final ModeloMapper modeloMapper;
 
-    public ModeloResource(ModeloService modeloService, ModeloRepository modeloRepository) {
+    public ModeloResource(ModeloService modeloService, ModeloRepository modeloRepository, ModeloMapper modeloMapper) {
         this.modeloService = modeloService;
         this.modeloRepository = modeloRepository;
+        this.modeloMapper = modeloMapper;
     }
 
     /**
@@ -142,7 +145,14 @@ public class ModeloResource {
      * @return the {@link ResponseEntity} with status {@code 200 (OK)} and the list of Modelos in body.
      */
     @GetMapping("")
-    public ResponseEntity<List<ModeloDTO>> getAllModelos(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
+    public ResponseEntity<List<ModeloDTO>> getAllModelos(
+        @RequestParam(value = "marcaId", required = false) Long marcaId,
+        @org.springdoc.core.annotations.ParameterObject Pageable pageable
+    ) {
+        if (marcaId != null) {
+            List<ModeloDTO> modeloes = modeloRepository.findAllByMarcaIdOrderByNombreAsc(marcaId).stream().map(modeloMapper::toDto).toList();
+            return ResponseEntity.ok(modeloes);
+        }
         LOG.debug("REST request to get a page of Modelos");
         Page<ModeloDTO> page = modeloService.findAll(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);

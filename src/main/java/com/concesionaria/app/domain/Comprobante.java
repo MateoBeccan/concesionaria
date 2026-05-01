@@ -1,5 +1,6 @@
 package com.concesionaria.app.domain;
 
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
@@ -50,6 +51,20 @@ public class Comprobante implements Serializable {
 
     @Column(name = "created_date")
     private Instant createdDate;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "last_modified_date")
+    private Instant lastModifiedDate;
+
+    @Column(name = "last_modified_by")
+    private String lastModifiedBy;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false)
+    private EstadoComprobante estado;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JsonIgnoreProperties(value = { "cliente", "estado", "moneda", "user" }, allowSetters = true)
@@ -154,6 +169,58 @@ public class Comprobante implements Serializable {
         this.createdDate = createdDate;
     }
 
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public Comprobante createdBy(String createdBy) {
+        this.setCreatedBy(createdBy);
+        return this;
+    }
+
+    public Instant getLastModifiedDate() {
+        return lastModifiedDate;
+    }
+
+    public void setLastModifiedDate(Instant lastModifiedDate) {
+        this.lastModifiedDate = lastModifiedDate;
+    }
+
+    public Comprobante lastModifiedDate(Instant lastModifiedDate) {
+        this.setLastModifiedDate(lastModifiedDate);
+        return this;
+    }
+
+    public String getLastModifiedBy() {
+        return lastModifiedBy;
+    }
+
+    public void setLastModifiedBy(String lastModifiedBy) {
+        this.lastModifiedBy = lastModifiedBy;
+    }
+
+    public Comprobante lastModifiedBy(String lastModifiedBy) {
+        this.setLastModifiedBy(lastModifiedBy);
+        return this;
+    }
+
+    public EstadoComprobante getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoComprobante estado) {
+        this.estado = estado;
+    }
+
+    public Comprobante estado(EstadoComprobante estado) {
+        this.setEstado(estado);
+        return this;
+    }
+
     public Venta getVenta() {
         return this.venta;
     }
@@ -223,6 +290,10 @@ public class Comprobante implements Serializable {
             ", impuesto=" + getImpuesto() +
             ", total=" + getTotal() +
             ", createdDate='" + getCreatedDate() + "'" +
+            ", createdBy='" + getCreatedBy() + "'" +
+            ", lastModifiedDate='" + getLastModifiedDate() + "'" +
+            ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", estado='" + getEstado() + "'" +
             "}";
     }
 }

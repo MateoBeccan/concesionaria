@@ -1,10 +1,10 @@
 package com.concesionaria.app.service.mapper;
 
-import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
+import com.concesionaria.app.domain.UbicacionStock;
 import com.concesionaria.app.domain.Vehiculo;
-import com.concesionaria.app.service.dto.ClienteDTO;
 import com.concesionaria.app.service.dto.InventarioDTO;
+import com.concesionaria.app.service.dto.UbicacionStockDTO;
 import com.concesionaria.app.service.dto.VehiculoDTO;
 import org.mapstruct.*;
 
@@ -15,23 +15,23 @@ import org.mapstruct.*;
 public interface InventarioMapper extends EntityMapper<InventarioDTO, Inventario> {
 
     @Mapping(target = "vehiculo", source = "vehiculo", qualifiedByName = "vehiculoId")
-    @Mapping(target = "clienteReserva", source = "clienteReserva", qualifiedByName = "clienteId")
+    @Mapping(target = "ubicacionStock", source = "ubicacionStock", qualifiedByName = "ubicacionStockResumen")
     InventarioDTO toDto(Inventario s);
 
     @Named("vehiculoId")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
     @Mapping(target = "patente", source = "patente")
-    @Mapping(target = "condicion", source = "condicion")
     @Mapping(target = "estado", source = "estado")
     VehiculoDTO toDtoVehiculoId(Vehiculo vehiculo);
 
-    @Named("clienteId")
+    @Named("ubicacionStockResumen")
     @BeanMapping(ignoreByDefault = true)
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "codigo", source = "codigo")
     @Mapping(target = "nombre", source = "nombre")
-    @Mapping(target = "apellido", source = "apellido")
-    ClienteDTO toDtoClienteId(Cliente cliente);
+    @Mapping(target = "tipoUbicacion", source = "tipoUbicacion")
+    UbicacionStockDTO toDtoUbicacionStockResumen(UbicacionStock ubicacionStock);
 
     // 🔥 clave
     @Override

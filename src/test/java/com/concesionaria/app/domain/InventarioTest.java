@@ -1,6 +1,5 @@
 package com.concesionaria.app.domain;
 
-import static com.concesionaria.app.domain.ClienteTestSamples.*;
 import static com.concesionaria.app.domain.InventarioTestSamples.*;
 import static com.concesionaria.app.domain.VehiculoTestSamples.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,15 +35,4 @@ class InventarioTest {
         assertThat(inventario.getVehiculo()).isNull();
     }
 
-    @Test
-    void clienteReservaTest() {
-        Inventario inventario = getInventarioRandomSampleGenerator();
-        Cliente clienteBack = getClienteRandomSampleGenerator();
-
-        inventario.setClienteReserva(clienteBack);
-        assertThat(inventario.getClienteReserva()).isEqualTo(clienteBack);
-
-        inventario.clienteReserva(null);
-        assertThat(inventario.getClienteReserva()).isNull();
-    }
 }

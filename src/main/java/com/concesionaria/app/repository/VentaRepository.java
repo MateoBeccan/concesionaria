@@ -1,6 +1,8 @@
 package com.concesionaria.app.repository;
 
 import com.concesionaria.app.domain.Venta;
+import com.concesionaria.app.domain.enumeration.EstadoVenta;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -30,14 +32,32 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     }
 
     @Query(
-        value = "select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda",
+        value = "select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda left join fetch venta.vehiculo left join fetch venta.vehiculo.moneda",
         countQuery = "select count(venta) from Venta venta"
     )
     Page<Venta> findAllWithToOneRelationships(Pageable pageable);
 
-    @Query("select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda")
+    @Query(
+        "select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda left join fetch venta.vehiculo left join fetch venta.vehiculo.moneda"
+    )
     List<Venta> findAllWithToOneRelationships();
 
-    @Query("select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda where venta.id =:id")
+    @Query(
+        "select venta from Venta venta left join fetch venta.user left join fetch venta.cliente left join fetch venta.moneda left join fetch venta.vehiculo left join fetch venta.vehiculo.moneda where venta.id =:id"
+    )
     Optional<Venta> findOneWithToOneRelationships(@Param("id") Long id);
+
+    Optional<Venta> findFirstByReservaIdOrderByFechaDesc(Long reservaId);
+
+    boolean existsByReservaId(Long reservaId);
+
+    boolean existsByReservaIdAndIdNot(Long reservaId, Long ventaId);
+
+    List<Venta> findAllByTasacionUsadoIdOrderByFechaDesc(Long tasacionUsadoId);
+
+    boolean existsByTasacionUsadoIdAndIdNot(Long tasacionUsadoId, Long ventaId);
+
+    boolean existsByVehiculoIdAndEstadoIn(Long vehiculoId, Collection<EstadoVenta> estados);
+
+    boolean existsByVehiculoIdAndEstadoInAndIdNot(Long vehiculoId, Collection<EstadoVenta> estados, Long ventaId);
 }

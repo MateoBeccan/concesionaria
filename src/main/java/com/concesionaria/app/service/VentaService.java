@@ -1,6 +1,8 @@
 package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.VentaDTO;
+import com.concesionaria.app.service.dto.VentaHistorialDTO;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,8 @@ public interface VentaService {
 
     Optional<VentaDTO> findOne(Long id);
 
+    Optional<VentaDTO> findByReservaId(Long reservaId);
+
     void delete(Long id);
 
 
@@ -27,5 +31,7 @@ public interface VentaService {
     void confirmarVenta(Long ventaId);
 
     void sincronizarInventarioConVenta(Long ventaId);
+
+    List<VentaHistorialDTO> findHistorialByVentaId(Long ventaId);
 
 }

@@ -51,15 +51,8 @@ public class InventarioAsserts {
             .satisfies(a -> assertThat(a.getUbicacion()).as("check ubicacion").isEqualTo(expected.getUbicacion()))
             .satisfies(a -> assertThat(a.getEstadoInventario()).as("check estadoInventario").isEqualTo(expected.getEstadoInventario()))
             .satisfies(a -> assertThat(a.getObservaciones()).as("check observaciones").isEqualTo(expected.getObservaciones()))
-            .satisfies(a -> assertThat(a.getDisponible()).as("check disponible").isEqualTo(expected.getDisponible()))
             .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))
-            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()))
-            .satisfies(a -> assertThat(a.getFechaReserva()).as("check fechaReserva").isEqualTo(expected.getFechaReserva()))
-            .satisfies(a ->
-                assertThat(a.getFechaVencimientoReserva())
-                    .as("check fechaVencimientoReserva")
-                    .isEqualTo(expected.getFechaVencimientoReserva())
-            );
+            .satisfies(a -> assertThat(a.getLastModifiedDate()).as("check lastModifiedDate").isEqualTo(expected.getLastModifiedDate()));
     }
 
     /**
@@ -71,7 +64,6 @@ public class InventarioAsserts {
     public static void assertInventarioUpdatableRelationshipsEquals(Inventario expected, Inventario actual) {
         assertThat(actual)
             .as("Verify Inventario relationships")
-            .satisfies(a -> assertThat(a.getVehiculo()).as("check vehiculo").isEqualTo(expected.getVehiculo()))
-            .satisfies(a -> assertThat(a.getClienteReserva()).as("check clienteReserva").isEqualTo(expected.getClienteReserva()));
+            .satisfies(a -> assertThat(a.getVehiculo()).as("check vehiculo").isEqualTo(expected.getVehiculo()));
     }
 }
