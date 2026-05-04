@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260420163000-01-backfill-reserva-from-inventario" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <tableExists tableName="reserva"/>
+                <columnExists tableName="inventario" columnName="cliente_reserva_id"/>
+                <columnExists tableName="inventario" columnName="fecha_reserva"/>
+                <columnExists tableName="inventario" columnName="fecha_vencimiento_reserva"/>
+            </and>
+        </preConditions>
+        <sql dbms="mysql">
+            INSERT INTO reserva (
+                fecha_reserva,
+                fecha_vencimiento,
+                monto_senia,
+                estado,
+                observaciones,
+                usuario_creacion,
+                created_date,
+                last_modified_date,
+                inventario_id,
+                cliente_id,
+                venta_id,
+                moneda_id
+            )
+            SELECT
+                COALESCE(i.fecha_reserva, NOW()),
+                COALESCE(i.fecha_vencimiento_reserva, DATE_ADD(COALESCE(i.fecha_reserva, NOW()), INTERVAL 1 MONTH)),
+                NULL,
+                'ACTIVA',
+                'Backfill automatico desde inventario legacy',
+                'liquibase-backfill',
+                NOW(),
+                NOW(),
+                i.id,
+                i.cliente_reserva_id,
+                NULL,
+                NULL
+            FROM inventario i
+            WHERE i.estado_inventario = 'RESERVADO'
+              AND i.cliente_reserva_id IS NOT NULL
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM reserva r
+                  WHERE r.inventario_id = i.id
+                    AND r.estado = 'ACTIVA'
+              );
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260420163000-02-drop-fk-cliente-reserva" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <foreignKeyConstraintExists foreignKeyName="fk_inventario__cliente_reserva_id"/>
+        </preConditions>
+        <dropForeignKeyConstraint baseTableName="inventario" constraintName="fk_inventario__cliente_reserva_id"/>
+    </changeSet>
+
+    <changeSet id="20260420163000-03-drop-inventario-disponible" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="inventario" columnName="disponible"/>
+        </preConditions>
+        <dropColumn tableName="inventario" columnName="disponible"/>
+    </changeSet>
+
+    <changeSet id="20260420163000-04-drop-inventario-cliente-reserva-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="inventario" columnName="cliente_reserva_id"/>
+        </preConditions>
+        <dropColumn tableName="inventario" columnName="cliente_reserva_id"/>
+    </changeSet>
+
+    <changeSet id="20260420163000-05-drop-inventario-fecha-reserva" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="inventario" columnName="fecha_reserva"/>
+        </preConditions>
+        <dropColumn tableName="inventario" columnName="fecha_reserva"/>
+    </changeSet>
+
+    <changeSet id="20260420163000-06-drop-inventario-fecha-vencimiento-reserva" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="inventario" columnName="fecha_vencimiento_reserva"/>
+        </preConditions>
+        <dropColumn tableName="inventario" columnName="fecha_vencimiento_reserva"/>
+    </changeSet>
+
+</databaseChangeLog>

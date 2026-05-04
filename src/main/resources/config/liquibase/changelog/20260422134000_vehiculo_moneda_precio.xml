@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260422134000-1-add-moneda-to-vehiculo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="vehiculo" />
+            <not>
+                <columnExists tableName="vehiculo" columnName="moneda_id" />
+            </not>
+        </preConditions>
+
+        <addColumn tableName="vehiculo">
+            <column name="moneda_id" type="bigint" />
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260422134000-2-backfill-moneda-vehiculo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="vehiculo" />
+            <tableExists tableName="moneda" />
+            <columnExists tableName="vehiculo" columnName="moneda_id" />
+        </preConditions>
+
+        <sql>
+            UPDATE vehiculo v
+            SET v.moneda_id = (
+                SELECT m.id
+                FROM moneda m
+                WHERE m.codigo = 'ARS'
+                ORDER BY m.id
+                LIMIT 1
+            )
+            WHERE v.moneda_id IS NULL
+              AND EXISTS (SELECT 1 FROM moneda m2 WHERE m2.codigo = 'ARS');
+        </sql>
+
+        <sql>
+            UPDATE vehiculo v
+            SET v.moneda_id = (
+                SELECT m.id
+                FROM moneda m
+                ORDER BY m.id
+                LIMIT 1
+            )
+            WHERE v.moneda_id IS NULL
+              AND EXISTS (SELECT 1 FROM moneda m3);
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260422134000-3-not-null-moneda-vehiculo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="vehiculo" columnName="moneda_id" />
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM vehiculo WHERE moneda_id IS NULL
+            </sqlCheck>
+        </preConditions>
+
+        <addNotNullConstraint tableName="vehiculo" columnName="moneda_id" columnDataType="bigint" />
+    </changeSet>
+
+    <changeSet id="20260422134000-4-fk-moneda-vehiculo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="vehiculo" />
+            <tableExists tableName="moneda" />
+            <columnExists tableName="vehiculo" columnName="moneda_id" />
+            <not>
+                <foreignKeyConstraintExists foreignKeyName="fk_vehiculo_moneda" />
+            </not>
+        </preConditions>
+
+        <addForeignKeyConstraint
+            baseTableName="vehiculo"
+            baseColumnNames="moneda_id"
+            constraintName="fk_vehiculo_moneda"
+            referencedTableName="moneda"
+            referencedColumnNames="id" />
+    </changeSet>
+
+    <changeSet id="20260422134000-5-index-moneda-vehiculo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="vehiculo" />
+            <columnExists tableName="vehiculo" columnName="moneda_id" />
+            <not>
+                <indexExists tableName="vehiculo" indexName="idx_vehiculo_moneda" />
+            </not>
+        </preConditions>
+
+        <createIndex tableName="vehiculo" indexName="idx_vehiculo_moneda">
+            <column name="moneda_id" />
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260422134000-6-vehiculo-precio-comment" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="vehiculo" />
+            <columnExists tableName="vehiculo" columnName="precio" />
+        </preConditions>
+
+        <modifyDataType tableName="vehiculo" columnName="precio" newDataType="decimal(21,2)" />
+    </changeSet>
+
+</databaseChangeLog>

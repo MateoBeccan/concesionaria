@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260501143000-01-tasacion-version-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="version_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="version_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="tasacion_usado"
+            baseColumnNames="version_id"
+            referencedTableName="version"
+            referencedColumnNames="id"
+            constraintName="fk_tasacion_usado__version_id"/>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__version_id">
+            <column name="version_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501143000-02-tasacion-motor-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="motor_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="motor_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="tasacion_usado"
+            baseColumnNames="motor_id"
+            referencedTableName="motor"
+            referencedColumnNames="id"
+            constraintName="fk_tasacion_usado__motor_id"/>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__motor_id">
+            <column name="motor_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501143000-03-tasacion-tipo-vehiculo-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="tipo_vehiculo_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="tipo_vehiculo_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="tasacion_usado"
+            baseColumnNames="tipo_vehiculo_id"
+            referencedTableName="tipo_vehiculo"
+            referencedColumnNames="id"
+            constraintName="fk_tasacion_usado__tipo_vehiculo_id"/>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__tipo_vehiculo_id">
+            <column name="tipo_vehiculo_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501143000-04-tasacion-tasador-user-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="tasador_user_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="tasador_user_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="tasacion_usado"
+            baseColumnNames="tasador_user_id"
+            referencedTableName="jhi_user"
+            referencedColumnNames="id"
+            constraintName="fk_tasacion_usado__tasador_user_id"/>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__tasador_user_id">
+            <column name="tasador_user_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260418190000-01-create-ubicacion-stock" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="ubicacion_stock"/>
+            </not>
+        </preConditions>
+        <createTable tableName="ubicacion_stock">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="codigo" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="nombre" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="tipo_ubicacion" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direccion" type="varchar(255)"/>
+            <column name="descripcion" type="varchar(500)"/>
+            <column name="activa" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addUniqueConstraint tableName="ubicacion_stock" columnNames="codigo" constraintName="ux_ubicacion_stock__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260418190000-02-add-inventario-domain-columns" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="origen_vehiculo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="origen_vehiculo" type="varchar(255)"/>
+            <column name="tipo_tenencia" type="varchar(255)"/>
+            <column name="estado_operativo_documental" type="varchar(255)"/>
+            <column name="proveedor_referencia" type="varchar(100)"/>
+            <column name="numero_interno_stock" type="varchar(30)"/>
+            <column name="ubicacion_stock_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418190000-03-fk-inventario-ubicacion-stock" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <tableExists tableName="ubicacion_stock"/>
+                <columnExists tableName="inventario" columnName="ubicacion_stock_id"/>
+                <not>
+                    <foreignKeyConstraintExists foreignKeyName="fk_inventario__ubicacion_stock_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="inventario"
+            baseColumnNames="ubicacion_stock_id"
+            constraintName="fk_inventario__ubicacion_stock_id"
+            referencedTableName="ubicacion_stock"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260418190000-04-backfill-inventario-numero-interno" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <columnExists tableName="inventario" columnName="numero_interno_stock"/>
+                <columnExists tableName="inventario" columnName="codigo_interno_stock"/>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE inventario
+            SET numero_interno_stock = codigo_interno_stock
+            WHERE (numero_interno_stock IS NULL OR TRIM(numero_interno_stock) = '')
+              AND codigo_interno_stock IS NOT NULL
+              AND TRIM(codigo_interno_stock) &lt;&gt; '';
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260418190000-05-create-reserva" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="reserva"/>
+            </not>
+        </preConditions>
+        <createTable tableName="reserva">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="fecha_reserva" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_vencimiento" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto_senia" type="decimal(21,2)"/>
+            <column name="estado" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="observaciones" type="varchar(500)"/>
+            <column name="usuario_creacion" type="varchar(50)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+            <column name="inventario_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cliente_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="venta_id" type="bigint"/>
+            <column name="moneda_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="reserva" baseColumnNames="inventario_id" constraintName="fk_reserva__inventario_id" referencedTableName="inventario" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="reserva" baseColumnNames="cliente_id" constraintName="fk_reserva__cliente_id" referencedTableName="cliente" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="reserva" baseColumnNames="venta_id" constraintName="fk_reserva__venta_id" referencedTableName="venta" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="reserva" baseColumnNames="moneda_id" constraintName="fk_reserva__moneda_id" referencedTableName="moneda" referencedColumnNames="id"/>
+        <createIndex tableName="reserva" indexName="idx_reserva__inventario_estado">
+            <column name="inventario_id"/>
+            <column name="estado"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260418190000-06-create-tasacion-usado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="tasacion_usado"/>
+            </not>
+        </preConditions>
+        <createTable tableName="tasacion_usado">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="fecha_tasacion" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="monto_tasacion" type="decimal(21,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="marca_modelo_usado" type="varchar(120)"/>
+            <column name="patente_usado" type="varchar(30)"/>
+            <column name="vin_chasis_usado" type="varchar(30)"/>
+            <column name="usuario_tasador" type="varchar(50)"/>
+            <column name="observaciones" type="varchar(500)"/>
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+            <column name="venta_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cliente_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inventario_generado_id" type="bigint"/>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="tasacion_usado" baseColumnNames="venta_id" constraintName="fk_tasacion_usado__venta_id" referencedTableName="venta" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="tasacion_usado" baseColumnNames="cliente_id" constraintName="fk_tasacion_usado__cliente_id" referencedTableName="cliente" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="tasacion_usado" baseColumnNames="inventario_generado_id" constraintName="fk_tasacion_usado__inventario_id" referencedTableName="inventario" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260418190000-07-add-venta-relational-columns" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <not>
+                    <columnExists tableName="venta" columnName="reserva_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="venta">
+            <column name="reserva_id" type="bigint"/>
+            <column name="tasacion_usado_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="venta" baseColumnNames="reserva_id" constraintName="fk_venta__reserva_id" referencedTableName="reserva" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="venta" baseColumnNames="tasacion_usado_id" constraintName="fk_venta__tasacion_usado_id" referencedTableName="tasacion_usado" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260418190000-08-add-pago-profesional-columns" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <not>
+                    <columnExists tableName="pago" columnName="tipo_movimiento"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="pago">
+            <column name="tipo_movimiento" type="varchar(255)"/>
+            <column name="cotizacion_usada" type="decimal(21,2)"/>
+            <column name="usuario_registro" type="varchar(50)"/>
+            <column name="observaciones" type="varchar(500)"/>
+            <column name="comprobante_externo" type="varchar(100)"/>
+            <column name="banco_entidad" type="varchar(100)"/>
+            <column name="numero_operacion" type="varchar(100)"/>
+        </addColumn>
+        <sql>
+            UPDATE pago
+            SET tipo_movimiento = 'PAGO_RECIBIDO'
+            WHERE tipo_movimiento IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260418190000-09-add-historial-context-columns" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario_historial"/>
+                <not>
+                    <columnExists tableName="inventario_historial" columnName="motivo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario_historial">
+            <column name="motivo" type="varchar(255)"/>
+            <column name="venta_id" type="bigint"/>
+            <column name="reserva_id" type="bigint"/>
+            <column name="cliente_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint baseTableName="inventario_historial" baseColumnNames="venta_id" constraintName="fk_inventario_historial__venta_id" referencedTableName="venta" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="inventario_historial" baseColumnNames="reserva_id" constraintName="fk_inventario_historial__reserva_id" referencedTableName="reserva" referencedColumnNames="id"/>
+        <addForeignKeyConstraint baseTableName="inventario_historial" baseColumnNames="cliente_id" constraintName="fk_inventario_historial__cliente_id" referencedTableName="cliente" referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260418190000-10-unique-detalle-venta-por-venta" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="detalle_venta"/>
+                <not>
+                    <uniqueConstraintExists tableName="detalle_venta" constraintName="ux_detalle_venta__venta_id"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT venta_id
+                        FROM detalle_venta
+                        GROUP BY venta_id
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="detalle_venta" columnNames="venta_id" constraintName="ux_detalle_venta__venta_id"/>
+    </changeSet>
+
+</databaseChangeLog>

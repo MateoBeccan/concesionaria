@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260417110000-1-cliente-audit-users" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="cliente"/>
+                <not>
+                    <columnExists tableName="cliente" columnName="created_by"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="cliente">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260417110000-2-vehiculo-audit-users" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <not>
+                    <columnExists tableName="vehiculo" columnName="created_by"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="vehiculo">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260417110000-3-inventario-audit-users" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="created_by"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260417110000-4-venta-audit-users" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <not>
+                    <columnExists tableName="venta" columnName="created_by"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="venta">
+            <column name="created_by" type="varchar(50)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260417110000-5-cotizacion-audit-fields" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="cotizacion"/>
+                <not>
+                    <columnExists tableName="cotizacion" columnName="created_date"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="cotizacion">
+            <column name="created_date" type="${datetimeType}"/>
+            <column name="last_modified_date" type="${datetimeType}"/>
+            <column name="created_by" type="varchar(50)"/>
+            <column name="last_modified_by" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

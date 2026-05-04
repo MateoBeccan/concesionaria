@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260501120000-01-pago-tasacion-usado-rel" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <not>
+                    <columnExists tableName="pago" columnName="tasacion_usado_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="pago">
+            <column name="tasacion_usado_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="pago"
+            baseColumnNames="tasacion_usado_id"
+            referencedTableName="tasacion_usado"
+            referencedColumnNames="id"
+            constraintName="fk_pago__tasacion_usado_id"/>
+        <createIndex tableName="pago" indexName="idx_pago__tasacion_usado_id">
+            <column name="tasacion_usado_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501120000-02-tasacion-usado-anio-usado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="anio_usado"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="anio_usado" type="int"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260501120000-03-tasacion-usado-km-usado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="km_usado"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="km_usado" type="int"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260501120000-04-tasacion-usado-color-usado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <columnExists tableName="tasacion_usado" columnName="color_usado"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="tasacion_usado">
+            <column name="color_usado" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260501120000-05-tasacion-usado-venta-nullable" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <columnExists tableName="tasacion_usado" columnName="venta_id"/>
+            </and>
+        </preConditions>
+        <dropNotNullConstraint tableName="tasacion_usado" columnName="venta_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260501120000-06-indice-tasacion-usado-estado-cliente" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <indexExists tableName="tasacion_usado" indexName="idx_tasacion_usado__estado_cliente"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__estado_cliente">
+            <column name="estado"/>
+            <column name="cliente_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501120000-07-indice-tasacion-usado-inventario" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tasacion_usado"/>
+                <not>
+                    <indexExists tableName="tasacion_usado" indexName="idx_tasacion_usado__inventario_generado"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado__inventario_generado">
+            <column name="inventario_generado_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260501120000-08-venta-tasacion-unique" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="tasacion_usado_id"/>
+                <not>
+                    <uniqueConstraintExists tableName="venta" constraintName="ux_venta__tasacion_usado_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="venta" columnNames="tasacion_usado_id" constraintName="ux_venta__tasacion_usado_id"/>
+    </changeSet>
+
+</databaseChangeLog>

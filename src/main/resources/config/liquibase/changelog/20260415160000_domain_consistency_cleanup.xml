@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260415160000-1-add-venta-estado-column" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <not>
+                    <columnExists tableName="venta" columnName="estado"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="venta">
+            <column name="estado" type="varchar(255)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260415160000-2-migrate-venta-estado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <tableExists tableName="estado_venta"/>
+                <columnExists tableName="venta" columnName="estado_venta_id"/>
+                <columnExists tableName="venta" columnName="estado"/>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE venta v
+            JOIN estado_venta ev ON ev.id = v.estado_venta_id
+            SET v.estado = UPPER(TRIM(ev.codigo))
+            WHERE v.estado IS NULL OR v.estado = '';
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260415160000-3-venta-estado-default" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="estado"/>
+            </and>
+        </preConditions>
+        <sql>UPDATE venta SET estado = 'PENDIENTE' WHERE estado IS NULL OR estado = '';</sql>
+    </changeSet>
+
+    <changeSet id="20260415160000-4-venta-estado-not-null" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="estado"/>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="estado" columnDataType="varchar(255)"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-5-drop-venta-estado-fk" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <foreignKeyConstraintExists foreignKeyName="fk_venta__estado_venta_id"/>
+            </and>
+        </preConditions>
+        <dropForeignKeyConstraint baseTableName="venta" constraintName="fk_venta__estado_venta_id"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-6-drop-venta-estado-id-column" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="estado_venta_id"/>
+            </and>
+        </preConditions>
+        <dropColumn tableName="venta" columnName="estado_venta_id"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-7-drop-estado-venta-table" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="estado_venta"/>
+        </preConditions>
+        <dropTable tableName="estado_venta"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-8-keep-inventario-disponible-column" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <columnExists tableName="inventario" columnName="disponible"/>
+            </and>
+        </preConditions>
+        <sql>UPDATE inventario SET disponible = true WHERE disponible IS NULL;</sql>
+        <addNotNullConstraint tableName="inventario" columnName="disponible" columnDataType="boolean"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-9-create-inventario-historial" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="inventario_historial"/>
+            </not>
+        </preConditions>
+        <createTable tableName="inventario_historial">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints nullable="false" primaryKey="true"/>
+            </column>
+            <column name="fecha" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado_anterior" type="varchar(255)"/>
+            <column name="estado_nuevo" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accion" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="detalle" type="varchar(500)"/>
+            <column name="inventario_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="inventario_historial"
+            baseColumnNames="inventario_id"
+            constraintName="fk_inventario_historial__inventario_id"
+            referencedTableName="inventario"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-10-unique-vehiculo-patente" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <columnExists tableName="vehiculo" columnName="patente"/>
+                <not>
+                    <indexExists tableName="vehiculo" indexName="ux_vehiculo__patente"/>
+                </not>
+                <not>
+                    <indexExists tableName="vehiculo" indexName="uk_vehiculo_patente"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'vehiculo'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'patente'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT patente
+                        FROM vehiculo
+                        WHERE patente IS NOT NULL AND TRIM(patente) &lt;&gt; ''
+                        GROUP BY patente
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="vehiculo" columnNames="patente" constraintName="ux_vehiculo__patente"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-11-unique-cliente-tipo-documento" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="cliente"/>
+                <columnExists tableName="cliente" columnName="tipo_documento_id"/>
+                <columnExists tableName="cliente" columnName="nro_documento"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'cliente'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'tipo_documento_id,nro_documento'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT tipo_documento_id, nro_documento
+                        FROM cliente
+                        WHERE tipo_documento_id IS NOT NULL AND nro_documento IS NOT NULL AND TRIM(nro_documento) &lt;&gt; ''
+                        GROUP BY tipo_documento_id, nro_documento
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="cliente" columnNames="tipo_documento_id,nro_documento" constraintName="ux_cliente__tipo_doc_nro"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-12-unique-tipo-documento-codigo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tipo_documento"/>
+                <columnExists tableName="tipo_documento" columnName="codigo"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'tipo_documento'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'codigo'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT UPPER(TRIM(codigo))
+                        FROM tipo_documento
+                        WHERE codigo IS NOT NULL AND TRIM(codigo) &lt;&gt; ''
+                        GROUP BY UPPER(TRIM(codigo))
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="tipo_documento" columnNames="codigo" constraintName="ux_tipo_documento__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-13-unique-condicion-iva-codigo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="condicion_iva"/>
+                <columnExists tableName="condicion_iva" columnName="codigo"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'condicion_iva'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'codigo'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT UPPER(TRIM(codigo))
+                        FROM condicion_iva
+                        WHERE codigo IS NOT NULL AND TRIM(codigo) &lt;&gt; ''
+                        GROUP BY UPPER(TRIM(codigo))
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="condicion_iva" columnNames="codigo" constraintName="ux_condicion_iva__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-14-unique-moneda-codigo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="moneda"/>
+                <columnExists tableName="moneda" columnName="codigo"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'moneda'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'codigo'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT UPPER(TRIM(codigo))
+                        FROM moneda
+                        WHERE codigo IS NOT NULL AND TRIM(codigo) &lt;&gt; ''
+                        GROUP BY UPPER(TRIM(codigo))
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="moneda" columnNames="codigo" constraintName="ux_moneda__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-15-unique-tipo-comprobante-codigo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="tipo_comprobante"/>
+                <columnExists tableName="tipo_comprobante" columnName="codigo"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'tipo_comprobante'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'codigo'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT UPPER(TRIM(codigo))
+                        FROM tipo_comprobante
+                        WHERE codigo IS NOT NULL AND TRIM(codigo) &lt;&gt; ''
+                        GROUP BY UPPER(TRIM(codigo))
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="tipo_comprobante" columnNames="codigo" constraintName="ux_tipo_comprobante__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-16-unique-metodo-pago-codigo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="metodo_pago"/>
+                <columnExists tableName="metodo_pago" columnName="codigo"/>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT index_name
+                        FROM information_schema.statistics
+                        WHERE table_schema = DATABASE()
+                          AND table_name = 'metodo_pago'
+                          AND non_unique = 0
+                        GROUP BY index_name
+                        HAVING GROUP_CONCAT(column_name ORDER BY seq_in_index) = 'codigo'
+                    ) t
+                </sqlCheck>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT UPPER(TRIM(codigo))
+                        FROM metodo_pago
+                        WHERE codigo IS NOT NULL AND TRIM(codigo) &lt;&gt; ''
+                        GROUP BY UPPER(TRIM(codigo))
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="metodo_pago" columnNames="codigo" constraintName="ux_metodo_pago__codigo"/>
+    </changeSet>
+
+    <changeSet id="20260415160000-17-drop-prueba1-table" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="prueba1"/>
+        </preConditions>
+        <dropTable tableName="prueba1"/>
+    </changeSet>
+</databaseChangeLog>

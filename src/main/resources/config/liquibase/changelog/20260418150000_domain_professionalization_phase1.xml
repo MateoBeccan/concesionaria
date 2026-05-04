@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260418150000-1-vehiculo-vin-chasis" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <not>
+                    <columnExists tableName="vehiculo" columnName="vin_chasis"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="vehiculo">
+            <column name="vin_chasis" type="varchar(30)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-1b-vehiculo-anio-modelo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <not>
+                    <columnExists tableName="vehiculo" columnName="anio_modelo"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="vehiculo">
+            <column name="anio_modelo" type="int"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-1c-vehiculo-color" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <not>
+                    <columnExists tableName="vehiculo" columnName="color"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="vehiculo">
+            <column name="color" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-1d-vehiculo-observaciones" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <not>
+                    <columnExists tableName="vehiculo" columnName="observaciones"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="vehiculo">
+            <column name="observaciones" type="varchar(500)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-2-vehiculo-patente-length" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="vehiculo"/>
+                <columnExists tableName="vehiculo" columnName="patente"/>
+            </and>
+        </preConditions>
+        <modifyDataType tableName="vehiculo" columnName="patente" newDataType="varchar(10)"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-3-inventario-codigo-interno-stock" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="codigo_interno_stock"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="codigo_interno_stock" type="varchar(30)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-3b-inventario-costo-adquisicion" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="costo_adquisicion"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="costo_adquisicion" type="decimal(21,2)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-3c-inventario-fecha-egreso" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="fecha_egreso"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="fecha_egreso" type="${datetimeType}"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-3d-inventario-tipo-origen-ingreso" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <columnExists tableName="inventario" columnName="tipo_origen_ingreso"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario">
+            <column name="tipo_origen_ingreso" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-4-inventario-codigo-backfill" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <columnExists tableName="inventario" columnName="codigo_interno_stock"/>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE inventario
+            SET codigo_interno_stock = CONCAT('INV-', id)
+            WHERE codigo_interno_stock IS NULL OR TRIM(codigo_interno_stock) = '';
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260418150000-5-inventario-codigo-unique" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <columnExists tableName="inventario" columnName="codigo_interno_stock"/>
+                <not>
+                    <uniqueConstraintExists tableName="inventario" constraintName="ux_inventario__codigo_interno_stock"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*) FROM (
+                        SELECT codigo_interno_stock
+                        FROM inventario
+                        WHERE codigo_interno_stock IS NOT NULL AND TRIM(codigo_interno_stock) &lt;&gt; ''
+                        GROUP BY codigo_interno_stock
+                        HAVING COUNT(*) &gt; 1
+                    ) t
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addUniqueConstraint tableName="inventario" columnNames="codigo_interno_stock" constraintName="ux_inventario__codigo_interno_stock"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-6-inventario-historial-usuario" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario_historial"/>
+                <not>
+                    <columnExists tableName="inventario_historial" columnName="usuario"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="inventario_historial">
+            <column name="usuario" type="varchar(50)"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260418150000-7-venta-importes-backfill" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="venta"/>
+        </preConditions>
+        <sql>
+            UPDATE venta SET total_pagado = 0 WHERE total_pagado IS NULL;
+        </sql>
+        <sql>
+            UPDATE venta
+            SET saldo = CASE
+                WHEN total IS NULL THEN 0
+                ELSE GREATEST(total - IFNULL(total_pagado, 0), 0)
+            END
+            WHERE saldo IS NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260418150000-8-venta-user-backfill" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <tableExists tableName="jhi_user"/>
+                <columnExists tableName="venta" columnName="user_id"/>
+            </and>
+        </preConditions>
+        <sql>
+            UPDATE venta
+            SET user_id = (SELECT MIN(id) FROM jhi_user)
+            WHERE user_id IS NULL
+              AND (SELECT MIN(id) FROM jhi_user) IS NOT NULL;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260418150000-9-venta-not-null-total-pagado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="total_pagado"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM venta WHERE total_pagado IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="total_pagado" columnDataType="decimal(21,2)"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-10-venta-not-null-saldo" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="saldo"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM venta WHERE saldo IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="saldo" columnDataType="decimal(21,2)"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-11-venta-not-null-cliente" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="cliente_id"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM venta WHERE cliente_id IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="cliente_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-12-venta-not-null-moneda" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="moneda_id"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM venta WHERE moneda_id IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="moneda_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-13-venta-not-null-user" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <columnExists tableName="venta" columnName="user_id"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM venta WHERE user_id IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="venta" columnName="user_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-14-detalle-venta-not-null-venta-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="detalle_venta"/>
+                <columnExists tableName="detalle_venta" columnName="venta_id"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM detalle_venta WHERE venta_id IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="detalle_venta" columnName="venta_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-15-detalle-venta-not-null-vehiculo-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="detalle_venta"/>
+                <columnExists tableName="detalle_venta" columnName="vehiculo_id"/>
+                <sqlCheck expectedResult="0">SELECT COUNT(*) FROM detalle_venta WHERE vehiculo_id IS NULL</sqlCheck>
+            </and>
+        </preConditions>
+        <addNotNullConstraint tableName="detalle_venta" columnName="vehiculo_id" columnDataType="bigint"/>
+    </changeSet>
+
+    <changeSet id="20260418150000-16-index-venta-fecha" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <not>
+                    <indexExists tableName="venta" indexName="idx_venta__fecha"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="venta" indexName="idx_venta__fecha">
+            <column name="fecha"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260418150000-17-index-venta-cliente" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="venta"/>
+                <not>
+                    <indexExists tableName="venta" indexName="idx_venta__cliente_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="venta" indexName="idx_venta__cliente_id">
+            <column name="cliente_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260418150000-18-index-pago-venta-fecha" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <not>
+                    <indexExists tableName="pago" indexName="idx_pago__venta_fecha"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="pago" indexName="idx_pago__venta_fecha">
+            <column name="venta_id"/>
+            <column name="fecha"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260418150000-19-index-inventario-estado" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="inventario"/>
+                <not>
+                    <indexExists tableName="inventario" indexName="idx_inventario__estado_inventario"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="inventario" indexName="idx_inventario__estado_inventario">
+            <column name="estado_inventario"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="20260418150000-20-index-cliente-documento" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="cliente"/>
+                <not>
+                    <indexExists tableName="cliente" indexName="idx_cliente__tipo_doc_nro"/>
+                </not>
+            </and>
+        </preConditions>
+        <createIndex tableName="cliente" indexName="idx_cliente__tipo_doc_nro">
+            <column name="tipo_documento_id"/>
+            <column name="nro_documento"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

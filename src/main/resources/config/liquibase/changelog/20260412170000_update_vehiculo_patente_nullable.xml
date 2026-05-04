@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260412170000-1" author="codex">
+        <dropNotNullConstraint tableName="vehiculo" columnName="patente" columnDataType="varchar(255)"/>
+    </changeSet>
+
+    <changeSet id="20260412170000-2" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <uniqueConstraintExists tableName="vehiculo" constraintName="ux_vehiculo__patente"/>
+            </not>
+        </preConditions>
+        <addUniqueConstraint
+            tableName="vehiculo"
+            columnNames="patente"
+            constraintName="ux_vehiculo__patente"
+        />
+    </changeSet>
+</databaseChangeLog>

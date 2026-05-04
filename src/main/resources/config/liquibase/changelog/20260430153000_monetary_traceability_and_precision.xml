@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260430153000-1-monetary-precision" author="codex">
+        <modifyDataType tableName="cotizacion" columnName="valor_compra" newDataType="DECIMAL(21,8)"/>
+        <modifyDataType tableName="cotizacion" columnName="valor_venta" newDataType="DECIMAL(21,8)"/>
+        <modifyDataType tableName="pago" columnName="cotizacion_usada" newDataType="DECIMAL(21,8)"/>
+    </changeSet>
+
+    <changeSet id="20260430153000-2-venta-traceability" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="venta" columnName="fecha_cotizacion_usada"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="venta">
+            <column name="fecha_cotizacion_usada" type="datetime(6)"/>
+            <column name="cotizacion_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="venta"
+            baseColumnNames="cotizacion_id"
+            referencedTableName="cotizacion"
+            referencedColumnNames="id"
+            constraintName="fk_venta__cotizacion_ref"/>
+    </changeSet>
+
+    <changeSet id="20260430153000-3-pago-traceability" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="pago" columnName="monto_aplicado_venta"/>
+            </not>
+        </preConditions>
+        <addColumn tableName="pago">
+            <column name="monto_aplicado_venta" type="DECIMAL(21,2)" defaultValueNumeric="0"/>
+            <column name="fecha_cotizacion_usada" type="datetime(6)"/>
+            <column name="cotizacion_id" type="bigint"/>
+        </addColumn>
+        <addForeignKeyConstraint
+            baseTableName="pago"
+            baseColumnNames="cotizacion_id"
+            referencedTableName="cotizacion"
+            referencedColumnNames="id"
+            constraintName="fk_pago__cotizacion_ref"/>
+        <sql>update pago set monto_aplicado_venta = monto where monto_aplicado_venta is null;</sql>
+    </changeSet>
+
+    <changeSet id="20260430153000-4-checks" author="codex">
+        <sql>
+            ALTER TABLE venta
+            ADD CONSTRAINT ck_venta_cotizacion_positive CHECK (cotizacion &gt; 0);
+        </sql>
+        <sql>
+            ALTER TABLE pago
+            ADD CONSTRAINT ck_pago_monto_aplicado_non_negative CHECK (monto_aplicado_venta &gt;= 0);
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>
