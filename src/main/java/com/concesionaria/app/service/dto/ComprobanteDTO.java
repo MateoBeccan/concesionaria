@@ -37,6 +37,14 @@ public class ComprobanteDTO implements Serializable {
 
     private String lastModifiedBy;
 
+    private String motivoAnulacion;
+
+    private Instant fechaAnulacion;
+
+    private String usuarioEmision;
+
+    private String usuarioAnulacion;
+
     private EstadoComprobante estado;
 
     private VentaDTO venta;
@@ -125,6 +133,38 @@ public class ComprobanteDTO implements Serializable {
         this.lastModifiedBy = lastModifiedBy;
     }
 
+    public String getMotivoAnulacion() {
+        return motivoAnulacion;
+    }
+
+    public void setMotivoAnulacion(String motivoAnulacion) {
+        this.motivoAnulacion = motivoAnulacion;
+    }
+
+    public Instant getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
+    public void setFechaAnulacion(Instant fechaAnulacion) {
+        this.fechaAnulacion = fechaAnulacion;
+    }
+
+    public String getUsuarioEmision() {
+        return usuarioEmision;
+    }
+
+    public void setUsuarioEmision(String usuarioEmision) {
+        this.usuarioEmision = usuarioEmision;
+    }
+
+    public String getUsuarioAnulacion() {
+        return usuarioAnulacion;
+    }
+
+    public void setUsuarioAnulacion(String usuarioAnulacion) {
+        this.usuarioAnulacion = usuarioAnulacion;
+    }
+
     public EstadoComprobante getEstado() {
         return estado;
     }
@@ -192,6 +232,10 @@ public class ComprobanteDTO implements Serializable {
             ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", motivoAnulacion='" + getMotivoAnulacion() + "'" +
+            ", fechaAnulacion='" + getFechaAnulacion() + "'" +
+            ", usuarioEmision='" + getUsuarioEmision() + "'" +
+            ", usuarioAnulacion='" + getUsuarioAnulacion() + "'" +
             ", estado='" + getEstado() + "'" +
             ", venta=" + getVenta() +
             ", tipoComprobante=" + getTipoComprobante() +

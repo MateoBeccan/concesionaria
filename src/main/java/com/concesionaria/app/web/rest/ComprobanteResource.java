@@ -1,9 +1,14 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
+import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.ComprobanteService;
+import com.concesionaria.app.service.PdfComprobanteService;
 import com.concesionaria.app.service.dto.ComprobanteDTO;
+import com.concesionaria.app.service.dto.ComprobantePdfResult;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
+import com.concesionaria.app.web.rest.vm.AnulacionRequestVM;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.net.URI;
@@ -17,7 +22,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -41,10 +49,16 @@ public class ComprobanteResource {
     private final ComprobanteService comprobanteService;
 
     private final ComprobanteRepository comprobanteRepository;
+    private final PdfComprobanteService pdfComprobanteService;
 
-    public ComprobanteResource(ComprobanteService comprobanteService, ComprobanteRepository comprobanteRepository) {
+    public ComprobanteResource(
+        ComprobanteService comprobanteService,
+        ComprobanteRepository comprobanteRepository,
+        PdfComprobanteService pdfComprobanteService
+    ) {
         this.comprobanteService = comprobanteService;
         this.comprobanteRepository = comprobanteRepository;
+        this.pdfComprobanteService = pdfComprobanteService;
     }
 
     /**
@@ -162,6 +176,32 @@ public class ComprobanteResource {
         return ResponseUtil.wrapOrNotFound(comprobanteDTO);
     }
 
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> getComprobantePdf(@PathVariable("id") Long id) {
+        LOG.debug("REST request to get PDF de Comprobante : {}", id);
+        validatePdfReadPermission(id);
+        Optional<ComprobantePdfResult> result = pdfComprobanteService.generarPdfComprobante(id);
+        if (result.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        ComprobantePdfResult pdf = result.get();
+        return ResponseEntity.ok()
+            .contentType(MediaType.APPLICATION_PDF)
+            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + pdf.fileName() + "\"")
+            .body(pdf.content());
+    }
+
+    private void validatePdfReadPermission(Long comprobanteId) {
+        if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            return;
+        }
+        String login = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
+        boolean allowed = comprobanteRepository.existsByIdAndVentaUserLogin(comprobanteId, login);
+        if (!allowed) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para descargar este comprobante");
+        }
+    }
+
     @GetMapping("/by-venta/{ventaId}")
     public ResponseEntity<List<ComprobanteDTO>> getComprobantesByVenta(@PathVariable("ventaId") Long ventaId) {
         LOG.debug("REST request to get Comprobantes by Venta : {}", ventaId);
@@ -196,9 +236,9 @@ public class ComprobanteResource {
     }
 
     @PostMapping("/{id}/anular")
-    public ResponseEntity<ComprobanteDTO> anularComprobante(@PathVariable("id") Long id) {
+    public ResponseEntity<ComprobanteDTO> anularComprobante(@PathVariable("id") Long id, @Valid @RequestBody AnulacionRequestVM request) {
         LOG.debug("REST request para anular comprobante {}", id);
-        ComprobanteDTO result = comprobanteService.anularComprobante(id);
+        ComprobanteDTO result = comprobanteService.anularComprobante(id, request.getMotivo());
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .body(result);

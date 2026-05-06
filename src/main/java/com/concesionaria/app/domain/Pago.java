@@ -74,6 +74,17 @@ public class Pago implements Serializable {
     @Column(name = "numero_operacion", length = 100)
     private String numeroOperacion;
 
+    @Size(max = 500)
+    @Column(name = "motivo_anulacion", length = 500)
+    private String motivoAnulacion;
+
+    @Column(name = "fecha_anulacion")
+    private Instant fechaAnulacion;
+
+    @Size(max = 50)
+    @Column(name = "usuario_anulacion", length = 50)
+    private String usuarioAnulacion;
+
     @Column(name = "created_date")
     private Instant createdDate;
 
@@ -254,6 +265,30 @@ public class Pago implements Serializable {
         this.numeroOperacion = numeroOperacion;
     }
 
+    public String getMotivoAnulacion() {
+        return motivoAnulacion;
+    }
+
+    public void setMotivoAnulacion(String motivoAnulacion) {
+        this.motivoAnulacion = motivoAnulacion;
+    }
+
+    public Instant getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
+    public void setFechaAnulacion(Instant fechaAnulacion) {
+        this.fechaAnulacion = fechaAnulacion;
+    }
+
+    public String getUsuarioAnulacion() {
+        return usuarioAnulacion;
+    }
+
+    public void setUsuarioAnulacion(String usuarioAnulacion) {
+        this.usuarioAnulacion = usuarioAnulacion;
+    }
+
     public Instant getCreatedDate() {
         return this.createdDate;
     }
@@ -369,6 +404,9 @@ public class Pago implements Serializable {
             ", comprobanteExterno='" + getComprobanteExterno() + "'" +
             ", bancoEntidad='" + getBancoEntidad() + "'" +
             ", numeroOperacion='" + getNumeroOperacion() + "'" +
+            ", motivoAnulacion='" + getMotivoAnulacion() + "'" +
+            ", fechaAnulacion='" + getFechaAnulacion() + "'" +
+            ", usuarioAnulacion='" + getUsuarioAnulacion() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", estado='" + getEstado() + "'" +
             "}";

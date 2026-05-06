@@ -19,6 +19,10 @@ public interface VentaService {
 
     Page<VentaDTO> findAllWithEagerRelationships(Pageable pageable);
 
+    Page<VentaDTO> findAllCurrentUser(Pageable pageable);
+
+    Page<VentaDTO> findAllCurrentUserWithEagerRelationships(Pageable pageable);
+
     Optional<VentaDTO> findOne(Long id);
 
     Optional<VentaDTO> findByReservaId(Long reservaId);

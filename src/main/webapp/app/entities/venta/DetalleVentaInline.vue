@@ -105,7 +105,7 @@
         </tbody>
         <tfoot class="table-light">
           <tr>
-            <td colspan="4" class="text-end fw-semibold">Subtotal venta (convertido):</td>
+            <td colspan="4" class="text-end fw-semibold">Subtotal:</td>
             <td class="text-end fw-bold" style="color: var(--color-primary)">
               {{ props.monedaVenta?.simbolo ?? '$' }} {{ fmt(props.sumaSubtotales) }} {{ props.monedaVenta?.codigo ?? '' }}
             </td>

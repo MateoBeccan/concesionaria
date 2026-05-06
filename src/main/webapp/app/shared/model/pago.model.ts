@@ -21,6 +21,9 @@ export interface IPago {
   comprobanteExterno?: string | null;
   bancoEntidad?: string | null;
   numeroOperacion?: string | null;
+  motivoAnulacion?: string | null;
+  fechaAnulacion?: Date | null;
+  usuarioAnulacion?: string | null;
   createdDate?: Date | null;
   venta?: IVenta | null;
   reserva?: IReserva | null;
@@ -47,6 +50,9 @@ export class Pago implements IPago {
     public comprobanteExterno?: string | null,
     public bancoEntidad?: string | null,
     public numeroOperacion?: string | null,
+    public motivoAnulacion?: string | null,
+    public fechaAnulacion?: Date | null,
+    public usuarioAnulacion?: string | null,
     public createdDate?: Date | null,
     public venta?: IVenta | null,
     public reserva?: IReserva | null,

@@ -231,3 +231,11 @@ app:
   negocio:
     reserva:
       porcentaje-minimo: 0.10
+  comprobante:
+    pdf:
+      company:
+        name: Concesionaria MB
+        address: Av. Siempre Viva 1234 - CABA
+        phone: +54 11 4000-1234
+        email: ventas@concesionariamb.com
+        cuit: 30-12345678-9

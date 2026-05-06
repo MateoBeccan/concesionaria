@@ -3,6 +3,7 @@ package com.concesionaria.app.web.rest;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.dto.PagoDTO;
+import com.concesionaria.app.web.rest.vm.AnulacionRequestVM;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -216,9 +217,9 @@ public class PagoResource {
     }
 
     @PostMapping("/{id}/anular")
-    public ResponseEntity<PagoDTO> anularPago(@PathVariable("id") Long id) {
+    public ResponseEntity<PagoDTO> anularPago(@PathVariable("id") Long id, @Valid @RequestBody AnulacionRequestVM request) {
         LOG.debug("REST request para anular pago {}", id);
-        PagoDTO result = pagoService.anularPago(id);
+        PagoDTO result = pagoService.anularPago(id, request.getMotivo());
         return ResponseEntity.ok()
             .headers(HeaderUtil.createEntityUpdateAlert(applicationName, false, ENTITY_NAME, id.toString()))
             .body(result);

@@ -99,7 +99,8 @@ public class ComprobanteServiceImpl implements ComprobanteService {
 
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta informada no existe"));
         validarVentaCompletada(venta);
-        validarPoliticaUnicoComprobanteActivo(ventaId);
+        validarTotalesVentaParaComprobante(venta);
+        validarPoliticaUnicoComprobanteActivo(ventaId, tipoComprobanteId);
 
         TipoComprobante tipoComprobante = tipoComprobanteRepository
             .findById(tipoComprobanteId)
@@ -127,6 +128,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         comprobante.setEstado(EstadoComprobante.EMITIDO);
         comprobante.setCreatedDate(now);
         comprobante.setCreatedBy(currentUser);
+        comprobante.setUsuarioEmision(currentUser);
         comprobante.setLastModifiedDate(now);
         comprobante.setLastModifiedBy(currentUser);
 
@@ -135,7 +137,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     }
 
     @Override
-    public ComprobanteDTO anularComprobante(Long comprobanteId) {
+    public ComprobanteDTO anularComprobante(Long comprobanteId, String motivo) {
         LOG.debug("Request to anular comprobante : {}", comprobanteId);
         Comprobante comprobante = comprobanteRepository
             .findById(comprobanteId)
@@ -143,10 +145,18 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         if (comprobante.getEstado() == EstadoComprobante.ANULADO) {
             throw new BadRequestException("El comprobante ya se encuentra anulado");
         }
+        if (motivo == null || motivo.isBlank()) {
+            throw new BadRequestException("Debe informar un motivo para anular el comprobante");
+        }
 
         comprobante.setEstado(EstadoComprobante.ANULADO);
-        comprobante.setLastModifiedDate(Instant.now());
-        comprobante.setLastModifiedBy(currentUserLogin());
+        Instant fechaAnulacion = Instant.now();
+        String usuarioAnulacion = currentUserLogin();
+        comprobante.setMotivoAnulacion(motivo.trim());
+        comprobante.setFechaAnulacion(fechaAnulacion);
+        comprobante.setUsuarioAnulacion(usuarioAnulacion);
+        comprobante.setLastModifiedDate(fechaAnulacion);
+        comprobante.setLastModifiedBy(usuarioAnulacion);
         Comprobante saved = comprobanteRepository.save(comprobante);
         return comprobanteMapper.toDto(saved);
     }
@@ -165,9 +175,9 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         }
     }
 
-    private void validarPoliticaUnicoComprobanteActivo(Long ventaId) {
-        if (comprobanteRepository.existsByVentaIdAndEstado(ventaId, EstadoComprobante.EMITIDO)) {
-            throw new BadRequestException("La venta ya posee un comprobante EMITIDO activo");
+    private void validarPoliticaUnicoComprobanteActivo(Long ventaId, Long tipoComprobanteId) {
+        if (comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(ventaId, tipoComprobanteId, EstadoComprobante.EMITIDO)) {
+            throw new BadRequestException("La venta ya posee un comprobante activo de ese tipo");
         }
     }
 
@@ -176,7 +186,19 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         if (codigo == null || codigo.isBlank()) {
             throw new BadRequestException("El tipo de comprobante debe tener un codigo para numerar");
         }
-        return codigo.trim().toUpperCase() + "-" + String.format("%08d", correlativo);
+        return codigo.trim().toUpperCase() + "-" + String.format("%06d", correlativo);
+    }
+
+    private void validarTotalesVentaParaComprobante(Venta venta) {
+        if (venta.getTotal() == null || venta.getTotal().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("La venta no tiene un total valido para emitir comprobante");
+        }
+        if (venta.getImporteNeto() == null || venta.getImporteNeto().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("La venta no tiene importe neto valido para emitir comprobante");
+        }
+        if (venta.getImpuesto() == null || venta.getImpuesto().compareTo(java.math.BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("La venta no tiene impuesto valido para emitir comprobante");
+        }
     }
 
     private String currentUserLogin() {

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260505220000-1-add-pago-anulacion-columns" author="codex">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="pago" columnName="motivo_anulacion"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="pago">
+      <column name="motivo_anulacion" type="varchar(500)"/>
+      <column name="fecha_anulacion" type="datetime(6)"/>
+      <column name="usuario_anulacion" type="varchar(50)"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="20260505220000-2-add-comprobante-anulacion-columns" author="codex">
+    <preConditions onFail="MARK_RAN">
+      <not>
+        <columnExists tableName="comprobante" columnName="motivo_anulacion"/>
+      </not>
+    </preConditions>
+    <addColumn tableName="comprobante">
+      <column name="motivo_anulacion" type="varchar(500)"/>
+      <column name="fecha_anulacion" type="datetime(6)"/>
+      <column name="usuario_emision" type="varchar(50)"/>
+      <column name="usuario_anulacion" type="varchar(50)"/>
+    </addColumn>
+  </changeSet>
+
+</databaseChangeLog>
+

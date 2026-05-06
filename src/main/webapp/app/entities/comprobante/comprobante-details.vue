@@ -1,87 +1,44 @@
 <template>
-  <div class="d-flex justify-content-center">
-    <div class="col-8">
-      <div v-if="comprobante">
-        <h2 class="jh-entity-heading" data-cy="comprobanteDetailsHeading"><span>ComprobanteComprobante</span> {{ comprobante.id }}</h2>
-        <dl class="row-md jh-entity-details">
-          <dt>
-            <span>Numero Comprobante</span>
-          </dt>
-          <dd>
-            <span>{{ comprobante.numeroComprobante }}</span>
+  <div class="container py-4" style="max-width: 900px" v-if="comprobante">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Comprobante #{{ comprobante.id }}</h2>
+      <div class="d-flex gap-2">
+        <button type="button" @click="descargarPdf" class="btn btn-primary btn-sm">Descargar PDF</button>
+        <button type="button" @click.prevent="previousState()" class="btn btn-outline-secondary btn-sm">Volver</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Número</dt>
+          <dd class="col-sm-8">{{ comprobante.numeroComprobante }}</dd>
+          <dt class="col-sm-4">Tipo</dt>
+          <dd class="col-sm-8">{{ comprobante.tipoComprobante?.codigo ?? '-' }}</dd>
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8">{{ comprobante.estado ?? '-' }}</dd>
+          <dt class="col-sm-4">Fecha emisión</dt>
+          <dd class="col-sm-8">{{ comprobante.fechaEmision ? formatDateLong(comprobante.fechaEmision) : '-' }}</dd>
+          <dt class="col-sm-4">Importe neto</dt>
+          <dd class="col-sm-8">{{ comprobante.importeNeto }}</dd>
+          <dt class="col-sm-4">Impuesto</dt>
+          <dd class="col-sm-8">{{ comprobante.impuesto }}</dd>
+          <dt class="col-sm-4">Total</dt>
+          <dd class="col-sm-8">{{ comprobante.total }}</dd>
+          <dt class="col-sm-4">Moneda</dt>
+          <dd class="col-sm-8">{{ comprobante.moneda?.simbolo ?? '' }} {{ comprobante.moneda?.codigo ?? '-' }}</dd>
+          <dt class="col-sm-4">Venta asociada</dt>
+          <dd class="col-sm-8">
+            <router-link v-if="comprobante.venta?.id" :to="{ name: 'VentaView', params: { ventaId: comprobante.venta.id } }">
+              {{ comprobante.venta.id }}
+            </router-link>
           </dd>
-          <dt>
-            <span>Fecha Emision</span>
-          </dt>
-          <dd>
-            <span v-if="comprobante.fechaEmision">{{ formatDateLong(comprobante.fechaEmision) }}</span>
-          </dd>
-          <dt>
-            <span>Importe Neto</span>
-          </dt>
-          <dd>
-            <span>{{ comprobante.importeNeto }}</span>
-          </dd>
-          <dt>
-            <span>Impuesto</span>
-          </dt>
-          <dd>
-            <span>{{ comprobante.impuesto }}</span>
-          </dd>
-          <dt>
-            <span>Total</span>
-          </dt>
-          <dd>
-            <span>{{ comprobante.total }}</span>
-          </dd>
-          <dt>
-            <span>Created Date</span>
-          </dt>
-          <dd>
-            <span v-if="comprobante.createdDate">{{ formatDateLong(comprobante.createdDate) }}</span>
-          </dd>
-          <dt>
-            <span>Venta</span>
-          </dt>
-          <dd>
-            <div v-if="comprobante.venta">
-              <router-link :to="{ name: 'VentaView', params: { ventaId: comprobante.venta.id } }">{{ comprobante.venta.id }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Tipo Comprobante</span>
-          </dt>
-          <dd>
-            <div v-if="comprobante.tipoComprobante">
-              <router-link :to="{ name: 'TipoComprobanteView', params: { tipoComprobanteId: comprobante.tipoComprobante.id } }">{{
-                comprobante.tipoComprobante.id
-              }}</router-link>
-            </div>
-          </dd>
-          <dt>
-            <span>Moneda</span>
-          </dt>
-          <dd>
-            <div v-if="comprobante.moneda">
-              <router-link :to="{ name: 'MonedaView', params: { monedaId: comprobante.moneda.id } }">{{
-                comprobante.moneda.id
-              }}</router-link>
-            </div>
-          </dd>
+          <dt class="col-sm-4">Usuario emisor</dt>
+          <dd class="col-sm-8">{{ comprobante.usuarioEmision ?? comprobante.createdBy ?? '-' }}</dd>
+          <dt class="col-sm-4">Motivo anulación</dt>
+          <dd class="col-sm-8">{{ comprobante.motivoAnulacion ?? '-' }}</dd>
+          <dt class="col-sm-4">Usuario anulación</dt>
+          <dd class="col-sm-8">{{ comprobante.usuarioAnulacion ?? '-' }}</dd>
         </dl>
-        <button type="submit" @click.prevent="previousState()" class="btn btn-info" data-cy="entityDetailsBackButton">
-          <font-awesome-icon icon="arrow-left"></font-awesome-icon>&nbsp;<span>Volver</span>
-        </button>
-        <router-link
-          v-if="comprobante.id"
-          :to="{ name: 'ComprobanteEdit', params: { comprobanteId: comprobante.id } }"
-          custom
-          v-slot="{ navigate }"
-        >
-          <button @click="navigate" class="btn btn-primary">
-            <font-awesome-icon icon="pencil-alt"></font-awesome-icon>&nbsp;<span>Editar</span>
-          </button>
-        </router-link>
       </div>
     </div>
   </div>

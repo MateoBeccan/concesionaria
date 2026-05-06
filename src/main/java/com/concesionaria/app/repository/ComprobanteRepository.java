@@ -3,6 +3,7 @@ package com.concesionaria.app.repository;
 import com.concesionaria.app.domain.Comprobante;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -22,7 +23,26 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
     )
     List<Comprobante> findAllByVentaIdWithRelaciones(@Param("ventaId") Long ventaId);
 
+    @Query(
+        "select c from Comprobante c " +
+        "left join fetch c.tipoComprobante tc " +
+        "left join fetch c.moneda m " +
+        "left join fetch c.venta v " +
+        "left join fetch v.cliente cli " +
+        "left join fetch cli.condicionIva ci " +
+        "left join fetch v.vehiculo vh " +
+        "left join fetch vh.version ver " +
+        "left join fetch ver.modelo mod " +
+        "left join fetch mod.marca mar " +
+        "where c.id = :id"
+    )
+    Optional<Comprobante> findOneForPdf(@Param("id") Long id);
+
+    boolean existsByIdAndVentaUserLogin(Long id, String login);
+
     boolean existsByVentaIdAndEstado(Long ventaId, EstadoComprobante estado);
+
+    boolean existsByVentaIdAndTipoComprobanteIdAndEstado(Long ventaId, Long tipoComprobanteId, EstadoComprobante estado);
 
     @Query(
         value = "select coalesce(max(cast(substring_index(c.numero_comprobante, '-', -1) as unsigned)), 0) from comprobante c where c.tipo_comprobante_id = :tipoComprobanteId",

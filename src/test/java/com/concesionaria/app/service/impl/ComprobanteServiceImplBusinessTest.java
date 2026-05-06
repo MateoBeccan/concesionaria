@@ -75,7 +75,7 @@ class ComprobanteServiceImplBusinessTest {
         Comprobante persisted = new Comprobante();
         persisted.setId(900L);
         persisted.setEstado(EstadoComprobante.EMITIDO);
-        persisted.setNumeroComprobante("FA-00000001");
+        persisted.setNumeroComprobante("FA-000001");
         persisted.setVenta(venta);
         persisted.setTipoComprobante(tipo);
         persisted.setMoneda(venta.getMoneda());
@@ -85,7 +85,7 @@ class ComprobanteServiceImplBusinessTest {
 
         when(ventaRepository.findById(30L)).thenReturn(Optional.of(venta));
         when(tipoComprobanteRepository.findById(4L)).thenReturn(Optional.of(tipo));
-        when(comprobanteRepository.existsByVentaIdAndEstado(30L, EstadoComprobante.EMITIDO)).thenReturn(false);
+        when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(30L, 4L, EstadoComprobante.EMITIDO)).thenReturn(false);
         when(comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(4L)).thenReturn(0L);
         when(comprobanteRepository.save(any(Comprobante.class))).thenReturn(persisted);
         when(comprobanteMapper.toDto(any(Comprobante.class))).thenAnswer(invocation -> {
@@ -101,7 +101,7 @@ class ComprobanteServiceImplBusinessTest {
         ComprobanteDTO result = comprobanteService.emitirComprobante(30L, 4L);
 
         assertThat(result.getId()).isEqualTo(900L);
-        assertThat(result.getNumeroComprobante()).isEqualTo("FA-00000001");
+        assertThat(result.getNumeroComprobante()).isEqualTo("FA-000001");
         assertThat(result.getEstado()).isEqualTo(EstadoComprobante.EMITIDO);
     }
 
@@ -111,7 +111,7 @@ class ComprobanteServiceImplBusinessTest {
         TipoComprobante tipo = tipoComprobante(7L, "NC");
         when(ventaRepository.findById(40L)).thenReturn(Optional.of(venta));
         when(tipoComprobanteRepository.findById(7L)).thenReturn(Optional.of(tipo));
-        when(comprobanteRepository.existsByVentaIdAndEstado(40L, EstadoComprobante.EMITIDO)).thenReturn(false);
+        when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(40L, 7L, EstadoComprobante.EMITIDO)).thenReturn(false);
         when(comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(7L)).thenReturn(41L);
         when(comprobanteRepository.save(any(Comprobante.class))).thenAnswer(invocation -> {
             Comprobante comprobante = invocation.getArgument(0);
@@ -128,7 +128,7 @@ class ComprobanteServiceImplBusinessTest {
         });
 
         ComprobanteDTO result = comprobanteService.emitirComprobante(40L, 7L);
-        assertThat(result.getNumeroComprobante()).isEqualTo("NC-00000042");
+        assertThat(result.getNumeroComprobante()).isEqualTo("NC-000042");
         assertThat(result.getEstado()).isEqualTo(EstadoComprobante.EMITIDO);
     }
 
@@ -136,7 +136,7 @@ class ComprobanteServiceImplBusinessTest {
     void noPermiteDosComprobantesActivosParaMismaVenta() {
         Venta venta = ventaBase(50L, EstadoVenta.PAGADA, "1200", "252", "1452", moneda(1L));
         when(ventaRepository.findById(50L)).thenReturn(Optional.of(venta));
-        when(comprobanteRepository.existsByVentaIdAndEstado(50L, EstadoComprobante.EMITIDO)).thenReturn(true);
+        when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(50L, 8L, EstadoComprobante.EMITIDO)).thenReturn(true);
 
         assertThrows(BadRequestException.class, () -> comprobanteService.emitirComprobante(50L, 8L));
     }
@@ -159,7 +159,7 @@ class ComprobanteServiceImplBusinessTest {
             return dto;
         });
 
-        ComprobanteDTO result = comprobanteService.anularComprobante(999L);
+        ComprobanteDTO result = comprobanteService.anularComprobante(999L, "Error de emisión");
 
         assertThat(result.getEstado()).isEqualTo(EstadoComprobante.ANULADO);
         verify(comprobanteRepository).save(comprobante);

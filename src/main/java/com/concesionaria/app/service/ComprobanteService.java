@@ -54,7 +54,7 @@ public interface ComprobanteService {
 
     ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId);
 
-    ComprobanteDTO anularComprobante(Long comprobanteId);
+    ComprobanteDTO anularComprobante(Long comprobanteId, String motivo);
 
     /**
      * Delete the "id" comprobante.

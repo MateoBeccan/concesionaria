@@ -29,6 +29,15 @@ export default defineComponent({
       }
     };
 
+    const descargarPdf = async () => {
+      if (!comprobante.value?.id) return;
+      try {
+        await comprobanteService().descargarPdf(comprobante.value.id);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
     if (route.params?.comprobanteId) {
       retrieveComprobante(route.params.comprobanteId);
     }
@@ -37,6 +46,7 @@ export default defineComponent({
       ...dateFormat,
       alertService,
       comprobante,
+      descargarPdf,
 
       previousState,
     };

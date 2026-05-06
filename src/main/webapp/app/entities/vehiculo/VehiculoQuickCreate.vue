@@ -34,6 +34,18 @@
             <div class="invalid-feedback">{{ errores.estado }}</div>
           </div>
 
+          <div class="col-md-3">
+            <label class="form-label">Color *</label>
+            <input
+              v-model="form.color"
+              class="form-control"
+              maxlength="50"
+              :class="{ 'is-invalid': errores.color }"
+              placeholder="Ej: Negro"
+            />
+            <div class="invalid-feedback">{{ errores.color }}</div>
+          </div>
+
           <div class="col-md-4">
             <label class="form-label">Fecha fabricacion *</label>
             <input v-model="form.fechaFabricacion" type="date" class="form-control" :class="{ 'is-invalid': errores.fechaFabricacion }" />
@@ -71,6 +83,18 @@
               </option>
             </select>
             <div class="invalid-feedback">{{ errores.moneda }}</div>
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label">VIN / Chasis</label>
+            <input
+              v-model="form.vinChasis"
+              class="form-control text-uppercase"
+              maxlength="30"
+              :class="{ 'is-invalid': errores.vinChasis }"
+              placeholder="Opcional"
+            />
+            <div class="invalid-feedback">{{ errores.vinChasis }}</div>
           </div>
 
           <div class="col-md-6">
@@ -132,7 +156,7 @@
               <option :value="null">
                 {{
                   !form.version
-                    ? 'Seleccioná una versión primero'
+                    ? 'Selecciona una version primero'
                     : loadingMotores
                       ? 'Cargando motores compatibles...'
                       : motoresCompatibles.length === 0
@@ -143,14 +167,25 @@
               <option v-for="motor in motoresCompatibles" :key="motor.id" :value="motor">{{ motor.nombre }} - {{ motor.potenciaHp ?? '-' }} HP</option>
             </select>
             <div class="invalid-feedback">{{ errores.motor }}</div>
-            <small v-if="loadingMotores" class="text-muted">Buscando motores compatibles para la versión seleccionada...</small>
+            <small v-if="loadingMotores" class="text-muted">Buscando motores compatibles para la version seleccionada...</small>
             <small v-else-if="motorHint" class="text-muted">{{ motorHint }}</small>
           </div>
 
           <div class="col-12" v-if="form.version && !loadingMotores && motoresCompatibles.length === 0">
-            <div class="alert alert-warning mb-0 py-2">
-              La versión seleccionada no tiene motores configurados. Revisá las compatibilidades en Administración.
-            </div>
+            <div class="alert alert-warning mb-0 py-2">La version seleccionada no tiene motores configurados.</div>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Observaciones</label>
+            <textarea
+              v-model="form.observaciones"
+              rows="2"
+              class="form-control"
+              maxlength="500"
+              :class="{ 'is-invalid': errores.observaciones }"
+              placeholder="Opcional"
+            />
+            <div class="invalid-feedback">{{ errores.observaciones }}</div>
           </div>
 
           <div class="col-12" v-if="errorServidor">
@@ -209,7 +244,7 @@ const formCatalog = useVehiculoForm({
   tipoVehiculoService,
 });
 
-  const {
+const {
   marcas,
   tipoVehiculos,
   selectedMarca,
@@ -233,6 +268,9 @@ const form = reactive({
   moneda: null as IMoneda | null,
   km: 0,
   fechaFabricacion: '',
+  color: '',
+  vinChasis: '',
+  observaciones: '',
   motor: null as IMotor | null,
   version: null as IVersion | null,
   tipoVehiculo: null as ITipoVehiculo | null,
@@ -245,6 +283,9 @@ const errores = reactive({
   moneda: '',
   km: '',
   fechaFabricacion: '',
+  color: '',
+  vinChasis: '',
+  observaciones: '',
   marca: '',
   modelo: '',
   tipoVehiculo: '',
@@ -257,11 +298,19 @@ const guardando = ref(false);
 const monedas = ref<IMoneda[]>([]);
 const patenteRequerida = computed(() => form.estado === 'USADO');
 const patenteHint = computed(() =>
-  patenteRequerida.value ? 'Para unidades usadas la patente es obligatoria.' : 'La patente puede cargarse más adelante.',
+  patenteRequerida.value ? 'Para unidades usadas la patente es obligatoria.' : 'La patente puede cargarse mas adelante.',
 );
 
 function normalizarPatente(value?: string | null) {
   return (value ?? '').trim().toUpperCase();
+}
+
+function normalizarTexto(value?: string | null) {
+  return (value ?? '').trim();
+}
+
+function normalizarVin(value?: string | null) {
+  return normalizarTexto(value).toUpperCase();
 }
 
 onMounted(async () => {
@@ -308,6 +357,9 @@ function validarFecha(fecha: string) {
 
 async function validar(): Promise<boolean> {
   form.patente = normalizarPatente(form.patente);
+  form.color = normalizarTexto(form.color);
+  form.vinChasis = normalizarVin(form.vinChasis);
+  form.observaciones = normalizarTexto(form.observaciones);
 
   if (patenteRequerida.value && !form.patente) {
     errores.patente = 'La patente es obligatoria para vehiculos usados';
@@ -327,6 +379,10 @@ async function validar(): Promise<boolean> {
   errores.moneda = form.moneda?.id ? '' : 'Selecciona la moneda del vehiculo';
   errores.km = Number.isInteger(form.km) && form.km >= 0 ? '' : 'Los kilometros no pueden ser negativos';
   errores.fechaFabricacion = validarFecha(form.fechaFabricacion) ? '' : 'La fecha de fabricacion es obligatoria y no puede ser futura';
+  errores.color = form.color ? '' : 'El color es obligatorio';
+  errores.vinChasis = form.vinChasis && form.vinChasis.length > 30 ? 'El VIN/chasis no puede superar 30 caracteres' : '';
+  errores.observaciones =
+    form.observaciones && form.observaciones.length > 500 ? 'Las observaciones no pueden superar 500 caracteres' : '';
   errores.marca = selectedMarca.value ? '' : 'Selecciona una marca';
   errores.modelo = selectedModelo.value ? '' : 'Selecciona un modelo';
   errores.tipoVehiculo = form.tipoVehiculo ? '' : 'Selecciona el tipo de vehiculo';
@@ -361,6 +417,9 @@ async function guardar() {
       moneda: form.moneda ? { id: form.moneda.id } : null,
       km: form.km,
       fechaFabricacion: form.fechaFabricacion,
+      color: form.color,
+      vinChasis: form.vinChasis || undefined,
+      observaciones: form.observaciones || undefined,
       motor: form.motor ? { id: form.motor.id } : null,
       version: form.version ? { id: form.version.id } : null,
       tipoVehiculo: form.tipoVehiculo ? { id: form.tipoVehiculo.id } : null,
@@ -370,7 +429,7 @@ async function guardar() {
     emit('guardado', vehiculo);
   } catch (e: any) {
     const detalle = String(e?.response?.data?.detail ?? e?.response?.data?.message ?? '');
-    if (detalle.includes('Field \'disponible\' doesn\'t have a default value') || detalle.includes("constraint [disponible]")) {
+    if (detalle.includes('Field \'disponible\' doesn\'t have a default value') || detalle.includes('constraint [disponible]')) {
       errorServidor.value =
         'No se pudo crear el inventario del vehiculo por una inconsistencia de esquema (campo legacy "disponible"). Reinicia backend para aplicar migraciones y vuelve a intentar.';
     } else {

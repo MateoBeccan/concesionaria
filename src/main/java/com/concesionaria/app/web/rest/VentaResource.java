@@ -1,6 +1,8 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.VentaRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
+import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.VentaDTO;
 import com.concesionaria.app.service.dto.VentaHistorialDTO;
@@ -155,10 +157,19 @@ public class VentaResource {
     ) {
         LOG.debug("REST request to get a page of Ventas");
         Page<VentaDTO> page;
-        if (eagerload) {
-            page = ventaService.findAllWithEagerRelationships(pageable);
+        boolean isAdmin = SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN);
+        if (isAdmin) {
+            if (eagerload) {
+                page = ventaService.findAllWithEagerRelationships(pageable);
+            } else {
+                page = ventaService.findAll(pageable);
+            }
         } else {
-            page = ventaService.findAll(pageable);
+            if (eagerload) {
+                page = ventaService.findAllCurrentUserWithEagerRelationships(pageable);
+            } else {
+                page = ventaService.findAllCurrentUser(pageable);
+            }
         }
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());

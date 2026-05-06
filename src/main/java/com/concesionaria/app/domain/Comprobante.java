@@ -61,6 +61,21 @@ public class Comprobante implements Serializable {
     @Column(name = "last_modified_by")
     private String lastModifiedBy;
 
+    @Size(max = 500)
+    @Column(name = "motivo_anulacion", length = 500)
+    private String motivoAnulacion;
+
+    @Size(max = 50)
+    @Column(name = "usuario_emision", length = 50)
+    private String usuarioEmision;
+
+    @Size(max = 50)
+    @Column(name = "usuario_anulacion", length = 50)
+    private String usuarioAnulacion;
+
+    @Column(name = "fecha_anulacion")
+    private Instant fechaAnulacion;
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
@@ -208,6 +223,38 @@ public class Comprobante implements Serializable {
         return this;
     }
 
+    public String getMotivoAnulacion() {
+        return motivoAnulacion;
+    }
+
+    public void setMotivoAnulacion(String motivoAnulacion) {
+        this.motivoAnulacion = motivoAnulacion;
+    }
+
+    public String getUsuarioEmision() {
+        return usuarioEmision;
+    }
+
+    public void setUsuarioEmision(String usuarioEmision) {
+        this.usuarioEmision = usuarioEmision;
+    }
+
+    public String getUsuarioAnulacion() {
+        return usuarioAnulacion;
+    }
+
+    public void setUsuarioAnulacion(String usuarioAnulacion) {
+        this.usuarioAnulacion = usuarioAnulacion;
+    }
+
+    public Instant getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
+    public void setFechaAnulacion(Instant fechaAnulacion) {
+        this.fechaAnulacion = fechaAnulacion;
+    }
+
     public EstadoComprobante getEstado() {
         return estado;
     }
@@ -293,6 +340,10 @@ public class Comprobante implements Serializable {
             ", createdBy='" + getCreatedBy() + "'" +
             ", lastModifiedDate='" + getLastModifiedDate() + "'" +
             ", lastModifiedBy='" + getLastModifiedBy() + "'" +
+            ", motivoAnulacion='" + getMotivoAnulacion() + "'" +
+            ", usuarioEmision='" + getUsuarioEmision() + "'" +
+            ", usuarioAnulacion='" + getUsuarioAnulacion() + "'" +
+            ", fechaAnulacion='" + getFechaAnulacion() + "'" +
             ", estado='" + getEstado() + "'" +
             "}";
     }

@@ -12,6 +12,7 @@ import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Pago;
+import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoTasacionUsado;
@@ -92,13 +93,8 @@ class PagoServiceImplBusinessTest {
 
     @Test
     void noPermiteMontoMenorOIgualACero() {
-        stubMonedaBaseArs();
-        Venta venta = ventaBase(10L, "1000", "0", "1000", EstadoVenta.PENDIENTE);
-        venta.setMoneda(moneda(1L, "ARS"));
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.ZERO);
-
-        when(ventaRepository.findById(10L)).thenReturn(Optional.of(venta));
 
         assertThrows(BadRequestException.class, () -> pagoService.registrarPago(10L, pagoDTO));
     }
@@ -108,12 +104,15 @@ class PagoServiceImplBusinessTest {
         stubMonedaBaseArs();
         Venta venta = ventaBase(20L, "1000", "900", "100", EstadoVenta.PENDIENTE);
         venta.setImporteNeto(BigDecimal.valueOf(1000));
+        MetodoPago efectivo = metodoPago(1L, "EFECTIVO", false);
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.valueOf(150));
         pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
         venta.setMoneda(moneda(1L, "ARS"));
 
         when(ventaRepository.findById(20L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(efectivo));
         when(monedaRepository.findById(1L)).thenReturn(Optional.of(moneda(1L, "ARS")));
         when(currencyConversionService.convertir(any(), eq(1L), eq(1L), any())).thenReturn(conversion("150.00", "1"));
 
@@ -126,14 +125,17 @@ class PagoServiceImplBusinessTest {
         Venta venta = ventaBase(30L, "10000", "0", "10000", EstadoVenta.PENDIENTE);
         venta.setImporteNeto(BigDecimal.valueOf(10000));
         venta.setMoneda(moneda(1L, "ARS"));
+        MetodoPago efectivo = metodoPago(1L, "EFECTIVO", false);
 
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.valueOf(1500));
         pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
         Pago pago = new Pago();
         pago.setMonto(BigDecimal.valueOf(1500));
 
         when(ventaRepository.findById(30L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(efectivo));
         when(monedaRepository.findById(1L)).thenReturn(Optional.of(moneda(1L, "ARS")));
         when(currencyConversionService.convertir(any(), eq(1L), eq(1L), any())).thenReturn(conversion("1500.00", "1"));
         when(pagoRepository.sumMontoByVentaId(30L)).thenReturn(BigDecimal.ZERO, BigDecimal.valueOf(1500));
@@ -158,14 +160,19 @@ class PagoServiceImplBusinessTest {
         Venta venta = ventaBase(40L, "500", "0", "500", EstadoVenta.PENDIENTE);
         venta.setImporteNeto(BigDecimal.valueOf(500));
         venta.setMoneda(moneda(1L, "ARS"));
+        MetodoPago efectivo = metodoPago(1L, "EFECTIVO", false);
 
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.valueOf(500));
+        pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
         pagoDTO.setFecha(Instant.now());
         Pago pago = new Pago();
         pago.setMonto(BigDecimal.valueOf(500));
 
         when(ventaRepository.findById(40L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(efectivo));
+        when(monedaRepository.findById(1L)).thenReturn(Optional.of(moneda(1L, "ARS")));
         when(currencyConversionService.convertir(any(), eq(1L), eq(1L), any())).thenReturn(conversion("500.00", "1"));
         when(pagoRepository.sumMontoByVentaId(40L)).thenReturn(BigDecimal.ZERO, BigDecimal.valueOf(500));
         when(pagoMapper.toEntity(any(PagoDTO.class))).thenReturn(pago);
@@ -214,7 +221,7 @@ class PagoServiceImplBusinessTest {
             return dto;
         });
 
-        PagoDTO resultado = pagoService.anularPago(601L);
+        PagoDTO resultado = pagoService.anularPago(601L, "Cliente solicitó anulación");
 
         assertThat(resultado.getEstado()).isEqualTo(EstadoPago.ANULADO);
         assertThat(venta.getTotalPagado()).isEqualByComparingTo("0.00");
@@ -232,7 +239,7 @@ class PagoServiceImplBusinessTest {
 
         when(pagoRepository.findById(701L)).thenReturn(Optional.of(pago));
 
-        assertThrows(BadRequestException.class, () -> pagoService.anularPago(701L));
+        assertThrows(BadRequestException.class, () -> pagoService.anularPago(701L, "Duplicado"));
     }
 
     @Test
@@ -256,15 +263,18 @@ class PagoServiceImplBusinessTest {
         Venta venta = ventaBase(90L, "1000", "0", "1000", EstadoVenta.PENDIENTE);
         venta.setImporteNeto(BigDecimal.valueOf(1000));
         venta.setMoneda(moneda(1L, "ARS"));
+        MetodoPago efectivo = metodoPago(1L, "EFECTIVO", false);
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.valueOf(100));
         pagoDTO.setMoneda(monedaDto(2L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
 
         CotizacionConversionDTO conversion = new CotizacionConversionDTO();
         conversion.setMontoConvertido(BigDecimal.valueOf(100));
         conversion.setCotizacionAplicada(BigDecimal.ZERO);
 
         when(ventaRepository.findById(90L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(efectivo));
         when(monedaRepository.findById(2L)).thenReturn(Optional.of(moneda(2L, "USD")));
         when(currencyConversionService.convertir(any(), eq(2L), eq(1L), any())).thenReturn(conversion);
 
@@ -278,10 +288,12 @@ class PagoServiceImplBusinessTest {
         Venta venta = ventaBase(100L, "20000", "0", "20000", EstadoVenta.PENDIENTE);
         venta.setImporteNeto(BigDecimal.valueOf(20000));
         venta.setMoneda(moneda(1L, "ARS"));
+        MetodoPago efectivo = metodoPago(1L, "EFECTIVO", false);
 
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.valueOf(10));
         pagoDTO.setMoneda(monedaDto(2L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
         Pago pago = new Pago();
         pago.setMonto(BigDecimal.valueOf(10));
 
@@ -289,6 +301,7 @@ class PagoServiceImplBusinessTest {
         conversion.setCotizacionOrigenId(99L);
 
         when(ventaRepository.findById(100L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(efectivo));
         when(monedaRepository.findById(2L)).thenReturn(Optional.of(moneda(2L, "USD")));
         when(currencyConversionService.convertir(any(), eq(2L), eq(1L), any())).thenReturn(conversion);
         when(pagoRepository.sumMontoByVentaId(100L)).thenReturn(BigDecimal.ZERO, BigDecimal.valueOf(12000));
@@ -316,6 +329,7 @@ class PagoServiceImplBusinessTest {
         MetodoPago metodo = new MetodoPago();
         metodo.setId(8L);
         metodo.setCodigo("ENTREGA_USADO");
+        metodo.setRequiereReferencia(false);
 
         TasacionUsado tasacion = new TasacionUsado();
         tasacion.setId(900L);
@@ -363,6 +377,7 @@ class PagoServiceImplBusinessTest {
         MetodoPago metodo = new MetodoPago();
         metodo.setId(8L);
         metodo.setCodigo("ENTREGA_USADO");
+        metodo.setRequiereReferencia(false);
 
         TasacionUsado tasacion = new TasacionUsado();
         tasacion.setId(901L);
@@ -395,6 +410,7 @@ class PagoServiceImplBusinessTest {
         MetodoPago metodo = new MetodoPago();
         metodo.setId(8L);
         metodo.setCodigo("ENTREGA_USADO");
+        metodo.setRequiereReferencia(false);
 
         TasacionUsado tasacion = new TasacionUsado();
         tasacion.setId(902L);
@@ -444,7 +460,7 @@ class PagoServiceImplBusinessTest {
             return dto;
         });
 
-        pagoService.anularPago(9030L);
+        pagoService.anularPago(9030L, "Operacion revertida");
 
         assertThat(venta.getTasacionUsado()).isNull();
         verify(ventaService).sincronizarInventarioConVenta(113L);
@@ -470,8 +486,67 @@ class PagoServiceImplBusinessTest {
 
         when(pagoRepository.findById(9040L)).thenReturn(Optional.of(pago));
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.anularPago(9040L));
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.anularPago(9040L, "Intento anular"));
         assertThat(ex.getMessage()).contains("ya genero inventario");
+    }
+
+    @Test
+    void transferenciaSinReferenciaNiOperacionFalla() {
+        stubMonedaBaseArs();
+        Venta venta = ventaBase(120L, "10000", "0", "10000", EstadoVenta.PENDIENTE);
+        venta.setImporteNeto(BigDecimal.valueOf(10000));
+        venta.setMoneda(moneda(1L, "ARS"));
+
+        MetodoPago transferencia = new MetodoPago();
+        transferencia.setId(3L);
+        transferencia.setCodigo("TRANSFERENCIA");
+        transferencia.setRequiereReferencia(false);
+
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(BigDecimal.valueOf(1000));
+        pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(3L));
+
+        when(ventaRepository.findById(120L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(3L)).thenReturn(Optional.of(transferencia));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(120L, pagoDTO));
+        assertThat(ex.getMessage()).contains("Transferencia/Tarjeta requiere referencia o numero de operacion");
+    }
+
+    @Test
+    void reservaNoPermiteMetodoEntregaUsado() {
+        Reserva reserva = new Reserva();
+        reserva.setId(130L);
+        reserva.setEstado(com.concesionaria.app.domain.enumeration.EstadoReserva.ACTIVA);
+        reserva.setMoneda(moneda(1L, "ARS"));
+
+        MetodoPago metodo = new MetodoPago();
+        metodo.setId(8L);
+        metodo.setCodigo("ENTREGA_USADO");
+        metodo.setRequiereReferencia(false);
+
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(BigDecimal.valueOf(1000));
+        pagoDTO.setFecha(Instant.now());
+        pagoDTO.setMetodoPago(metodoDto(8L));
+        pagoDTO.setMoneda(monedaDto(1L));
+
+        when(reservaRepository.findById(130L)).thenReturn(Optional.of(reserva));
+        when(metodoPagoRepository.findById(8L)).thenReturn(Optional.of(metodo));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPagoReserva(130L, pagoDTO));
+        assertThat(ex.getMessage()).contains("ENTREGA_USADO solo puede registrarse sobre una venta");
+    }
+
+    @Test
+    void pagoConFechaFuturaDebeFallar() {
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(BigDecimal.valueOf(1000));
+        pagoDTO.setFecha(Instant.now().plusSeconds(3600));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(10L, pagoDTO));
+        assertThat(ex.getMessage()).contains("no puede estar en el futuro");
     }
 
     private Venta ventaBase(Long id, String total, String totalPagado, String saldo, EstadoVenta estado) {
@@ -506,6 +581,14 @@ class PagoServiceImplBusinessTest {
     private com.concesionaria.app.service.dto.MetodoPagoDTO metodoDto(Long id) {
         com.concesionaria.app.service.dto.MetodoPagoDTO metodo = new com.concesionaria.app.service.dto.MetodoPagoDTO();
         metodo.setId(id);
+        return metodo;
+    }
+
+    private MetodoPago metodoPago(Long id, String codigo, boolean requiereReferencia) {
+        MetodoPago metodo = new MetodoPago();
+        metodo.setId(id);
+        metodo.setCodigo(codigo);
+        metodo.setRequiereReferencia(requiereReferencia);
         return metodo;
     }
 

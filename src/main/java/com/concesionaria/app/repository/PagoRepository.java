@@ -1,9 +1,11 @@
 package com.concesionaria.app.repository;
 
 import com.concesionaria.app.domain.Pago;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -53,4 +55,10 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     long countByTasacionUsadoIdAndEstado(Long tasacionUsadoId, EstadoPago estado);
 
     long countByReservaIdAndEstado(Long reservaId, EstadoPago estado);
+
+    Optional<Pago> findFirstByVentaIdAndEstadoAndTipoMovimientoAndTasacionUsadoIsNotNullOrderByFechaDescIdDesc(
+        Long ventaId,
+        EstadoPago estado,
+        TipoMovimientoPago tipoMovimiento
+    );
 }

@@ -52,6 +52,14 @@ public class PagoDTO implements Serializable {
     @Size(max = 100)
     private String numeroOperacion;
 
+    @Size(max = 500)
+    private String motivoAnulacion;
+
+    private Instant fechaAnulacion;
+
+    @Size(max = 50)
+    private String usuarioAnulacion;
+
     private Instant createdDate;
 
     private VentaDTO venta;
@@ -192,6 +200,30 @@ public class PagoDTO implements Serializable {
         this.numeroOperacion = numeroOperacion;
     }
 
+    public String getMotivoAnulacion() {
+        return motivoAnulacion;
+    }
+
+    public void setMotivoAnulacion(String motivoAnulacion) {
+        this.motivoAnulacion = motivoAnulacion;
+    }
+
+    public Instant getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
+    public void setFechaAnulacion(Instant fechaAnulacion) {
+        this.fechaAnulacion = fechaAnulacion;
+    }
+
+    public String getUsuarioAnulacion() {
+        return usuarioAnulacion;
+    }
+
+    public void setUsuarioAnulacion(String usuarioAnulacion) {
+        this.usuarioAnulacion = usuarioAnulacion;
+    }
+
     public Instant getCreatedDate() {
         return createdDate;
     }
@@ -276,6 +308,9 @@ public class PagoDTO implements Serializable {
             ", comprobanteExterno='" + getComprobanteExterno() + "'" +
             ", bancoEntidad='" + getBancoEntidad() + "'" +
             ", numeroOperacion='" + getNumeroOperacion() + "'" +
+            ", motivoAnulacion='" + getMotivoAnulacion() + "'" +
+            ", fechaAnulacion='" + getFechaAnulacion() + "'" +
+            ", usuarioAnulacion='" + getUsuarioAnulacion() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +
             ", estado='" + getEstado() + "'" +
             ", venta=" + getVenta() +

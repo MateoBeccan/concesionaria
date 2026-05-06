@@ -14,6 +14,10 @@ export interface IComprobante {
   createdBy?: string | null;
   lastModifiedDate?: Date | null;
   lastModifiedBy?: string | null;
+  motivoAnulacion?: string | null;
+  fechaAnulacion?: Date | null;
+  usuarioEmision?: string | null;
+  usuarioAnulacion?: string | null;
   estado?: EstadoComprobante;
   venta?: IVenta | null;
   tipoComprobante?: ITipoComprobante | null;
@@ -32,6 +36,10 @@ export class Comprobante implements IComprobante {
     public createdBy?: string | null,
     public lastModifiedDate?: Date | null,
     public lastModifiedBy?: string | null,
+    public motivoAnulacion?: string | null,
+    public fechaAnulacion?: Date | null,
+    public usuarioEmision?: string | null,
+    public usuarioAnulacion?: string | null,
     public estado?: EstadoComprobante,
     public venta?: IVenta | null,
     public tipoComprobante?: ITipoComprobante | null,

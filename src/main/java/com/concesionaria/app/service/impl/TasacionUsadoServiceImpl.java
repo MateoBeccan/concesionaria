@@ -103,6 +103,12 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<TasacionUsadoDTO> findAllCurrentUser(Pageable pageable) {
+        return tasacionUsadoRepository.findAllCurrentUser(pageable).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<TasacionUsadoDTO> findOne(Long id) {
         return tasacionUsadoRepository.findById(id).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
     }

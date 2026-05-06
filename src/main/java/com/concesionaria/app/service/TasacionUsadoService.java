@@ -11,6 +11,7 @@ public interface TasacionUsadoService {
     TasacionUsadoDTO update(TasacionUsadoDTO dto);
     Optional<TasacionUsadoDTO> partialUpdate(TasacionUsadoDTO dto);
     Page<TasacionUsadoDTO> findAll(Pageable pageable);
+    Page<TasacionUsadoDTO> findAllCurrentUser(Pageable pageable);
     Optional<TasacionUsadoDTO> findOne(Long id);
     List<TasacionUsadoDTO> findByVentaId(Long ventaId);
     List<TasacionUsadoDTO> findAceptadasDisponiblesByClienteId(Long clienteId);

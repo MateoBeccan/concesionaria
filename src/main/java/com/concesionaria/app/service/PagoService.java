@@ -65,5 +65,5 @@ public interface PagoService {
 
     List<PagoDTO> findByReservaId(Long reservaId);
 
-    PagoDTO anularPago(Long pagoId);
+    PagoDTO anularPago(Long pagoId, String motivo);
 }

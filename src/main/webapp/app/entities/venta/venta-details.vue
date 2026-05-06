@@ -176,25 +176,29 @@
               <tr>
                 <th>Fecha</th>
                 <th>Metodo</th>
+                <th class="text-end">Monto original</th>
                 <th>Moneda</th>
-                <th>Referencia</th>
-                <th class="text-end">Monto</th>
+                <th class="text-end">Cotización</th>
+                <th class="text-end">Aplicado ARS</th>
+                <th>Estado</th>
+                <th>Usuario</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="pago in pagos" :key="pago.id">
+              <tr v-for="pago in pagos" :key="pago.id" :class="pago.estado === 'ANULADO' ? 'table-secondary' : ''">
                 <td>{{ formatFecha(pago.fecha) }}</td>
                 <td>{{ pago.metodoPago?.descripcion ?? pago.metodoPago?.codigo ?? '-' }}</td>
+                <td class="text-end">{{ formatPrecio(pago.monto) }}</td>
                 <td>{{ pago.moneda?.simbolo ?? '' }} {{ pago.moneda?.codigo ?? '-' }}</td>
-                <td class="text-muted small">{{ pago.referencia ?? '-' }}</td>
-                <td class="text-end fw-semibold text-success">
-                  {{ pago.moneda?.simbolo ?? ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(pago.monto) }} {{ pago.moneda?.codigo ?? ventaMonedaDisplay?.codigo ?? '' }}
-                </td>
+                <td class="text-end">{{ formatCotizacion(pago.cotizacionUsada) }}</td>
+                <td class="text-end fw-semibold">{{ formatPrecio(pago.montoAplicadoVenta ?? pago.monto) }}</td>
+                <td><span class="badge" :class="pago.estado === 'ANULADO' ? 'bg-secondary' : 'bg-success'">{{ pago.estado ?? '-' }}</span></td>
+                <td>{{ pago.usuarioRegistro ?? '-' }}</td>
               </tr>
             </tbody>
             <tfoot class="table-light">
               <tr>
-                <td colspan="4" class="fw-semibold text-end">Total pagado:</td>
+                <td colspan="7" class="fw-semibold text-end">Total pagado:</td>
                 <td class="text-end fw-bold text-success">
                   {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(totalPagado) }} {{ ventaMonedaDisplay?.codigo ?? '' }}
                 </td>
@@ -203,6 +207,63 @@
           </table>
         </div>
       </div>
+
+      <div class="card mb-3">
+        <div class="card-header">Comprobantes</div>
+        <div v-if="loadingComprobantes" class="card-body text-center text-muted">Cargando comprobantes...</div>
+        <div v-else-if="comprobantes.length === 0" class="card-body text-center text-muted">No hay comprobantes registrados.</div>
+        <div v-else class="table-responsive">
+          <table class="table mb-0">
+            <thead>
+              <tr>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Fecha emisión</th>
+                <th class="text-end">Total</th>
+                <th>Usuario emisor</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="comprobante in comprobantes" :key="comprobante.id" :class="comprobante.estado === 'ANULADO' ? 'table-secondary' : ''">
+                <td>{{ comprobante.numeroComprobante }}</td>
+                <td>{{ comprobante.tipoComprobante?.codigo ?? '-' }}</td>
+                <td><span class="badge" :class="comprobante.estado === 'ANULADO' ? 'bg-secondary' : 'bg-success'">{{ labelEstadoComprobante(comprobante.estado) }}</span></td>
+                <td>{{ formatFecha(comprobante.fechaEmision) }}</td>
+                <td class="text-end">{{ formatPrecio(comprobante.total) }}</td>
+                <td>{{ comprobante.usuarioEmision ?? comprobante.createdBy ?? '-' }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary me-2" @click="descargarPdfComprobante(comprobante.id)">PDF</button>
+                  <button
+                    v-if="comprobante.estado !== 'ANULADO'"
+                    class="btn btn-sm btn-outline-danger"
+                    @click="abrirModalAnulacionComprobante(comprobante.id)"
+                  >
+                    Anular
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <b-modal v-model="mostrarModalAnulacionComprobante" title="Anular comprobante">
+        <div class="mb-2">Ingresa motivo de anulación</div>
+        <textarea v-model="motivoAnulacionComprobante" class="form-control" rows="3" maxlength="500" />
+        <template #footer>
+          <button type="button" class="btn btn-secondary btn-sm" @click="cerrarModalAnulacionComprobante">Cancelar</button>
+          <button
+            type="button"
+            class="btn btn-danger btn-sm"
+            :disabled="!motivoAnulacionComprobante || !motivoAnulacionComprobante.trim()"
+            @click="confirmarAnulacionComprobante"
+          >
+            Confirmar anulación
+          </button>
+        </template>
+      </b-modal>
 
       <div v-if="venta.observaciones" class="card">
         <div class="card-header">Observaciones</div>

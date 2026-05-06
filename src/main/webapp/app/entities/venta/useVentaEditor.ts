@@ -37,6 +37,7 @@ export interface PagoLocal {
   tasacionUsado?: ITasacionUsado | null;
   estado: EstadoPago;
   guardado: boolean;
+  usuarioRegistro?: string | null;
 }
 
 interface ICotizacionConversion {
@@ -522,6 +523,7 @@ export function useVentaEditor() {
       tasacionUsado: tasacionSeleccionada,
       estado: EstadoPago.REGISTRADO,
       guardado: false,
+      usuarioRegistro: null,
     });
   }
 
@@ -536,7 +538,7 @@ export function useVentaEditor() {
     }
 
     if (!venta.value.fecha || Number.isNaN(new Date(venta.value.fecha as Date).getTime())) {
-      throw new Error('La fecha de la venta es obligatoria');
+      venta.value.fecha = new Date();
     }
 
     if (detalles.value.length === 0) {
@@ -550,7 +552,10 @@ export function useVentaEditor() {
       throw new Error('El vehiculo seleccionado no tiene moneda configurada');
     }
     if (!venta.value.moneda?.id) {
-      throw new Error('Debe seleccionar la moneda de la venta');
+      venta.value.moneda = resolverMonedaBaseVenta();
+    }
+    if (!venta.value.moneda?.id) {
+      throw new Error('No se pudo resolver la moneda base de la venta');
     }
 
     const monedaVehiculoId = detalles.value[0]?.vehiculo?.moneda?.id;
@@ -624,7 +629,7 @@ export function useVentaEditor() {
 
     const payload = {
       id: venta.value.id,
-      fecha: venta.value.fecha ?? new Date(),
+      fecha: new Date(),
       estado: estadoCalculado.value,
       cotizacion: venta.value.cotizacion,
       porcentajeImpuesto: venta.value.porcentajeImpuesto,
@@ -743,6 +748,7 @@ export function useVentaEditor() {
         tasacionUsado: pago.tasacionUsado ?? null,
         estado: pago.estado ?? EstadoPago.REGISTRADO,
         guardado: true,
+        usuarioRegistro: pago.usuarioRegistro ?? null,
       }));
 
       comprobantes.value = comprobantesRes.data as IComprobante[];
@@ -753,7 +759,7 @@ export function useVentaEditor() {
     }
   }
 
-  async function anularPago(key: string) {
+  async function anularPago(key: string, motivo: string) {
     const pago = pagos.value.find(item => item._key === key);
     if (!pago) {
       return;
@@ -768,7 +774,7 @@ export function useVentaEditor() {
       return;
     }
 
-    await axios.post(`api/pagos/${pago.id}/anular`);
+    await axios.post(`api/pagos/${pago.id}/anular`, { motivo });
     pago.estado = EstadoPago.ANULADO;
 
     if (venta.value.id) {
@@ -791,6 +797,7 @@ export function useVentaEditor() {
         tasacionUsado: item.tasacionUsado ?? null,
         estado: item.estado ?? EstadoPago.REGISTRADO,
         guardado: true,
+        usuarioRegistro: item.usuarioRegistro ?? null,
       }));
     }
 

@@ -11,11 +11,14 @@ import static org.mockito.Mockito.when;
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Moneda;
-import com.concesionaria.app.domain.Vehiculo;
+import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.TasacionUsado;
+import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
+import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ClienteRepository;
 import com.concesionaria.app.repository.InventarioHistorialRepository;
 import com.concesionaria.app.repository.InventarioRepository;
@@ -205,6 +208,61 @@ class VentaServiceImplBusinessTest {
     }
 
     @Test
+    void ventaPagadaRecuperaTasacionDesdePagoEntregaUsadoSiVentaNoLaTiene() {
+        Moneda ars = moneda(1L, "ARS");
+        Venta venta = ventaBase(204L, EstadoVenta.RESERVADA, ars, new BigDecimal("0.00"));
+        venta.setTasacionUsado(null);
+
+        TasacionUsado tasacion = tasacionCompleta(304L, ars);
+        Pago pagoEntregaUsado = new Pago();
+        pagoEntregaUsado.setId(804L);
+        pagoEntregaUsado.setEstado(EstadoPago.REGISTRADO);
+        pagoEntregaUsado.setTipoMovimiento(TipoMovimientoPago.ENTREGA_USADO);
+        pagoEntregaUsado.setTasacionUsado(tasacion);
+        pagoEntregaUsado.setVenta(venta);
+
+        Inventario inventarioVenta = new Inventario();
+        inventarioVenta.setId(504L);
+        inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
+        inventarioVenta.setVehiculo(venta.getVehiculo());
+
+        when(ventaRepository.findById(204L)).thenReturn(java.util.Optional.of(venta));
+        when(inventarioRepository.findByVehiculoId(904L)).thenReturn(java.util.Optional.of(inventarioVenta));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> {
+            Inventario i = inv.getArgument(0);
+            if (i.getId() == null) {
+                i.setId(704L);
+            }
+            return i;
+        });
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
+        when(tasacionUsadoRepository.findById(304L)).thenReturn(java.util.Optional.of(tasacion));
+        when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(
+            pagoRepository.findFirstByVentaIdAndEstadoAndTipoMovimientoAndTasacionUsadoIsNotNullOrderByFechaDescIdDesc(
+                204L,
+                EstadoPago.REGISTRADO,
+                TipoMovimientoPago.ENTREGA_USADO
+            )
+        )
+            .thenReturn(java.util.Optional.of(pagoEntregaUsado));
+        when(vehiculoRepository.save(any(Vehiculo.class))).thenAnswer(inv -> {
+            Vehiculo v = inv.getArgument(0);
+            if (v.getId() == null) {
+                v.setId(604L);
+            }
+            return v;
+        });
+
+        service.confirmarVenta(204L);
+
+        verify(vehiculoRepository, times(1)).save(any(Vehiculo.class));
+        assertThat(venta.getTasacionUsado()).isNotNull();
+        assertThat(venta.getTasacionUsado().getId()).isEqualTo(304L);
+    }
+
+    @Test
     void ventaCanceladaNoGeneraInventarioUsadoAlConfirmar() {
         Moneda ars = moneda(1L, "ARS");
         Venta venta = ventaBase(202L, EstadoVenta.CANCELADA, ars, new BigDecimal("0.00"));
@@ -237,6 +295,47 @@ class VentaServiceImplBusinessTest {
         service.sincronizarInventarioConVenta(203L);
 
         verify(vehiculoRepository, never()).save(any(Vehiculo.class));
+    }
+
+    @Test
+    void ventaFinalizadaConSaldoCeroGeneraInventarioUsadoAlSincronizar() {
+        Moneda ars = moneda(1L, "ARS");
+        Venta venta = ventaBase(205L, EstadoVenta.FINALIZADA, ars, BigDecimal.ZERO);
+        TasacionUsado tasacion = tasacionCompleta(305L, ars);
+        venta.setTasacionUsado(tasacion);
+
+        Inventario inventarioVenta = new Inventario();
+        inventarioVenta.setId(505L);
+        inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
+        inventarioVenta.setVehiculo(venta.getVehiculo());
+
+        when(ventaRepository.findById(205L)).thenReturn(java.util.Optional.of(venta));
+        when(inventarioRepository.findByVehiculoId(905L)).thenReturn(java.util.Optional.of(inventarioVenta));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> {
+            Inventario i = inv.getArgument(0);
+            if (i.getId() == null) {
+                i.setId(705L);
+            }
+            return i;
+        });
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tasacionUsadoRepository.findById(305L)).thenReturn(java.util.Optional.of(tasacion));
+        when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
+        when(vehiculoRepository.save(any(Vehiculo.class))).thenAnswer(inv -> {
+            Vehiculo v = inv.getArgument(0);
+            if (v.getId() == null) {
+                v.setId(605L);
+            }
+            return v;
+        });
+
+        service.sincronizarInventarioConVenta(205L);
+
+        verify(vehiculoRepository, times(1)).save(any(Vehiculo.class));
+        verify(tasacionUsadoRepository, times(1)).save(any(TasacionUsado.class));
+        assertThat(tasacion.getInventarioGenerado()).isNotNull();
+        assertThat(tasacion.getInventarioGenerado().getId()).isEqualTo(705L);
     }
 
     private Moneda moneda(Long id, String codigo) {

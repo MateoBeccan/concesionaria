@@ -2,8 +2,10 @@
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h4 class="fw-semibold mb-0">Tasaciones</h4>
-        <p class="text-muted small mb-0" v-if="!loading">{{ filtered.length }} tasaciones</p>
+        <h4 class="fw-semibold mb-0">{{ isAdmin ? 'Tasaciones globales' : 'Mis tasaciones' }}</h4>
+        <p class="text-muted small mb-0" v-if="!loading">
+          {{ filtered.length }} {{ filtered.length === 1 ? 'tasacion' : 'tasaciones' }}
+        </p>
       </div>
       <router-link :to="{ name: 'TasacionUsadoCreate' }" class="btn btn-primary">Nueva tasacion</router-link>
     </div>
@@ -28,7 +30,9 @@
 
     <div v-if="loading" class="text-center py-4"><span class="spinner-border" /></div>
     <div v-else-if="error" class="alert alert-danger">{{ error }}</div>
-    <div v-else-if="filtered.length === 0" class="alert alert-warning">No hay tasaciones para mostrar.</div>
+    <div v-else-if="filtered.length === 0" class="alert alert-warning">
+      {{ isAdmin ? 'No hay tasaciones para mostrar.' : 'Todavia no tenes tasaciones para mostrar.' }}
+    </div>
 
     <div v-else class="card border-0 shadow-sm">
       <div class="table-responsive">
@@ -89,15 +93,19 @@ import { computed, onMounted, ref } from 'vue';
 import { useAlertService } from '@/shared/alert/alert.service';
 import type { ITasacionUsado } from '@/shared/model/tasacion-usado.model';
 import TasacionUsadoService from './tasacion-usado.service';
+import { useStore } from '@/store';
+import { Authority } from '@/shared/jhipster/constants';
 
 const service = new TasacionUsadoService();
 const alertService = useAlertService();
+const store = useStore();
 
 const items = ref<ITasacionUsado[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const search = ref('');
 const estadoFiltro = ref('');
+const isAdmin = computed(() => (store.account?.authorities ?? []).includes(Authority.ADMIN));
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase();

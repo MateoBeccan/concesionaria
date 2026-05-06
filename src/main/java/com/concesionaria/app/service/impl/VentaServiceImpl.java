@@ -12,10 +12,12 @@ import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.VentaHistorial;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoOperativoDocumental;
+import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.EstadoReserva;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import com.concesionaria.app.domain.enumeration.OrigenVehiculo;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.domain.enumeration.TipoTenenciaInventario;
 import com.concesionaria.app.repository.ClienteRepository;
 import com.concesionaria.app.repository.InventarioHistorialRepository;
@@ -336,6 +338,22 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Page<VentaDTO> findAllCurrentUser(Pageable pageable) {
+        Page<Venta> page = ventaRepository.findByUserIsCurrentUser(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<VentaDTO> findAllCurrentUserWithEagerRelationships(Pageable pageable) {
+        Page<Venta> page = ventaRepository.findAllCurrentUserWithToOneRelationships(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
+    }
+
+    @Override
     public Optional<VentaDTO> findOne(Long id) {
         sincronizarInventarioConVenta(id);
         return ventaRepository.findOneWithEagerRelationships(id).map(ventaMapper::toDto);
@@ -468,6 +486,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     public void sincronizarInventarioConVenta(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        asegurarIngresoUsadoSiVentaCobrada(venta);
         Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
         if (vehiculoIds.isEmpty()) {
             return;
@@ -557,6 +576,19 @@ public class VentaServiceImpl implements VentaService {
                 LOG.warn("No se pudo reconciliar inventario para venta {}: {}", venta.getId(), ex.getMessage());
             }
         }
+    }
+
+    private void asegurarIngresoUsadoSiVentaCobrada(Venta venta) {
+        if (venta == null || venta.getId() == null || venta.getEstado() == null) {
+            return;
+        }
+        if (venta.getEstado() != EstadoVenta.PAGADA && venta.getEstado() != EstadoVenta.FINALIZADA) {
+            return;
+        }
+        if (venta.getSaldo() != null && venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
+            return;
+        }
+        generarInventarioTomaUsadoSiCorresponde(venta);
     }
 
     private void marcarInventarioReservado(Inventario inventario, Cliente cliente, Venta venta) {
@@ -746,10 +778,10 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private void generarInventarioTomaUsadoSiCorresponde(Venta venta) {
-        if (venta == null || venta.getId() == null || venta.getTasacionUsado() == null || venta.getTasacionUsado().getId() == null) {
+        if (venta == null || venta.getId() == null) {
             return;
         }
-        TasacionUsado tasacion = tasacionUsadoRepository.findById(venta.getTasacionUsado().getId()).orElse(null);
+        TasacionUsado tasacion = resolverTasacionUsadoParaIngreso(venta);
         if (tasacion == null) {
             return;
         }
@@ -809,6 +841,29 @@ public class VentaServiceImpl implements VentaService {
         historial.setFecha(Instant.now());
         historial.setUsuario(currentUserLogin());
         inventarioHistorialRepository.save(historial);
+    }
+
+    private TasacionUsado resolverTasacionUsadoParaIngreso(Venta venta) {
+        if (venta.getTasacionUsado() != null && venta.getTasacionUsado().getId() != null) {
+            return tasacionUsadoRepository.findById(venta.getTasacionUsado().getId()).orElse(null);
+        }
+
+        return pagoRepository
+            .findFirstByVentaIdAndEstadoAndTipoMovimientoAndTasacionUsadoIsNotNullOrderByFechaDescIdDesc(
+                venta.getId(),
+                EstadoPago.REGISTRADO,
+                TipoMovimientoPago.ENTREGA_USADO
+            )
+            .map(pago -> pago.getTasacionUsado())
+            .flatMap(tasacion -> tasacion == null || tasacion.getId() == null ? Optional.empty() : tasacionUsadoRepository.findById(tasacion.getId()))
+            .map(tasacionRecuperada -> {
+                venta.setTasacionUsado(tasacionRecuperada);
+                venta.setLastModifiedDate(Instant.now());
+                venta.setLastModifiedBy(currentUserLogin());
+                ventaRepository.save(venta);
+                return tasacionRecuperada;
+            })
+            .orElse(null);
     }
 
     private String generarCodigoInternoStock(Long vehiculoId) {

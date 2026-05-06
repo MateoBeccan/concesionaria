@@ -72,12 +72,14 @@ export default defineComponent({
     const closeDialog = () => {
       removeEntity.value.hide();
     };
+    const motivoAnulacion = ref('');
     const removePago = async () => {
       try {
-        await pagoService().delete(removeId.value);
-        const message = `A Pago is deleted with identifier ${removeId.value}`;
-        alertService.showInfo(message, { variant: 'danger' });
+        await pagoService().anular(removeId.value, motivoAnulacion.value.trim());
+        const message = `Pago ${removeId.value} anulado correctamente`;
+        alertService.showInfo(message, { variant: 'warning' });
         removeId.value = null;
+        motivoAnulacion.value = '';
         retrievePagos();
         closeDialog();
       } catch (error) {
@@ -119,6 +121,7 @@ export default defineComponent({
       ...dateFormat,
       removeId,
       removeEntity,
+      motivoAnulacion,
       prepareRemove,
       closeDialog,
       removePago,

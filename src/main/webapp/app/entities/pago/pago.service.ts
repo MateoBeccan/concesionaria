@@ -68,10 +68,10 @@ export default class PagoService {
     });
   }
 
-  anular(id: number): Promise<IPago> {
+  anular(id: number, motivo: string): Promise<IPago> {
     return new Promise<IPago>((resolve, reject) => {
       axios
-        .post(`${baseApiUrl}/${id}/anular`)
+        .post(`${baseApiUrl}/${id}/anular`, { motivo })
         .then(res => resolve(res.data))
         .catch(err => reject(err));
     });

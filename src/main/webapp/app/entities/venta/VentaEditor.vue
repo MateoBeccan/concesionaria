@@ -2,10 +2,8 @@
   <div class="container-fluid py-4" style="max-width: 1200px">
     <div class="page-header mb-4">
       <div>
-        <h1 class="page-title mb-0">
-          {{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}
-        </h1>
-        <p class="page-subtitle">Completa los datos para registrar la operacion en un unico flujo.</p>
+        <h1 class="page-title mb-0">{{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}</h1>
+        <p class="page-subtitle">Registrá una venta o reserva</p>
       </div>
       <button class="btn btn-sm btn-outline-secondary" @click="router.push({ name: 'VentaList' })">Volver</button>
     </div>
@@ -30,8 +28,8 @@
         <div class="card mb-3">
           <div class="card-header">
             <div>
-              <div class="section-title">1. Cliente y condiciones</div>
-              <div class="section-copy">Primero definí quién compra y bajo qué condiciones se registra la operación.</div>
+              <div class="section-title">1. Cliente</div>
+              <div class="section-copy">Selecciona al cliente para iniciar la operación.</div>
             </div>
           </div>
           <div class="card-body">
@@ -70,30 +68,6 @@
               </div>
 
               <div class="col-md-4">
-                <label class="form-label">Fecha <span class="text-danger">*</span></label>
-                <input type="datetime-local" class="form-control" v-model="fechaLocal" />
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Moneda</label>
-                <select class="form-select" v-model="venta.moneda" disabled>
-                  <option v-for="moneda in monedas" :key="moneda.id" :value="moneda">
-                    {{ moneda.simbolo ?? '' }} {{ moneda.codigo }} - {{ moneda.descripcion }}
-                  </option>
-                </select>
-                <small class="text-muted">La venta se registra siempre en ARS.</small>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Cotización aplicada</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" v-model.number="venta.cotizacion" readonly />
-                  <span class="input-group-text">auto</span>
-                </div>
-                <small class="text-muted">Se obtiene desde la entidad Cotización usando valor de venta.</small>
-              </div>
-
-              <div class="col-md-4">
                 <label class="form-label">% IVA</label>
                 <div class="input-group">
                   <input type="number" class="form-control" v-model.number="venta.porcentajeImpuesto" min="0" max="100" step="0.5" />
@@ -101,62 +75,17 @@
                 </div>
               </div>
 
-              <div class="col-12" v-if="vehiculoSeleccionado && false">
-                <div class="alert alert-light border mb-0 py-2">
-                  <strong>Precio base vehículo:</strong>
-                  {{ vehiculoSeleccionado.moneda?.simbolo ?? '$' }} {{ fmt(vehiculoSeleccionado.precio) }} {{ vehiculoSeleccionado.moneda?.codigo ?? '' }}
-                  · <strong>Moneda venta:</strong> {{ venta.moneda?.codigo ?? '-' }}
-                  <span v-if="requiereCotizacion">
-                    · <strong>Ejemplo:</strong> Vehículo en {{ vehiculoSeleccionado.moneda?.codigo ?? '-' }}, venta en
-                    {{ venta.moneda?.codigo ?? '-' }}, cotización {{ venta.cotizacion ?? cotizacionActiva?.cotizacionAplicada ?? '-' }}.
-                  </span>
-                </div>
-              </div>
-
-              <div class="col-12" v-if="vehiculoSeleccionado">
-                <div class="alert alert-light border mb-0 py-2 d-flex flex-wrap gap-3 align-items-center">
-                  <span>
-                    <strong>Precio vehiculo:</strong>
-                    {{ vehiculoSeleccionado.moneda?.simbolo ?? '$' }} {{ fmt(vehiculoSeleccionado.precio) }} {{ vehiculoSeleccionado.moneda?.codigo ?? '' }}
-                  </span>
-                  <span>
-                    <strong>Moneda venta:</strong>
-                    {{ venta.moneda?.simbolo ?? '' }} {{ venta.moneda?.codigo ?? '-' }}
-                  </span>
-                  <span>
-                    <strong>Cotizacion aplicada:</strong>
-                    {{ cotizacionAplicada }}
-                  </span>
-                  <span>
-                    <strong>Importe convertido:</strong>
-                    {{ venta.moneda?.simbolo ?? '$' }} {{ fmt(importeConvertidoPreview) }} {{ venta.moneda?.codigo ?? '' }}
-                  </span>
-                </div>
-                <div v-if="requiereCotizacion" class="small text-muted mt-1">
-                  Ejemplo: Vehiculo en {{ vehiculoSeleccionado.moneda?.codigo ?? '-' }}, venta en
-                  {{ venta.moneda?.codigo ?? '-' }}, cotizacion {{ cotizacionAplicada }}.
-                </div>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Estado de la operacion</label>
+              <div class="col-md-4">
+                <label class="form-label">Estado</label>
                 <div class="form-control d-flex align-items-center justify-content-between bg-light">
                   <span>{{ labelEstado(estadoCalculado) }}</span>
                   <span class="badge" :class="badgeEstado(estadoCalculado)">{{ labelEstado(estadoCalculado) }}</span>
                 </div>
-                <small class="text-muted">El estado se calcula automaticamente segun el saldo y los pagos cargados.</small>
               </div>
 
-              <div class="col-md-6">
-                <label class="form-label">Regla de reserva con seña</label>
-                <div class="form-control bg-light">
-                  Para reservar este vehiculo se requiere una seña minima de
-                  <strong>{{ venta.moneda?.simbolo ?? '$' }} {{ fmt(montoMinimoReserva) }} {{ venta.moneda?.codigo ?? '' }}</strong>
-                  (<strong>{{ porcentajeMinimoReservaLabel }}%</strong> del valor del vehiculo).
-                </div>
-                <small :class="cumpleMinimoReserva ? 'text-success' : 'text-danger'">
-                  {{ cumpleMinimoReserva ? 'Reserva valida: seña minima cumplida.' : 'Reserva no valida: falta seña minima.' }}
-                </small>
+              <div class="col-md-4">
+                <label class="form-label">Reserva</label>
+                <div class="form-control bg-light">La reserva requiere una seña mínima.</div>
               </div>
 
               <div class="col-12">
@@ -170,10 +99,10 @@
         <div class="card mb-3">
           <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-              <div class="section-title">2. Vehículos de la operación</div>
-              <div class="section-copy">Sumá unidades válidas y ajustá el precio final solo cuando haga falta.</div>
+              <div class="section-title">2. Vehículo</div>
+              <div class="section-copy">Selecciona la unidad y revisa el precio final.</div>
             </div>
-            <span class="badge bg-primary">{{ detalles.length }} vehiculo(s)</span>
+            <span class="badge bg-primary">{{ detalles.length }} vehículo(s)</span>
           </div>
           <div class="card-body">
             <DetalleVentaInline
@@ -191,10 +120,10 @@
           <div class="card-header d-flex justify-content-between align-items-center">
             <div>
               <div class="section-title">3. Pagos</div>
-              <div class="section-copy">Registrá anticipos o medios de cobro sin superar el saldo pendiente.</div>
+              <div class="section-copy">Registra pagos y controla el saldo pendiente.</div>
             </div>
             <span class="badge" :class="Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'bg-success' : 'bg-warning text-dark'">
-              {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: ${venta.moneda?.simbolo ?? '$'} ${fmt(venta.saldo)} ${venta.moneda?.codigo ?? ''}` }}
+              {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: ${venta.moneda?.simbolo ?? '$'} ${fmt(venta.saldo)}` }}
             </span>
           </div>
           <div class="card-body">
@@ -218,8 +147,8 @@
         <div class="card mb-3">
           <div class="card-header">
             <div>
-              <div class="section-title">4. Confirmación y comprobante</div>
-              <div class="section-copy">Opcionalmente definí el comprobante y luego confirmá la operación.</div>
+              <div class="section-title">4. Confirmación</div>
+              <div class="section-copy">Confirma la reserva o cierra la venta.</div>
             </div>
           </div>
           <div class="card-body">
@@ -231,15 +160,8 @@
                   <option v-for="tipo in tipoComprobantes" :key="tipo.id" :value="tipo">{{ tipo.codigo }} - {{ tipo.descripcion }}</option>
                 </select>
               </div>
-              <div class="col-md-6" v-if="tipoComprobanteSeleccionado">
-                <div class="alert alert-info py-2 mb-0 small">
-                  Se generara el comprobante <strong>{{ tipoComprobanteSeleccionado.codigo }}</strong> al confirmar la venta.
-                </div>
-              </div>
-              <div class="col-12" v-if="tieneComprobanteActivo">
-                <div class="alert alert-warning py-2 mb-0 small">
-                  La venta ya tiene un comprobante activo emitido. Debes anularlo antes de emitir uno nuevo.
-                </div>
+              <div class="col-md-6" v-if="tieneComprobanteActivo">
+                <div class="alert alert-warning py-2 mb-0 small">La venta ya tiene un comprobante activo emitido.</div>
               </div>
             </div>
           </div>
@@ -258,13 +180,12 @@
           :saldo="venta.saldo"
           :estado="estadoCalculado"
           :moneda="venta.moneda"
-          :cotizacion="venta.cotizacion"
         >
           <template #acciones>
             <div class="summary-flow mb-3">
               <div class="summary-flow-item" :class="{ ready: !!venta.cliente?.id }">Cliente</div>
-              <div class="summary-flow-item" :class="{ ready: detalles.length > 0 }">Vehículos</div>
-              <div class="summary-flow-item" :class="{ ready: Number(venta.total ?? 0) > 0 }">Condiciones</div>
+              <div class="summary-flow-item" :class="{ ready: detalles.length > 0 }">Vehículo</div>
+              <div class="summary-flow-item" :class="{ ready: Number(venta.total ?? 0) > 0 }">Resumen</div>
               <div class="summary-flow-item" :class="{ ready: pagos.length > 0 }">Pagos</div>
             </div>
             <button class="btn btn-warning w-100" @click="confirmarReserva" :disabled="guardando || !puedeConfirmarReserva">
@@ -275,12 +196,8 @@
               <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
               Confirmar venta
             </button>
-            <p v-if="!puedeConfirmarReserva && !mensajeValidacion" class="text-danger small text-center mb-0">
-              Confirmar reserva requiere cumplir la seña mínima.
-            </p>
-            <p v-if="!puedeConfirmar && !mensajeValidacion" class="text-danger small text-center mb-0">
-              Confirmar venta requiere pago total (100%).
-            </p>
+            <p v-if="!puedeConfirmarReserva && !mensajeValidacion" class="text-danger small text-center mb-0">La reserva requiere una seña mínima.</p>
+            <p v-if="!puedeConfirmar && !mensajeValidacion" class="text-danger small text-center mb-0">Confirmar venta requiere pago total (100%).</p>
             <p v-if="mensajeValidacion" class="text-muted small text-center mb-0">
               {{ mensajeValidacion }}
             </p>
@@ -323,17 +240,12 @@ const {
   metodoPagos,
   tipoComprobantes,
   porcentajeMinimoReserva,
-  montoMinimoReserva,
   tieneComprobanteActivo,
   cumpleMinimoReserva,
   estadoCalculado,
   sumaSubtotales,
   sumaPagos,
   tasacionesUsadoDisponibles,
-  vehiculoSeleccionado,
-  cotizacionAplicada,
-  importeConvertidoPreview,
-  requiereCotizacion,
   agregarVehiculo,
   actualizarPrecioDetalle,
   quitarDetalle,
@@ -355,14 +267,12 @@ let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 function buscarClientes() {
   if (debounceTimer) clearTimeout(debounceTimer);
-
   debounceTimer = setTimeout(async () => {
     const q = busquedaCliente.value.trim();
     if (q.length < 2) {
       resultadosCliente.value = [];
       return;
     }
-
     try {
       const res = await axios.get<ICliente[]>('api/clientes/buscar', { params: { q } });
       resultadosCliente.value = res.data;
@@ -379,17 +289,6 @@ function seleccionarCliente(cliente: ICliente) {
   void cargarTasacionesUsadoCliente();
 }
 
-const fechaLocal = computed({
-  get: () => {
-    const fecha = venta.value.fecha;
-    if (!fecha) return '';
-    return new Date(fecha).toISOString().slice(0, 16);
-  },
-  set: value => {
-    venta.value.fecha = value ? new Date(value) : new Date();
-  },
-});
-
 const mensajeValidacion = computed(() => {
   try {
     validarVentaAntesDeGuardar();
@@ -399,9 +298,7 @@ const mensajeValidacion = computed(() => {
   }
 });
 
-const puedeConfirmar = computed(
-  () => !mensajeValidacion.value && Number(venta.value.total ?? 0) > 0 && Number(venta.value.saldo ?? 0) === 0,
-);
+const puedeConfirmar = computed(() => !mensajeValidacion.value && Number(venta.value.total ?? 0) > 0 && Number(venta.value.saldo ?? 0) === 0);
 const puedeConfirmarReserva = computed(
   () =>
     !mensajeValidacion.value &&
@@ -410,7 +307,6 @@ const puedeConfirmarReserva = computed(
     Number(venta.value.totalPagado ?? 0) > 0 &&
     cumpleMinimoReserva.value,
 );
-const porcentajeMinimoReservaLabel = computed(() => (Number(porcentajeMinimoReserva.value ?? 0) * 100).toFixed(2).replace(/\.00$/, ''));
 const flowSteps = computed(() => [
   {
     number: '01',
@@ -428,18 +324,15 @@ const flowSteps = computed(() => [
   },
   {
     number: '03',
-    title: 'Condiciones',
-    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Definí fecha e impuestos.',
+    title: 'Resumen',
+    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Revisá subtotal e impuestos.',
     done: Number(venta.value.total ?? 0) > 0,
     current: detalles.value.length > 0 && Number(venta.value.total ?? 0) === 0,
   },
   {
     number: '04',
-    title: 'Pagos y cierre',
-    copy:
-      Number(venta.value.totalPagado ?? 0) > 0
-        ? `${pagos.value.length} pago(s) cargado(s).`
-        : 'Registrá pagos para poder continuar.',
+    title: 'Pagos',
+    copy: Number(venta.value.totalPagado ?? 0) > 0 ? `${pagos.value.length} pago(s) cargado(s).` : 'Registrá pagos para continuar.',
     done: Number(venta.value.saldo ?? 0) === 0 && detalles.value.length > 0,
     current: detalles.value.length > 0,
   },
@@ -466,18 +359,15 @@ onMounted(async () => {
     return c.includes('ARS') || c.includes('ARG') || c.includes('PESO') || d.includes('ARS') || d.includes('ARG') || d.includes('PESO');
   };
   const monedaBase = monedas.value.find(m => esMonedaBase(m.codigo, m.descripcion)) ?? null;
-  if (monedaBase) {
-    venta.value.moneda = monedaBase;
-  }
+  if (monedaBase) venta.value.moneda = monedaBase;
+
   metodoPagos.value = metodosRes.data;
   tipoComprobantes.value = tiposRes.data;
   setPorcentajeMinimoReserva(Number(reservaConfigRes.data?.porcentajeMinimo ?? 0.1));
 
   if (route.params?.ventaId) {
     await cargarVenta(Number(route.params.ventaId));
-    if (monedaBase) {
-      venta.value.moneda = monedaBase;
-    }
+    if (monedaBase) venta.value.moneda = monedaBase;
     return;
   }
 
@@ -486,19 +376,12 @@ onMounted(async () => {
     try {
       const reservaRes = await axios.get<IReserva>(`api/reservas/${reservaId}`);
       const reserva = reservaRes.data;
-      if (reserva.estado !== 'ACTIVA') {
-        throw new Error(`La reserva #${reservaId} no esta activa`);
-      }
+      if (reserva.estado !== 'ACTIVA') throw new Error(`La reserva #${reservaId} no está activa`);
 
       venta.value.reserva = { id: reserva.id } as IReserva;
-      if (!venta.value.cliente?.id && reserva.cliente?.id) {
-        venta.value.cliente = reserva.cliente;
-      }
-      if (!venta.value.observaciones && reserva.observaciones) {
-        venta.value.observaciones = `Convertida desde reserva #${reserva.id}. ${reserva.observaciones}`;
-      } else if (!venta.value.observaciones) {
-        venta.value.observaciones = `Convertida desde reserva #${reserva.id}`;
-      }
+      if (!venta.value.cliente?.id && reserva.cliente?.id) venta.value.cliente = reserva.cliente;
+      if (!venta.value.observaciones && reserva.observaciones) venta.value.observaciones = `Convertida desde reserva #${reserva.id}. ${reserva.observaciones}`;
+      else if (!venta.value.observaciones) venta.value.observaciones = `Convertida desde reserva #${reserva.id}`;
 
       const vehiculoReservaId = reserva.inventario?.vehiculo?.id;
       if (Number.isFinite(vehiculoReservaId) && vehiculoReservaId > 0 && detalles.value.length === 0) {
@@ -523,19 +406,13 @@ onMounted(async () => {
       if (inventarioRes.data?.id && inventarioRes.data?.estadoInventario === 'RESERVADO' && !venta.value.cliente?.id) {
         try {
           const reservaRes = await axios.get<IReserva>(`api/reservas/inventario/${inventarioRes.data.id}/activa`);
-          if (reservaRes.data?.cliente?.id) {
-            venta.value.cliente = reservaRes.data.cliente;
-          }
+          if (reservaRes.data?.cliente?.id) venta.value.cliente = reservaRes.data.cliente;
         } catch (reservaError: any) {
-          if (reservaError?.response?.status !== 404) {
-            alertService.showHttpError(reservaError.response);
-          }
+          if (reservaError?.response?.status !== 404) alertService.showHttpError(reservaError.response);
         }
       }
     } catch (e: any) {
-      if (e?.response?.status !== 404) {
-        alertService.showHttpError(e.response);
-      }
+      if (e?.response?.status !== 404) alertService.showHttpError(e.response);
     }
   }
 
@@ -546,7 +423,7 @@ onMounted(async () => {
       venta.value.cliente = clienteRes.data;
       await cargarTasacionesUsadoCliente();
     } catch {
-      // Si no se puede precargar por query se mantiene seleccion manual.
+      // noop
     }
   }
 });
@@ -573,14 +450,11 @@ watch(
 async function confirmarVenta() {
   try {
     validarVentaAntesDeGuardar();
-    if (Number(venta.value.saldo ?? 0) > 0) {
-      throw new Error('Para vender la unidad se requiere pago total (100%).');
-    }
+    if (Number(venta.value.saldo ?? 0) > 0) throw new Error('Para vender la unidad se requiere pago total (100%).');
     const { venta: ventaGuardada, comprobante } = await confirmar(tipoComprobanteSeleccionado.value ?? undefined);
     const message = comprobante
       ? `Venta #${ventaGuardada.id} confirmada. Comprobante ${comprobante.numeroComprobante} generado.`
       : `Venta #${ventaGuardada.id} confirmada correctamente`;
-
     alertService.showSuccess(message);
     router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
@@ -591,14 +465,10 @@ async function confirmarVenta() {
 async function confirmarReserva() {
   try {
     validarVentaAntesDeGuardar();
-    if (!cumpleMinimoReserva.value) {
-      throw new Error('La reserva requiere una seña mínima.');
-    }
+    if (!cumpleMinimoReserva.value) throw new Error('La reserva requiere una seña mínima.');
     const { venta: ventaGuardada } = await confirmar();
     alertService.showSuccess(`Reserva confirmada para la venta #${ventaGuardada.id}`);
-    if (!route.params?.ventaId) {
-      router.replace({ name: 'VentaEditorEdit', params: { ventaId: ventaGuardada.id } });
-    }
+    if (!route.params?.ventaId) router.replace({ name: 'VentaEditorEdit', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la reserva');
   }
@@ -606,7 +476,7 @@ async function confirmarReserva() {
 
 async function crearTasacionDesdeVenta() {
   if (!venta.value.cliente?.id) {
-    alertService.showError('Primero debes seleccionar un cliente para crear una tasacion.');
+    alertService.showError('Primero debes seleccionar un cliente para crear una tasación.');
     return;
   }
   await router.push({

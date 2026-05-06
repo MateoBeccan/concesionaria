@@ -32,6 +32,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -145,6 +146,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO) {
+        validarContextoEntradaPago(pagoDTO);
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
         validarVentaEnMonedaBase(venta);
         if (venta.getEstado() == EstadoVenta.PAGADA) {
@@ -164,12 +166,19 @@ public class PagoServiceImpl implements PagoService {
         MetodoPago metodoPago = pagoDTO.getMetodoPago() != null && pagoDTO.getMetodoPago().getId() != null
             ? metodoPagoRepository.findById(pagoDTO.getMetodoPago().getId()).orElseThrow(() -> new BadRequestException("El metodo de pago no existe"))
             : null;
+        if (metodoPago == null) {
+            throw new BadRequestException("Debe informar el metodo de pago");
+        }
         validarMetodoPagoEspecial(metodoPago);
+        validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         if (metodoPago != null && Boolean.TRUE.equals(metodoPago.getRequiereReferencia()) && (pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank())) {
             throw new BadRequestException("La referencia es obligatoria para el metodo de pago seleccionado");
         }
         if (esMetodoEntregaUsado(metodoPago)) {
             return registrarPagoEntregaUsado(venta, pagoDTO, metodoPago);
+        }
+        if (pagoDTO.getTasacionUsadoId() != null) {
+            throw new BadRequestException("La tasacion_usado_id solo aplica para metodo ENTREGA_USADO");
         }
         Moneda monedaVenta = venta.getMoneda();
         if (monedaVenta == null || monedaVenta.getId() == null) {
@@ -226,6 +235,7 @@ public class PagoServiceImpl implements PagoService {
         pago.setLastModifiedDate(Instant.now());
         pago.setEstado(EstadoPago.REGISTRADO);
         pago.setTasacionUsado(null);
+        normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago ventaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoVenta={}",
             ventaId,
@@ -242,6 +252,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPagoReserva(Long reservaId, PagoDTO pagoDTO) {
+        validarContextoEntradaPago(pagoDTO);
         Reserva reserva = reservaRepository.findById(reservaId).orElseThrow(() -> new BadRequestException("La reserva no existe"));
         if (reserva.getEstado() != EstadoReserva.ACTIVA) {
             throw new BadRequestException("Solo se pueden registrar pagos en reservas ACTIVAS");
@@ -253,9 +264,19 @@ public class PagoServiceImpl implements PagoService {
         MetodoPago metodoPago = pagoDTO.getMetodoPago() != null && pagoDTO.getMetodoPago().getId() != null
             ? metodoPagoRepository.findById(pagoDTO.getMetodoPago().getId()).orElseThrow(() -> new BadRequestException("El metodo de pago no existe"))
             : null;
+        if (metodoPago == null) {
+            throw new BadRequestException("Debe informar el metodo de pago");
+        }
         validarMetodoPagoEspecial(metodoPago);
+        validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         if (metodoPago != null && Boolean.TRUE.equals(metodoPago.getRequiereReferencia()) && (pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank())) {
             throw new BadRequestException("La referencia es obligatoria para el metodo de pago seleccionado");
+        }
+        if (esMetodoEntregaUsado(metodoPago)) {
+            throw new BadRequestException("ENTREGA_USADO solo puede registrarse sobre una venta");
+        }
+        if (pagoDTO.getTasacionUsadoId() != null) {
+            throw new BadRequestException("La tasacion_usado_id solo aplica para pagos de venta");
         }
 
         Pago pago = pagoMapper.toEntity(pagoDTO);
@@ -292,6 +313,8 @@ public class PagoServiceImpl implements PagoService {
         pago.setCreatedDate(Instant.now());
         pago.setLastModifiedDate(Instant.now());
         pago.setEstado(EstadoPago.REGISTRADO);
+        pago.setTasacionUsado(null);
+        normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago reservaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoReserva={}",
             reservaId,
@@ -307,10 +330,13 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
-    public PagoDTO anularPago(Long pagoId) {
+    public PagoDTO anularPago(Long pagoId, String motivo) {
         Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago no existe"));
         if (pago.getEstado() == EstadoPago.ANULADO) {
             throw new BadRequestException("El pago ya se encuentra anulado");
+        }
+        if (motivo == null || motivo.isBlank()) {
+            throw new BadRequestException("Debe informar un motivo para anular el pago");
         }
         if (pago.getTipoMovimiento() == TipoMovimientoPago.ENTREGA_USADO && pago.getTasacionUsado() != null && pago.getTasacionUsado().getInventarioGenerado() != null) {
             throw new BadRequestException("No se puede anular la entrega de usado porque ya genero inventario");
@@ -329,13 +355,13 @@ public class PagoServiceImpl implements PagoService {
             venta.setLastModifiedDate(Instant.now());
             ventaRepository.save(venta);
         }
-        String auditoriaAnulacion = "Anulado por " + currentUserLogin() + " en " + Instant.now();
-        if (pago.getObservaciones() == null || pago.getObservaciones().isBlank()) {
-            pago.setObservaciones(auditoriaAnulacion);
-        } else {
-            pago.setObservaciones(pago.getObservaciones() + " | " + auditoriaAnulacion);
-        }
+        String usuarioAnulacion = currentUserLogin();
+        Instant fechaAnulacion = Instant.now();
+        pago.setMotivoAnulacion(motivo.trim());
+        pago.setUsuarioAnulacion(usuarioAnulacion);
+        pago.setFechaAnulacion(fechaAnulacion);
         pago.setLastModifiedDate(Instant.now());
+        normalizarCamposTextoPago(pago);
         LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
         Pago pagoActualizado = pagoRepository.save(pago);
 
@@ -419,6 +445,27 @@ public class PagoServiceImpl implements PagoService {
         if (metodoPago == null || metodoPago.getCodigo() == null) {
             return;
         }
+        String codigoMetodo = metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
+        if (("TRANSFERENCIA".equals(codigoMetodo) || "TARJETA".equals(codigoMetodo)) && (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())) {
+            LOG.warn("Metodo de pago {} deberia requerir referencia para trazabilidad", codigoMetodo);
+        }
+    }
+
+    private void validarDatosOperacionParaMetodo(PagoDTO pagoDTO, MetodoPago metodoPago) {
+        if (metodoPago == null || metodoPago.getCodigo() == null) {
+            return;
+        }
+        String codigoMetodo = metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
+        boolean referenciaVacia = pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank();
+        boolean numeroOperacionVacio = pagoDTO.getNumeroOperacion() == null || pagoDTO.getNumeroOperacion().isBlank();
+        if ("EFECTIVO".equals(codigoMetodo)) {
+            return;
+        }
+        if ("TRANSFERENCIA".equals(codigoMetodo) || "TARJETA".equals(codigoMetodo)) {
+            if (referenciaVacia && numeroOperacionVacio) {
+                throw new BadRequestException("Transferencia/Tarjeta requiere referencia o numero de operacion");
+            }
+        }
     }
 
     private PagoDTO registrarPagoEntregaUsado(Venta venta, PagoDTO pagoDTO, MetodoPago metodoPago) {
@@ -468,6 +515,7 @@ public class PagoServiceImpl implements PagoService {
         pago.setCreatedDate(Instant.now());
         pago.setLastModifiedDate(Instant.now());
         pago.setEstado(EstadoPago.REGISTRADO);
+        normalizarCamposTextoPago(pago);
 
         venta.setTasacionUsado(tasacion);
         venta.setLastModifiedDate(Instant.now());
@@ -523,6 +571,43 @@ public class PagoServiceImpl implements PagoService {
 
     private boolean esMetodoEntregaUsado(MetodoPago metodoPago) {
         return metodoPago != null && metodoPago.getCodigo() != null && "ENTREGA_USADO".equalsIgnoreCase(metodoPago.getCodigo());
+    }
+
+    private void validarContextoEntradaPago(PagoDTO pagoDTO) {
+        if (pagoDTO == null) {
+            throw new BadRequestException("Debe informar los datos del pago");
+        }
+        if (pagoDTO.getMonto() == null || pagoDTO.getMonto().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("El monto del pago es invalido");
+        }
+        if (pagoDTO.getFecha() != null && pagoDTO.getFecha().isAfter(Instant.now().plusSeconds(300))) {
+            throw new BadRequestException("La fecha del pago no puede estar en el futuro");
+        }
+    }
+
+    private void normalizarCamposTextoPago(Pago pago) {
+        pago.setReferencia(normalizarTexto(pago.getReferencia(), 100));
+        pago.setNumeroOperacion(normalizarTexto(pago.getNumeroOperacion(), 100));
+        pago.setComprobanteExterno(normalizarTexto(pago.getComprobanteExterno(), 100));
+        pago.setBancoEntidad(normalizarTexto(pago.getBancoEntidad(), 100));
+        pago.setObservaciones(normalizarTexto(pago.getObservaciones(), 500));
+        pago.setUsuarioRegistro(normalizarTexto(pago.getUsuarioRegistro(), 50));
+        pago.setMotivoAnulacion(normalizarTexto(pago.getMotivoAnulacion(), 500));
+        pago.setUsuarioAnulacion(normalizarTexto(pago.getUsuarioAnulacion(), 50));
+    }
+
+    private String normalizarTexto(String value, int max) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > max) {
+            throw new BadRequestException("Un campo de texto excede el maximo permitido de " + max + " caracteres");
+        }
+        return trimmed;
     }
 
     private BigDecimal normalizarMoneda(BigDecimal valor) {

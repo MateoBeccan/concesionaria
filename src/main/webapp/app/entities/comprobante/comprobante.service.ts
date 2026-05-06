@@ -41,6 +41,22 @@ export default class ComprobanteService {
     });
   }
 
+  async descargarPdf(id: number): Promise<void> {
+    const response = await axios.get(`${baseApiUrl}/${id}/pdf`, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const header = response.headers?.['content-disposition'] ?? '';
+    const match = /filename="?([^"]+)"?/i.exec(header);
+    const fileName = match?.[1] ?? `comprobante-${id}.pdf`;
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.target = '_blank';
+    link.click();
+    window.URL.revokeObjectURL(url);
+  }
+
   emitir(ventaId: number, tipoComprobanteId: number): Promise<IComprobante> {
     return new Promise<IComprobante>((resolve, reject) => {
       axios
@@ -50,10 +66,10 @@ export default class ComprobanteService {
     });
   }
 
-  anular(id: number): Promise<IComprobante> {
+  anular(id: number, motivo: string): Promise<IComprobante> {
     return new Promise<IComprobante>((resolve, reject) => {
       axios
-        .post(`${baseApiUrl}/${id}/anular`)
+        .post(`${baseApiUrl}/${id}/anular`, { motivo })
         .then(res => resolve(res.data))
         .catch(err => reject(err));
     });

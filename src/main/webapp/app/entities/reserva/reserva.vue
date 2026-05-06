@@ -2,8 +2,10 @@
   <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h4 class="fw-semibold mb-0">Reservas</h4>
-        <p class="text-muted small mb-0" v-if="!loading">{{ total }} reservas</p>
+        <h4 class="fw-semibold mb-0">{{ isAdmin ? 'Reservas globales' : 'Mis reservas' }}</h4>
+        <p class="text-muted small mb-0" v-if="!loading">
+          {{ total }} {{ total === 1 ? 'reserva' : 'reservas' }}
+        </p>
       </div>
       <button class="btn btn-outline-warning" @click="expirarVencidas" :disabled="loadingExpirar || loading">
         <span v-if="loadingExpirar" class="spinner-border spinner-border-sm me-2" />
@@ -47,7 +49,9 @@
       <button class="btn btn-sm btn-outline-danger" @click="cargar">Reintentar</button>
     </div>
 
-    <div v-else-if="filteredReservas.length === 0" class="alert alert-warning mb-0">No hay reservas para mostrar.</div>
+    <div v-else-if="filteredReservas.length === 0" class="alert alert-warning mb-0">
+      {{ isAdmin ? 'No hay reservas para mostrar.' : 'Todavia no tenes reservas para mostrar.' }}
+    </div>
 
     <div v-else class="card border-0 shadow-sm">
       <div class="table-responsive">
@@ -116,6 +120,8 @@ import { useRoute } from 'vue-router';
 import { useAlertService } from '@/shared/alert/alert.service';
 import type { IInventario } from '@/shared/model/inventario.model';
 import type { IReserva } from '@/shared/model/reserva.model';
+import { useStore } from '@/store';
+import { Authority } from '@/shared/jhipster/constants';
 import InventarioService from '@/entities/inventario/inventario.service';
 import ReservaService from './reserva.service';
 
@@ -123,6 +129,7 @@ const reservaService = new ReservaService();
 const inventarioService = new InventarioService();
 const alertService = useAlertService();
 const route = useRoute();
+const store = useStore();
 
 const reservas = ref<IReserva[]>([]);
 const total = ref(0);
@@ -131,6 +138,7 @@ const loadingExpirar = ref(false);
 const error = ref<string | null>(null);
 const search = ref('');
 const estadoFiltro = ref('');
+const isAdmin = computed(() => (store.account?.authorities ?? []).includes(Authority.ADMIN));
 
 const filteredReservas = computed(() => {
   const q = search.value.trim().toLowerCase();

@@ -1,6 +1,8 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.ReservaRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
+import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.ReservaService;
 import com.concesionaria.app.service.dto.ReservaDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
@@ -83,7 +85,8 @@ public class ReservaResource {
 
     @GetMapping("")
     public ResponseEntity<List<ReservaDTO>> getAll(@org.springdoc.core.annotations.ParameterObject Pageable pageable) {
-        Page<ReservaDTO> page = reservaService.findAll(pageable);
+        boolean isAdmin = SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN);
+        Page<ReservaDTO> page = isAdmin ? reservaService.findAll(pageable) : reservaService.findAllCurrentUser(pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(ServletUriComponentsBuilder.fromCurrentRequest(), page);
         return ResponseEntity.ok().headers(headers).body(page.getContent());
     }

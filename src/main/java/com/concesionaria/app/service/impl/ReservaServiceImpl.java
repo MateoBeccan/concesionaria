@@ -112,6 +112,12 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     @Transactional(readOnly = true)
+    public Page<ReservaDTO> findAllCurrentUser(Pageable pageable) {
+        return reservaRepository.findAllCurrentUser(pageable).map(this::toDtoEnriquecido);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Optional<ReservaDTO> findOne(Long id) {
         return reservaRepository.findById(id).map(this::toDtoEnriquecido);
     }

@@ -72,12 +72,22 @@ export default defineComponent({
     const closeDialog = () => {
       removeEntity.value.hide();
     };
+    const descargarPdf = async (id?: number) => {
+      if (!id) return;
+      try {
+        await comprobanteService().descargarPdf(id);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+    const motivoAnulacion = ref('');
     const removeComprobante = async () => {
       try {
-        await comprobanteService().anular(removeId.value);
+        await comprobanteService().anular(removeId.value, motivoAnulacion.value.trim());
         const message = `Comprobante ${removeId.value} anulado correctamente`;
         alertService.showInfo(message, { variant: 'warning' });
         removeId.value = null;
+        motivoAnulacion.value = '';
         retrieveComprobantes();
         closeDialog();
       } catch (error) {
@@ -119,9 +129,11 @@ export default defineComponent({
       ...dateFormat,
       removeId,
       removeEntity,
+      motivoAnulacion,
       prepareRemove,
       closeDialog,
       removeComprobante,
+      descargarPdf,
       itemsPerPage,
       queryCount,
       page,

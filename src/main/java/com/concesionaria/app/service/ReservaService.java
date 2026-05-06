@@ -10,6 +10,7 @@ public interface ReservaService {
     ReservaDTO update(ReservaDTO dto);
     Optional<ReservaDTO> partialUpdate(ReservaDTO dto);
     Page<ReservaDTO> findAll(Pageable pageable);
+    Page<ReservaDTO> findAllCurrentUser(Pageable pageable);
     Optional<ReservaDTO> findOne(Long id);
     void delete(Long id);
 

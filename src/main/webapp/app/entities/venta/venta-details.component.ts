@@ -49,6 +49,9 @@ export default defineComponent({
     const loadingPagos       = ref(false);
     const loadingComprobantes = ref(false);
     const loadingHistorial = ref(false);
+    const mostrarModalAnulacionComprobante = ref(false);
+    const comprobanteAAnular = ref<number | null>(null);
+    const motivoAnulacionComprobante = ref('');
 
     const totalPagado = computed(() =>
       pagos.value.filter(p => p.estado !== EstadoPago.ANULADO).reduce((sum, p) => sum + Number(p.monto ?? 0), 0),
@@ -139,11 +142,38 @@ export default defineComponent({
       }
     };
 
-    const anularComprobante = async (comprobanteId: number) => {
+    const anularComprobante = async (comprobanteId: number, motivo: string) => {
       if (!venta.value.id) return;
       try {
-        await comprobanteService().anular(comprobanteId);
+        await comprobanteService().anular(comprobanteId, motivo);
         await cargarComprobantes(venta.value.id);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
+    const abrirModalAnulacionComprobante = (comprobanteId: number) => {
+      comprobanteAAnular.value = comprobanteId;
+      motivoAnulacionComprobante.value = '';
+      mostrarModalAnulacionComprobante.value = true;
+    };
+
+    const cerrarModalAnulacionComprobante = () => {
+      mostrarModalAnulacionComprobante.value = false;
+      comprobanteAAnular.value = null;
+      motivoAnulacionComprobante.value = '';
+    };
+
+    const confirmarAnulacionComprobante = async () => {
+      if (!comprobanteAAnular.value || !motivoAnulacionComprobante.value.trim()) return;
+      await anularComprobante(comprobanteAAnular.value, motivoAnulacionComprobante.value.trim());
+      cerrarModalAnulacionComprobante();
+    };
+
+    const descargarPdfComprobante = async (comprobanteId?: number) => {
+      if (!comprobanteId) return;
+      try {
+        await comprobanteService().descargarPdf(comprobanteId);
       } catch (error: any) {
         alertService.showHttpError(error.response);
       }
@@ -216,6 +246,9 @@ export default defineComponent({
       loadingPagos,
       loadingComprobantes,
       loadingHistorial,
+      mostrarModalAnulacionComprobante,
+      comprobanteAAnular,
+      motivoAnulacionComprobante,
       previousState,
       formatPrecio,
       formatCotizacion,
@@ -224,6 +257,10 @@ export default defineComponent({
       labelEstado,
       labelEstadoComprobante,
       anularComprobante,
+      descargarPdfComprobante,
+      abrirModalAnulacionComprobante,
+      cerrarModalAnulacionComprobante,
+      confirmarAnulacionComprobante,
     };
   },
 });
