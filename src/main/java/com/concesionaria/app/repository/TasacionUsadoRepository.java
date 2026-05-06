@@ -28,4 +28,20 @@ public interface TasacionUsadoRepository extends JpaRepository<TasacionUsado, Lo
         """
     )
     List<TasacionUsado> findAceptadasDisponiblesByClienteId(@Param("clienteId") Long clienteId);
+
+    @Query(
+        """
+        select (count(t) > 0)
+        from TasacionUsado t
+        where t.id = :tasacionId
+          and t.cliente.id = :clienteId
+          and t.estado = com.concesionaria.app.domain.enumeration.EstadoTasacionUsado.ACEPTADA
+          and t.inventarioGenerado is null
+          and not exists (
+            select 1 from Venta v
+            where v.tasacionUsado.id = t.id
+          )
+        """
+    )
+    boolean existsAceptadaDisponibleByIdAndClienteId(@Param("tasacionId") Long tasacionId, @Param("clienteId") Long clienteId);
 }

@@ -2,6 +2,7 @@ import { type ICliente } from '@/shared/model/cliente.model';
 import { type EstadoTasacionUsado } from '@/shared/model/enumerations/estado-tasacion-usado.model';
 import { type IInventario } from '@/shared/model/inventario.model';
 import { type IMotor } from '@/shared/model/motor.model';
+import { type IMoneda } from '@/shared/model/moneda.model';
 import { type ITipoVehiculo } from '@/shared/model/tipo-vehiculo.model';
 import { type IUser } from '@/shared/model/user.model';
 import { type IVersion } from '@/shared/model/version.model';
@@ -23,6 +24,7 @@ export interface ITasacionUsado {
   lastModifiedDate?: Date | null;
   cliente?: ICliente | null;
   inventarioGenerado?: IInventario | null;
+  moneda?: IMoneda | null;
   version?: IVersion | null;
   motor?: IMotor | null;
   tipoVehiculo?: ITipoVehiculo | null;
@@ -48,6 +50,7 @@ export class TasacionUsado implements ITasacionUsado {
     public lastModifiedDate?: Date | null,
     public cliente?: ICliente | null,
     public inventarioGenerado?: IInventario | null,
+    public moneda?: IMoneda | null,
     public version?: IVersion | null,
     public motor?: IMotor | null,
     public tipoVehiculo?: ITipoVehiculo | null,

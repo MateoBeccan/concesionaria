@@ -124,6 +124,10 @@
               <input v-model="fechaLocal" type="datetime-local" class="form-control" />
             </div>
             <div class="col-md-4">
+              <label class="form-label">Moneda tasacion</label>
+              <input class="form-control" :value="monedaTasacionLabel" readonly />
+            </div>
+            <div class="col-md-4">
               <label class="form-label">Monto tasacion <span class="text-danger">*</span></label>
               <input v-model.number="form.montoTasacion" type="number" min="0.01" step="0.01" class="form-control" />
             </div>
@@ -223,6 +227,11 @@ const form = reactive<ITasacionUsado>({
 
 const anioMaximo = new Date().getFullYear() + 1;
 const esAceptada = computed(() => form.estado === EstadoTasacionUsado.ACEPTADA);
+const monedaTasacionLabel = computed(() => {
+  const codigo = form.moneda?.codigo ?? 'ARS';
+  const simbolo = form.moneda?.simbolo ?? '$';
+  return `${simbolo} ${codigo} (solo lectura)`;
+});
 
 const versionResumen = computed(() => {
   const version = versiones.value.find(item => item.id === selectedVersionId.value);

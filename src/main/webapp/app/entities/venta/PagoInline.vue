@@ -38,10 +38,10 @@
             <select class="form-select form-select-sm" v-model.number="nuevoPago.tasacionUsadoId">
               <option :value="null">- Seleccionar tasacion aceptada -</option>
               <option v-for="t in tasacionesUsado" :key="t.id" :value="t.id">
-                #{{ t.id }} - {{ tasacionVehiculoLabel(t) }} - {{ t.patenteUsado ?? 'Sin patente' }} - $ {{ fmt(t.montoTasacion) }}
+                #{{ t.id }} - {{ tasacionVehiculoLabel(t) }} - {{ t.patenteUsado ?? 'Sin patente' }} - {{ tasacionMonedaLabel(t) }} {{ fmt(t.montoTasacion) }}
               </option>
             </select>
-            <div class="small text-muted mt-1">El monto se toma automaticamente desde la tasacion.</div>
+            <div class="small text-muted mt-1">El monto se toma automaticamente desde la tasacion en {{ monedaBaseCodigo }}.</div>
             <div v-if="tasacionesUsado.length === 0" class="small mt-2">
               <span class="text-danger">No hay tasaciones aceptadas disponibles para este cliente.</span>
               <button class="btn btn-link btn-sm p-0 ms-2" @click="emit('crearTasacion')">Crear tasacion</button>
@@ -125,7 +125,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from 'vue';
+import { computed, reactive, watch } from 'vue';
 import type { PagoLocal } from './useVentaEditor';
 import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
@@ -140,6 +140,7 @@ const props = defineProps<{
   monedas: IMoneda[];
   tasacionesUsado: ITasacionUsado[];
   monedaDefault?: IMoneda | null;
+  monedaBaseCodigo?: string;
 }>();
 
 const emit = defineEmits<{
@@ -158,6 +159,19 @@ const nuevoPago = reactive({
 });
 
 const esEntregaUsado = computed(() => (nuevoPago.metodoPago?.codigo ?? '').toUpperCase() === 'ENTREGA_USADO');
+const monedaBaseCodigo = computed(() => props.monedaBaseCodigo ?? props.monedaDefault?.codigo ?? 'ARS');
+
+watch(
+  () => props.tasacionesUsado,
+  tasaciones => {
+    if (!nuevoPago.tasacionUsadoId) return;
+    const sigueDisponible = tasaciones.some(t => t.id === nuevoPago.tasacionUsadoId);
+    if (!sigueDisponible) {
+      nuevoPago.tasacionUsadoId = null;
+    }
+  },
+  { deep: true },
+);
 
 const mensajeValidacionPago = computed(() => {
   if (esEntregaUsado.value) {
@@ -206,5 +220,9 @@ function tasacionVehiculoLabel(t: ITasacionUsado) {
   const modelo = t.version?.modelo?.nombre;
   const version = t.version?.nombre;
   return [marca, modelo, version].filter(Boolean).join(' ') || t.marcaModeloUsado || 'Usado';
+}
+
+function tasacionMonedaLabel(t: ITasacionUsado) {
+  return t.moneda?.simbolo || t.moneda?.codigo || monedaBaseCodigo.value;
 }
 </script>

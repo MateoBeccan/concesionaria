@@ -86,6 +86,10 @@ public class TasacionUsado implements Serializable {
     @JoinColumn(name = "inventario_generado_id")
     private Inventario inventarioGenerado;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "moneda_id", nullable = false)
+    private Moneda moneda;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "version_id")
     private Version version;
@@ -228,6 +232,14 @@ public class TasacionUsado implements Serializable {
 
     public void setInventarioGenerado(Inventario inventarioGenerado) {
         this.inventarioGenerado = inventarioGenerado;
+    }
+
+    public Moneda getMoneda() {
+        return moneda;
+    }
+
+    public void setMoneda(Moneda moneda) {
+        this.moneda = moneda;
     }
 
     public Version getVersion() {

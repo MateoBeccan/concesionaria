@@ -53,7 +53,7 @@
               <td>{{ clienteLabel(item) }}</td>
               <td>{{ vehiculoTecnico(item) }}</td>
               <td>{{ item.patenteUsado || item.vinChasisUsado || '-' }}</td>
-              <td class="text-end">$ {{ fmt(item.montoTasacion) }}</td>
+              <td class="text-end">{{ monedaLabel(item) }} {{ fmt(item.montoTasacion) }}</td>
               <td>
                 <span class="badge" :class="estadoBadge(item.estado)">{{ item.estado }}</span>
               </td>
@@ -135,6 +135,10 @@ function clienteLabel(item: ITasacionUsado) {
 
 function fmt(value?: number | null) {
   return Number(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function monedaLabel(item: ITasacionUsado) {
+  return item.moneda?.simbolo || item.moneda?.codigo || 'ARS';
 }
 
 function estadoBadge(estado?: string) {

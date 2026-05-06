@@ -55,6 +55,7 @@ public class TasacionUsadoDTO implements Serializable {
     private ClienteDTO cliente;
 
     private InventarioDTO inventarioGenerado;
+    private MonedaDTO moneda;
 
     private VersionDTO version;
 
@@ -192,6 +193,14 @@ public class TasacionUsadoDTO implements Serializable {
 
     public void setInventarioGenerado(InventarioDTO inventarioGenerado) {
         this.inventarioGenerado = inventarioGenerado;
+    }
+
+    public MonedaDTO getMoneda() {
+        return moneda;
+    }
+
+    public void setMoneda(MonedaDTO moneda) {
+        this.moneda = moneda;
     }
 
     public VersionDTO getVersion() {

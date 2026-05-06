@@ -20,7 +20,7 @@
           <div class="col-md-6"><strong>Cliente:</strong> {{ clienteLabel }}</div>
           <div class="col-md-3"><strong>Estado:</strong> {{ tasacion.estado }}</div>
           <div class="col-md-3"><strong>Fecha:</strong> {{ formatDate(tasacion.fechaTasacion) }}</div>
-          <div class="col-md-4"><strong>Monto:</strong> $ {{ fmt(tasacion.montoTasacion) }}</div>
+          <div class="col-md-4"><strong>Monto:</strong> {{ monedaLabel(tasacion) }} {{ fmt(tasacion.montoTasacion) }}</div>
           <div class="col-md-8"><strong>Vehiculo tecnico:</strong> {{ vehiculoTecnico }}</div>
           <div class="col-md-4"><strong>Patente:</strong> {{ tasacion.patenteUsado || '-' }}</div>
           <div class="col-md-4"><strong>VIN/Chasis:</strong> {{ tasacion.vinChasisUsado || '-' }}</div>
@@ -103,5 +103,9 @@ function formatDate(value?: Date | string) {
 
 function fmt(value?: number | null) {
   return Number(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function monedaLabel(item: ITasacionUsado) {
+  return item.moneda?.simbolo || item.moneda?.codigo || 'ARS';
 }
 </script>

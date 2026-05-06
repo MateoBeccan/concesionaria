@@ -2,7 +2,9 @@ package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.User;
+import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.repository.MotorRepository;
+import com.concesionaria.app.repository.MonedaRepository;
 import com.concesionaria.app.repository.TasacionUsadoRepository;
 import com.concesionaria.app.repository.TipoVehiculoRepository;
 import com.concesionaria.app.repository.UserRepository;
@@ -17,6 +19,7 @@ import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,7 +35,11 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
     private final MotorRepository motorRepository;
     private final TipoVehiculoRepository tipoVehiculoRepository;
     private final UserRepository userRepository;
+    private final MonedaRepository monedaRepository;
     private final TasacionUsadoMapper tasacionUsadoMapper;
+
+    @Value("${app.negocio.moneda-base-codigo:ARS}")
+    private String monedaBaseCodigo;
 
     public TasacionUsadoServiceImpl(
         TasacionUsadoRepository tasacionUsadoRepository,
@@ -41,6 +48,7 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
         MotorRepository motorRepository,
         TipoVehiculoRepository tipoVehiculoRepository,
         UserRepository userRepository,
+        MonedaRepository monedaRepository,
         TasacionUsadoMapper tasacionUsadoMapper
     ) {
         this.tasacionUsadoRepository = tasacionUsadoRepository;
@@ -49,6 +57,7 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
         this.motorRepository = motorRepository;
         this.tipoVehiculoRepository = tipoVehiculoRepository;
         this.userRepository = userRepository;
+        this.monedaRepository = monedaRepository;
         this.tasacionUsadoMapper = tasacionUsadoMapper;
     }
 
@@ -140,6 +149,20 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
     }
 
     private void normalizar(TasacionUsado entity) {
+        Moneda monedaBase = monedaRepository
+            .findByCodigoIgnoreCase(monedaBaseCodigo)
+            .orElseThrow(() -> new BadRequestException("No existe la moneda base configurada"));
+        if (entity.getMoneda() == null || entity.getMoneda().getId() == null) {
+            entity.setMoneda(monedaBase);
+        } else {
+            Moneda moneda = monedaRepository
+                .findById(entity.getMoneda().getId())
+                .orElseThrow(() -> new BadRequestException("La moneda de la tasacion no existe"));
+            if (!monedaBase.getId().equals(moneda.getId())) {
+                throw new BadRequestException("La tasacion usada solo puede registrarse en moneda base ARS");
+            }
+            entity.setMoneda(moneda);
+        }
         if (entity.getCliente() == null || entity.getCliente().getId() == null) {
             throw new BadRequestException("La tasacion debe asociarse a un cliente");
         }

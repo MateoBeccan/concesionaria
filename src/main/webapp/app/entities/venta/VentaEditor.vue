@@ -206,6 +206,7 @@
               :monedas="monedas"
               :tasaciones-usado="tasacionesUsadoDisponibles"
               :moneda-default="venta.moneda ?? null"
+              :moneda-base-codigo="venta.moneda?.codigo ?? 'ARS'"
               @agregar="agregarPago"
               @quitar="quitarPago"
               @anular="anularPago"

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260504150000-1-add-tasacion-moneda-column" author="codex">
+    <addColumn tableName="tasacion_usado">
+      <column name="moneda_id" type="bigint"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="20260504150000-2-backfill-tasacion-moneda-ars" author="codex" dbms="mysql">
+    <preConditions onFail="HALT">
+      <sqlCheck expectedResult="1">
+        SELECT CASE WHEN EXISTS (
+          SELECT 1 FROM moneda WHERE UPPER(codigo) = 'ARS'
+        ) THEN 1 ELSE 0 END
+      </sqlCheck>
+    </preConditions>
+    <sql>
+      UPDATE tasacion_usado t
+      SET t.moneda_id = (
+        SELECT m.id
+        FROM moneda m
+        WHERE UPPER(m.codigo) = 'ARS'
+        ORDER BY m.id
+        LIMIT 1
+      )
+      WHERE t.moneda_id IS NULL;
+    </sql>
+  </changeSet>
+
+  <changeSet id="20260504150000-3-add-tasacion-moneda-constraints" author="codex">
+    <preConditions onFail="HALT">
+      <sqlCheck expectedResult="0">
+        SELECT COUNT(*) FROM tasacion_usado WHERE moneda_id IS NULL
+      </sqlCheck>
+    </preConditions>
+    <addNotNullConstraint tableName="tasacion_usado" columnName="moneda_id" columnDataType="bigint"/>
+    <createIndex tableName="tasacion_usado" indexName="idx_tasacion_usado_moneda_id">
+      <column name="moneda_id"/>
+    </createIndex>
+    <addForeignKeyConstraint
+      baseTableName="tasacion_usado"
+      baseColumnNames="moneda_id"
+      constraintName="fk_tasacion_usado_moneda_id"
+      referencedTableName="moneda"
+      referencedColumnNames="id"/>
+  </changeSet>
+
+</databaseChangeLog>

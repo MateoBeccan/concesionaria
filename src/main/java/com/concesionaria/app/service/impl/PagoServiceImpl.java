@@ -497,8 +497,21 @@ public class PagoServiceImpl implements PagoService {
         if (tasacion.getMontoTasacion() == null || tasacion.getMontoTasacion().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("La tasacion tiene un monto invalido");
         }
+        if (tasacion.getMoneda() == null || tasacion.getMoneda().getId() == null || tasacion.getMoneda().getCodigo() == null) {
+            throw new BadRequestException("La tasacion no tiene moneda configurada");
+        }
+        boolean tasacionEnMonedaBase = tasacion.getMoneda().getCodigo().equalsIgnoreCase(monedaBaseCodigo);
+        boolean tasacionEnMonedaVenta = venta.getMoneda() != null && venta.getMoneda().getId() != null && venta.getMoneda().getId().equals(tasacion.getMoneda().getId());
+        if (!tasacionEnMonedaBase || !tasacionEnMonedaVenta) {
+            throw new BadRequestException("La tasacion debe estar en moneda base ARS para aplicarse a la venta");
+        }
         if (tasacion.getInventarioGenerado() != null) {
             throw new BadRequestException("La tasacion ya genero inventario y no puede reutilizarse");
+        }
+        boolean disponibleParaCliente = tasacionUsadoRepository.existsAceptadaDisponibleByIdAndClienteId(tasacion.getId(), venta.getCliente().getId());
+        boolean esTasacionYaAsociadaAMismaVenta = venta.getTasacionUsado() != null && venta.getTasacionUsado().getId() != null && venta.getTasacionUsado().getId().equals(tasacion.getId());
+        if (!disponibleParaCliente && !esTasacionYaAsociadaAMismaVenta) {
+            throw new BadRequestException("La tasacion indicada no esta disponible para el cliente de la venta");
         }
         if (ventaRepository.existsByTasacionUsadoIdAndIdNot(tasacion.getId(), venta.getId())) {
             throw new BadRequestException("La tasacion ya fue aplicada a otra venta");

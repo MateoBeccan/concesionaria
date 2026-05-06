@@ -758,7 +758,6 @@ public class VentaServiceImpl implements VentaService {
         }
         validarTasacionParaIngresoInventario(venta, tasacion);
 
-        Moneda monedaBase = resolverMonedaBaseVenta();
         Vehiculo vehiculoUsado = new Vehiculo();
         vehiculoUsado.setEstado(EstadoVehiculo.USADO);
         vehiculoUsado.setFechaFabricacion(java.time.LocalDate.of(tasacion.getAnioUsado(), 1, 1));
@@ -768,7 +767,7 @@ public class VentaServiceImpl implements VentaService {
         vehiculoUsado.setColor(tasacion.getColorUsado());
         vehiculoUsado.setObservaciones("Ingresado por toma de usado en venta #" + venta.getId());
         vehiculoUsado.setPrecio(tasacion.getMontoTasacion().setScale(2, RoundingMode.HALF_UP));
-        vehiculoUsado.setMoneda(monedaBase);
+        vehiculoUsado.setMoneda(tasacion.getMoneda());
         vehiculoUsado.setVersion(tasacion.getVersion());
         vehiculoUsado.setMotor(tasacion.getMotor());
         vehiculoUsado.setTipoVehiculo(tasacion.getTipoVehiculo());
@@ -833,12 +832,18 @@ public class VentaServiceImpl implements VentaService {
         if (tasacion.getTipoVehiculo() == null || tasacion.getTipoVehiculo().getId() == null) {
             throw new BadRequestException("No se puede generar inventario del usado: la tasacion debe informar un tipo de vehiculo valido");
         }
+        if (tasacion.getMoneda() == null || tasacion.getMoneda().getId() == null) {
+            throw new BadRequestException("No se puede generar inventario del usado: la tasacion debe informar una moneda valida");
+        }
         if (venta.getMoneda() == null || venta.getMoneda().getId() == null) {
             throw new BadRequestException("No se puede generar inventario del usado: la venta no tiene moneda configurada");
         }
         Moneda monedaBase = resolverMonedaBaseVenta();
         if (!monedaBase.getId().equals(venta.getMoneda().getId())) {
             throw new BadRequestException("No se puede generar inventario del usado: la venta debe estar en moneda base ARS");
+        }
+        if (!tasacion.getMoneda().getId().equals(venta.getMoneda().getId())) {
+            throw new BadRequestException("No se puede generar inventario del usado: la tasacion debe estar en la misma moneda de la venta");
         }
     }
 

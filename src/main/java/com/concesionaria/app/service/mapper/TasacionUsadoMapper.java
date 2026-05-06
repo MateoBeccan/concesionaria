@@ -3,6 +3,7 @@ package com.concesionaria.app.service.mapper;
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Marca;
+import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.Modelo;
 import com.concesionaria.app.domain.Motor;
 import com.concesionaria.app.domain.TasacionUsado;
@@ -12,6 +13,7 @@ import com.concesionaria.app.domain.Version;
 import com.concesionaria.app.service.dto.ClienteDTO;
 import com.concesionaria.app.service.dto.InventarioDTO;
 import com.concesionaria.app.service.dto.MarcaDTO;
+import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.ModeloDTO;
 import com.concesionaria.app.service.dto.MotorDTO;
 import com.concesionaria.app.service.dto.TasacionUsadoDTO;
@@ -28,6 +30,7 @@ public interface TasacionUsadoMapper extends EntityMapper<TasacionUsadoDTO, Tasa
 
     @Mapping(target = "cliente", source = "cliente", qualifiedByName = "clienteResumen")
     @Mapping(target = "inventarioGenerado", source = "inventarioGenerado", qualifiedByName = "inventarioResumen")
+    @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaResumen")
     @Mapping(target = "version", source = "version", qualifiedByName = "versionResumen")
     @Mapping(target = "motor", source = "motor", qualifiedByName = "motorResumen")
     @Mapping(target = "tipoVehiculo", source = "tipoVehiculo", qualifiedByName = "tipoVehiculoResumen")
@@ -46,6 +49,14 @@ public interface TasacionUsadoMapper extends EntityMapper<TasacionUsadoDTO, Tasa
     @Mapping(target = "id", source = "id")
     @Mapping(target = "estadoInventario", source = "estadoInventario")
     InventarioDTO toDtoInventarioResumen(Inventario inventario);
+
+    @Named("monedaResumen")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "descripcion", source = "descripcion")
+    @Mapping(target = "simbolo", source = "simbolo")
+    MonedaDTO toDtoMonedaResumen(Moneda moneda);
 
     @Named("tasadorResumen")
     @BeanMapping(ignoreByDefault = true)

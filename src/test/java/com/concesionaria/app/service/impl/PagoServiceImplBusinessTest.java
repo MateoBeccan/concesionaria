@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.MetodoPago;
+import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.Venta;
@@ -322,6 +323,7 @@ class PagoServiceImplBusinessTest {
         tasacion.setEstado(EstadoTasacionUsado.ACEPTADA);
         tasacion.setMontoTasacion(BigDecimal.valueOf(12000));
         tasacion.setFechaTasacion(Instant.now());
+        tasacion.setMoneda(moneda(1L, "ARS"));
 
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.ONE);
@@ -332,6 +334,7 @@ class PagoServiceImplBusinessTest {
         when(ventaRepository.findById(110L)).thenReturn(Optional.of(venta));
         when(metodoPagoRepository.findById(8L)).thenReturn(Optional.of(metodo));
         when(tasacionUsadoRepository.findById(900L)).thenReturn(Optional.of(tasacion));
+        when(tasacionUsadoRepository.existsAceptadaDisponibleByIdAndClienteId(900L, 55L)).thenReturn(true);
         when(ventaRepository.existsByTasacionUsadoIdAndIdNot(900L, 110L)).thenReturn(false);
         when(pagoRepository.sumMontoByVentaId(110L)).thenReturn(BigDecimal.ZERO, BigDecimal.valueOf(12000));
         when(pagoMapper.toEntity(any(PagoDTO.class))).thenReturn(pago);
@@ -366,6 +369,7 @@ class PagoServiceImplBusinessTest {
         tasacion.setCliente(cliente(55L));
         tasacion.setEstado(EstadoTasacionUsado.PENDIENTE);
         tasacion.setMontoTasacion(BigDecimal.valueOf(12000));
+        tasacion.setMoneda(moneda(1L, "ARS"));
 
         PagoDTO pagoDTO = new PagoDTO();
         pagoDTO.setMonto(BigDecimal.ONE);
@@ -378,6 +382,96 @@ class PagoServiceImplBusinessTest {
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(111L, pagoDTO));
         assertThat(ex.getMessage()).contains("tasacion debe estar aceptada");
+    }
+
+    @Test
+    void bloqueaEntregaUsadoConTasacionEnMonedaNoBase() {
+        stubMonedaBaseArs();
+        Venta venta = ventaBase(112L, "30000", "0", "30000", EstadoVenta.PENDIENTE);
+        venta.setImporteNeto(BigDecimal.valueOf(30000));
+        venta.setMoneda(moneda(1L, "ARS"));
+        venta.setCliente(cliente(55L));
+
+        MetodoPago metodo = new MetodoPago();
+        metodo.setId(8L);
+        metodo.setCodigo("ENTREGA_USADO");
+
+        TasacionUsado tasacion = new TasacionUsado();
+        tasacion.setId(902L);
+        tasacion.setCliente(cliente(55L));
+        tasacion.setEstado(EstadoTasacionUsado.ACEPTADA);
+        tasacion.setMontoTasacion(BigDecimal.valueOf(12000));
+        tasacion.setMoneda(moneda(2L, "USD"));
+
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(BigDecimal.ONE);
+        pagoDTO.setMetodoPago(metodoDto(8L));
+        pagoDTO.setTasacionUsadoId(902L);
+
+        when(ventaRepository.findById(112L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(8L)).thenReturn(Optional.of(metodo));
+        when(tasacionUsadoRepository.findById(902L)).thenReturn(Optional.of(tasacion));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(112L, pagoDTO));
+        assertThat(ex.getMessage()).contains("moneda base ARS");
+    }
+
+    @Test
+    void anularEntregaUsadoAntesDeGenerarInventarioLiberaTasacion() {
+        Venta venta = ventaBase(113L, "30000", "12000", "18000", EstadoVenta.RESERVADA);
+        venta.setMoneda(moneda(1L, "ARS"));
+
+        TasacionUsado tasacion = new TasacionUsado();
+        tasacion.setId(903L);
+        venta.setTasacionUsado(tasacion);
+
+        Pago pago = new Pago();
+        pago.setId(9030L);
+        pago.setEstado(EstadoPago.REGISTRADO);
+        pago.setTipoMovimiento(TipoMovimientoPago.ENTREGA_USADO);
+        pago.setVenta(venta);
+        pago.setTasacionUsado(tasacion);
+
+        when(pagoRepository.findById(9030L)).thenReturn(Optional.of(pago));
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.sumMontoByVentaId(113L)).thenReturn(BigDecimal.ZERO);
+        when(pagoMapper.toDto(any(Pago.class))).thenAnswer(inv -> {
+            Pago entidad = inv.getArgument(0);
+            PagoDTO dto = new PagoDTO();
+            dto.setId(entidad.getId());
+            dto.setEstado(entidad.getEstado());
+            return dto;
+        });
+
+        pagoService.anularPago(9030L);
+
+        assertThat(venta.getTasacionUsado()).isNull();
+        verify(ventaService).sincronizarInventarioConVenta(113L);
+    }
+
+    @Test
+    void bloqueaAnulacionEntregaUsadoSiYaGeneroInventario() {
+        Venta venta = ventaBase(114L, "30000", "12000", "18000", EstadoVenta.RESERVADA);
+        venta.setMoneda(moneda(1L, "ARS"));
+
+        TasacionUsado tasacion = new TasacionUsado();
+        tasacion.setId(904L);
+        Inventario inventario = new Inventario();
+        inventario.setId(444L);
+        tasacion.setInventarioGenerado(inventario);
+
+        Pago pago = new Pago();
+        pago.setId(9040L);
+        pago.setEstado(EstadoPago.REGISTRADO);
+        pago.setTipoMovimiento(TipoMovimientoPago.ENTREGA_USADO);
+        pago.setVenta(venta);
+        pago.setTasacionUsado(tasacion);
+
+        when(pagoRepository.findById(9040L)).thenReturn(Optional.of(pago));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.anularPago(9040L));
+        assertThat(ex.getMessage()).contains("ya genero inventario");
     }
 
     private Venta ventaBase(Long id, String total, String totalPagado, String saldo, EstadoVenta estado) {

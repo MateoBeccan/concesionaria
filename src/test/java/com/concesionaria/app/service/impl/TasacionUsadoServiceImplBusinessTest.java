@@ -2,13 +2,16 @@ package com.concesionaria.app.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.User;
+import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.enumeration.EstadoTasacionUsado;
 import com.concesionaria.app.repository.TasacionUsadoRepository;
 import com.concesionaria.app.repository.MotorRepository;
+import com.concesionaria.app.repository.MonedaRepository;
 import com.concesionaria.app.repository.TipoVehiculoRepository;
 import com.concesionaria.app.repository.UserRepository;
 import com.concesionaria.app.repository.VentaRepository;
@@ -34,6 +37,7 @@ class TasacionUsadoServiceImplBusinessTest {
     @Mock private MotorRepository motorRepository;
     @Mock private TipoVehiculoRepository tipoVehiculoRepository;
     @Mock private UserRepository userRepository;
+    @Mock private MonedaRepository monedaRepository;
     @Mock private TasacionUsadoMapper tasacionUsadoMapper;
 
     private TasacionUsadoServiceImpl service;
@@ -48,8 +52,10 @@ class TasacionUsadoServiceImplBusinessTest {
                 motorRepository,
                 tipoVehiculoRepository,
                 userRepository,
+                monedaRepository,
                 tasacionUsadoMapper
             );
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "monedaBaseCodigo", "ARS");
     }
 
     @Test
@@ -60,6 +66,10 @@ class TasacionUsadoServiceImplBusinessTest {
         TasacionUsadoDTO dto = new TasacionUsadoDTO();
         dto.setId(200L);
         dto.setEstado(EstadoTasacionUsado.ACEPTADA);
+        Moneda ars = new Moneda();
+        ars.setId(1L);
+        ars.setCodigo("ARS");
+        entidad.setMoneda(ars);
 
         when(tasacionUsadoRepository.findAceptadasDisponiblesByClienteId(15L)).thenReturn(List.of(entidad));
         when(tasacionUsadoMapper.toDto(entidad)).thenReturn(dto);
@@ -97,6 +107,10 @@ class TasacionUsadoServiceImplBusinessTest {
         entity.setAnioUsado(2020);
         entity.setKmUsado(10000);
         entity.setColorUsado("Blanco");
+        Moneda ars = new Moneda();
+        ars.setId(1L);
+        ars.setCodigo("ARS");
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
 
         when(tasacionUsadoMapper.toEntity(dto)).thenReturn(entity);
         assertThrows(BadRequestException.class, () -> service.save(dto));
@@ -128,8 +142,12 @@ class TasacionUsadoServiceImplBusinessTest {
         entity.setTipoVehiculo(new com.concesionaria.app.domain.TipoVehiculo().id(2L));
         entity.setTasadorUser(new User());
         entity.getTasadorUser().setId(77L);
+        Moneda ars = new Moneda();
+        ars.setId(1L);
+        ars.setCodigo("ARS");
 
         when(tasacionUsadoMapper.toEntity(dto)).thenReturn(entity);
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
         when(versionRepository.existsById(20L)).thenReturn(true);
         when(tipoVehiculoRepository.existsById(2L)).thenReturn(true);
         User user = new User();
@@ -138,6 +156,68 @@ class TasacionUsadoServiceImplBusinessTest {
         when(userRepository.findById(77L)).thenReturn(java.util.Optional.of(user));
 
         assertThrows(BadRequestException.class, () -> service.save(dto));
+    }
+
+    @Test
+    void asignaMonedaBaseArsSiNoVieneMoneda() {
+        TasacionUsadoDTO dto = new TasacionUsadoDTO();
+        dto.setEstado(EstadoTasacionUsado.PENDIENTE);
+        dto.setMontoTasacion(BigDecimal.valueOf(1000));
+        dto.setFechaTasacion(Instant.now());
+        dto.setCliente(new com.concesionaria.app.service.dto.ClienteDTO());
+        dto.getCliente().setId(1L);
+
+        TasacionUsado entity = new TasacionUsado();
+        entity.setEstado(EstadoTasacionUsado.PENDIENTE);
+        entity.setMontoTasacion(BigDecimal.valueOf(1000));
+        entity.setFechaTasacion(Instant.now());
+        entity.setCliente(new com.concesionaria.app.domain.Cliente().id(1L));
+
+        Moneda ars = new Moneda();
+        ars.setId(1L);
+        ars.setCodigo("ARS");
+
+        when(tasacionUsadoMapper.toEntity(dto)).thenReturn(entity);
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
+        when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tasacionUsadoMapper.toDto(any(TasacionUsado.class))).thenReturn(new TasacionUsadoDTO());
+
+        service.save(dto);
+
+        assertThat(entity.getMoneda()).isNotNull();
+        assertThat(entity.getMoneda().getCodigo()).isEqualTo("ARS");
+    }
+
+    @Test
+    void rechazaTasacionEnMonedaNoBase() {
+        TasacionUsadoDTO dto = new TasacionUsadoDTO();
+        dto.setEstado(EstadoTasacionUsado.PENDIENTE);
+        dto.setMontoTasacion(BigDecimal.valueOf(1000));
+        dto.setFechaTasacion(Instant.now());
+        dto.setCliente(new com.concesionaria.app.service.dto.ClienteDTO());
+        dto.getCliente().setId(1L);
+
+        TasacionUsado entity = new TasacionUsado();
+        entity.setEstado(EstadoTasacionUsado.PENDIENTE);
+        entity.setMontoTasacion(BigDecimal.valueOf(1000));
+        entity.setFechaTasacion(Instant.now());
+        entity.setCliente(new com.concesionaria.app.domain.Cliente().id(1L));
+
+        Moneda usd = new Moneda();
+        usd.setId(2L);
+        usd.setCodigo("USD");
+        entity.setMoneda(new Moneda().id(2L));
+
+        Moneda ars = new Moneda();
+        ars.setId(1L);
+        ars.setCodigo("ARS");
+
+        when(tasacionUsadoMapper.toEntity(dto)).thenReturn(entity);
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
+        when(monedaRepository.findById(2L)).thenReturn(java.util.Optional.of(usd));
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> service.save(dto));
+        assertThat(ex.getMessage()).contains("moneda base ARS");
     }
 }
 
