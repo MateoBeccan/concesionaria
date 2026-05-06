@@ -167,6 +167,7 @@
                 <th>#</th>
                 <th>Fecha</th>
                 <th>Cliente</th>
+                <th>Usuario</th>
                 <th>Total</th>
                 <th>Estado</th>
               </tr>
@@ -177,6 +178,7 @@
                 <td>{{ venta.id }}</td>
                 <td>{{ formatDate(venta.fecha) }}</td>
                 <td>{{ venta.cliente ? clientFullName(venta.cliente) : 'Sin cliente' }}</td>
+                <td>{{ saleOwner(venta) }}</td>
                 <td class="amount">{{ formatCurrency(venta.total) }}</td>
                 <td>
                   <span class="status-pill" :class="statusClass(venta.estado)">
@@ -346,12 +348,16 @@ const quickActions = computed<QuickAction[]>(() =>
         { routeName: 'Inventario', label: 'Controlar inventario', description: 'Revisa stock, reservas y vencimientos.', icon: 'IN' },
         { routeName: 'VersionCompatibilityAdmin', label: 'Compatibilidades', description: 'Relaciona versiones y motores del catalogo.', icon: 'CM' },
         { routeName: 'Cotizacion', label: 'Actualizar cotizaciones', description: 'Mantiene los valores vigentes por moneda.', icon: 'CZ' },
+        { routeName: 'JhiUser', label: 'Gestionar usuarios', description: 'Administra accesos, perfiles y permisos del sistema.', icon: 'US' },
+        { routeName: 'CatalogoTecnicoAdmin', label: 'Centro de catalogo', description: 'Gestion integral de marcas, modelos, versiones y motores.', icon: 'CT' },
       ]
     : [
         { routeName: 'VentaEditor', label: 'Nueva venta', description: 'Inicia una operacion completa con cliente, vehiculos y pagos.', icon: 'NV' },
         { routeName: 'VehiculoSearch', label: 'Buscar vehiculo', description: 'Encuentra unidades disponibles para vender.', icon: 'BV' },
         { routeName: 'ClienteCreate', label: 'Nuevo cliente', description: 'Registra clientes sin salir del flujo comercial.', icon: 'NC' },
         { routeName: 'VentaList', label: 'Ver ventas', description: 'Consulta operaciones recientes y pendientes.', icon: 'VT' },
+        { routeName: 'TasacionUsado', label: 'Tasaciones usadas', description: 'Gestiona entrega de usados para toma en parte de pago.', icon: 'TS' },
+        { routeName: 'Reserva', label: 'Reservas activas', description: 'Controla vencimientos y conversiones a venta.', icon: 'RS' },
       ],
 );
 
@@ -458,6 +464,10 @@ function sameDay(value?: Date | string | null, compareDate = new Date()) {
   if (!value) return false;
   const date = new Date(value);
   return date.toDateString() === compareDate.toDateString();
+}
+
+function saleOwner(venta: IVenta) {
+  return venta.user?.login ?? venta.createdBy ?? 'Sin usuario';
 }
 
 </script>

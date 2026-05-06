@@ -73,6 +73,8 @@
                 <dl class="detail-list">
                   <dt>Documento</dt>
                   <dd>{{ venta.cliente.nroDocumento ?? '-' }}</dd>
+                  <dt>Usuario registro</dt>
+                  <dd>{{ venta.user?.login ?? venta.createdBy ?? '-' }}</dd>
                   <dt>Email</dt>
                   <dd>{{ venta.cliente.email ?? '-' }}</dd>
                   <dt>Telefono</dt>

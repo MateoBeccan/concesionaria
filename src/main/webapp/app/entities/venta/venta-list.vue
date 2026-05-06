@@ -44,6 +44,7 @@
               <th class="ps-4">#</th>
               <th>Fecha</th>
               <th>Cliente</th>
+              <th>Usuario</th>
               <th>Total</th>
               <th>Cotización</th>
               <th>Estado</th>
@@ -56,6 +57,9 @@
               <td>{{ formatFecha(venta.fecha) }}</td>
               <td>
                 <span class="fw-semibold">{{ venta.cliente?.nombre }} {{ venta.cliente?.apellido }}</span>
+              </td>
+              <td>
+                <span class="text-muted small">{{ venta.user?.login ?? venta.createdBy ?? '-' }}</span>
               </td>
               <td class="fw-semibold text-primary">
                 {{ venta.moneda?.simbolo ?? '$' }} {{ formatPrecio(venta.total) }} {{ venta.moneda?.codigo ?? '' }}
