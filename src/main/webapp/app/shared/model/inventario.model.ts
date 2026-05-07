@@ -16,7 +16,6 @@ export interface IInventario {
   estadoOperativoDocumental?: EstadoOperativoDocumental | null;
   proveedorReferencia?: string | null;
   numeroInternoStock?: string | null;
-  ubicacion?: string | null;
   ubicacionStock?: IUbicacionStock | null;
   estadoInventario?: keyof typeof EstadoInventario;
   observaciones?: string | null;
@@ -40,7 +39,6 @@ export class Inventario implements IInventario {
     public estadoOperativoDocumental?: EstadoOperativoDocumental | null,
     public proveedorReferencia?: string | null,
     public numeroInternoStock?: string | null,
-    public ubicacion?: string | null,
     public ubicacionStock?: IUbicacionStock | null,
     public estadoInventario?: keyof typeof EstadoInventario,
     public observaciones?: string | null,

@@ -9,7 +9,7 @@
             <input type="number" class="form-control form-control-sm" v-model.number="nuevoPago.monto" min="0" step="0.01" />
           </div>
           <div class="col-md-3">
-            <label class="form-label form-label-sm">Método <span class="text-danger">*</span></label>
+            <label class="form-label form-label-sm">Metodo <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" v-model="nuevoPago.metodoPago">
               <option :value="null">- Seleccionar -</option>
               <option v-for="m in metodoPagos" :key="m.id" :value="m">{{ m.descripcion ?? m.codigo }}</option>
@@ -22,19 +22,23 @@
               <option v-for="m in monedas" :key="m.id" :value="m">{{ m.simbolo ?? '' }} {{ m.codigo }}</option>
             </select>
           </div>
-          <div class="col-md-2" v-if="!esEntregaUsado">
-            <label class="form-label form-label-sm">Referencia</label>
-            <input type="text" class="form-control form-control-sm" v-model="nuevoPago.referencia" />
+          <div class="col-md-3" v-if="requiereBancoEntidad">
+            <label class="form-label form-label-sm">Banco / Entidad <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" v-model.trim="nuevoPago.bancoEntidad" maxlength="100" />
           </div>
-          <div class="col-md-2" v-if="!esEntregaUsado">
-            <label class="form-label form-label-sm">N° operación</label>
-            <input type="text" class="form-control form-control-sm" v-model="nuevoPago.numeroOperacion" />
+          <div class="col-md-3" v-if="requiereComprobanteExterno">
+            <label class="form-label form-label-sm">Comprobante externo <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" v-model.trim="nuevoPago.comprobanteExterno" maxlength="100" />
+          </div>
+          <div class="col-md-3" v-if="admiteObservaciones">
+            <label class="form-label form-label-sm">Observaciones</label>
+            <input type="text" class="form-control form-control-sm" v-model.trim="nuevoPago.observaciones" maxlength="500" />
           </div>
 
           <div class="col-md-4" v-if="esEntregaUsado">
-            <label class="form-label form-label-sm">Tasación usada <span class="text-danger">*</span></label>
+            <label class="form-label form-label-sm">Tasacion usada <span class="text-danger">*</span></label>
             <select class="form-select form-select-sm" v-model.number="nuevoPago.tasacionUsadoId">
-              <option :value="null">- Seleccionar tasación -</option>
+              <option :value="null">- Seleccionar tasacion -</option>
               <option v-for="t in tasacionesUsado" :key="t.id" :value="t.id">
                 #{{ t.id }} - {{ t.patenteUsado ?? 'Sin patente' }} - {{ tasacionMonedaLabel(t) }} {{ fmt(t.montoTasacion) }}
               </option>
@@ -49,18 +53,20 @@
       </div>
     </div>
 
-    <div v-if="pagos.length === 0" class="text-center py-3 text-muted small border rounded">No hay pagos registrados aún.</div>
+    <div v-if="pagos.length === 0" class="text-center py-3 text-muted small border rounded">No hay pagos registrados aun.</div>
 
     <div v-else class="table-responsive">
       <table class="table align-middle mb-0">
         <thead class="table-light">
           <tr>
             <th>Fecha</th>
-            <th>Método</th>
+            <th>Metodo</th>
             <th class="text-end">Monto original</th>
             <th>Moneda</th>
-            <th class="text-end">Cotización</th>
+            <th class="text-end">Cotizacion</th>
             <th class="text-end">Aplicado ARS</th>
+            <th>Ref./Operacion</th>
+            <th>Detalle</th>
             <th>Estado</th>
             <th>Usuario</th>
             <th class="text-end">Acciones</th>
@@ -74,6 +80,8 @@
             <td>{{ p.moneda?.simbolo ?? '' }} {{ p.moneda?.codigo ?? '-' }}</td>
             <td class="text-end">{{ fmt(p.cotizacionUsada) }}</td>
             <td class="text-end fw-semibold">{{ fmt(p.montoAplicadoMonedaVenta) }}</td>
+            <td>{{ p.referencia || p.numeroOperacion || '-' }}</td>
+            <td>{{ p.bancoEntidad || p.comprobanteExterno || p.observaciones || '-' }}</td>
             <td>
               <span class="badge" :class="p.estado === EstadoPago.ANULADO ? 'bg-secondary' : 'bg-success'">
                 {{ p.estado === EstadoPago.ANULADO ? 'ANULADO' : 'REGISTRADO' }}
@@ -81,12 +89,7 @@
             </td>
             <td>{{ p.usuarioRegistro ?? '-' }}</td>
             <td class="text-end">
-              <button
-                class="btn btn-sm btn-outline-danger"
-                @click="abrirModalAnulacion(p)"
-                :disabled="p.estado === EstadoPago.ANULADO"
-                v-if="p.guardado"
-              >
+              <button class="btn btn-sm btn-outline-danger" @click="abrirModalAnulacion(p)" :disabled="p.estado === EstadoPago.ANULADO" v-if="p.guardado">
                 Anular
               </button>
               <button class="btn btn-sm btn-outline-secondary" @click="emit('quitar', p._key)" v-else>Quitar</button>
@@ -98,11 +101,11 @@
 
     <b-modal id="modal-anular-pago" ref="modalAnularPago">
       <template #title>Anular pago</template>
-      <div class="mb-2 small text-muted">Debes ingresar motivo de anulación.</div>
+      <div class="mb-2 small text-muted">Debes ingresar motivo de anulacion.</div>
       <textarea class="form-control" rows="3" v-model="motivoAnulacion" maxlength="500" />
       <template #footer>
         <button class="btn btn-secondary btn-sm" @click="cerrarModalAnulacion">Cancelar</button>
-        <button class="btn btn-danger btn-sm" :disabled="!motivoAnulacion.trim()" @click="confirmarAnulacion">Confirmar anulación</button>
+        <button class="btn btn-danger btn-sm" :disabled="!motivoAnulacion.trim()" @click="confirmarAnulacion">Confirmar anulacion</button>
       </template>
     </b-modal>
   </div>
@@ -128,7 +131,15 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  agregar: [monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia: string];
+  agregar: [
+    monto: number,
+    metodoPago: IMetodoPago | null,
+    moneda: IMoneda | null,
+    tasacionUsadoId?: number | null,
+    bancoEntidad?: string,
+    comprobanteExterno?: string,
+    observaciones?: string,
+  ];
   quitar: [key: string];
   anular: [key: string, motivo: string];
   crearTasacion: [];
@@ -138,9 +149,10 @@ const nuevoPago = reactive({
   monto: 0,
   metodoPago: null as IMetodoPago | null,
   moneda: props.monedaDefault ?? null,
-  referencia: '',
-  numeroOperacion: '',
   tasacionUsadoId: null as number | null,
+  bancoEntidad: '',
+  comprobanteExterno: '',
+  observaciones: '',
 });
 
 const pagoAAnular = ref<PagoLocal | null>(null);
@@ -148,32 +160,40 @@ const motivoAnulacion = ref('');
 const modalAnularPago = ref<any>(null);
 
 const esEntregaUsado = computed(() => (nuevoPago.metodoPago?.codigo ?? '').toUpperCase() === 'ENTREGA_USADO');
+const codigoMetodo = computed(() => (nuevoPago.metodoPago?.codigo ?? '').toUpperCase());
+const requiereBancoEntidad = computed(() => ['TRANSFERENCIA', 'DEPOSITO', 'CHEQUE'].includes(codigoMetodo.value));
+const requiereComprobanteExterno = computed(() => codigoMetodo.value === 'CHEQUE');
+const admiteObservaciones = computed(() => ['AJUSTE', 'BONIFICACION', 'FINANCIACION', 'PERMUTA'].includes(codigoMetodo.value));
 const mensajeValidacionPago = computed(() => {
-  if (!nuevoPago.metodoPago) return 'Selecciona un método de pago';
+  if (!nuevoPago.metodoPago) return 'Selecciona un metodo de pago';
   if (!esEntregaUsado.value && (!nuevoPago.moneda || !nuevoPago.moneda.id)) return 'Selecciona una moneda';
-  if (esEntregaUsado.value && !nuevoPago.tasacionUsadoId) return 'Debes seleccionar una tasación aceptada';
+  if (esEntregaUsado.value && !nuevoPago.tasacionUsadoId) return 'Debes seleccionar una tasacion aceptada';
   if (!esEntregaUsado.value && (!nuevoPago.monto || nuevoPago.monto <= 0)) return 'Ingresa un monto mayor a 0';
   if (props.saldoPendiente <= 0) return 'La venta no tiene saldo pendiente';
-  const codigo = (nuevoPago.metodoPago?.codigo ?? '').toUpperCase();
-  if (nuevoPago.metodoPago?.requiereReferencia && !nuevoPago.referencia.trim()) return 'La referencia es obligatoria';
-  if ((codigo === 'TRANSFERENCIA' || codigo === 'TARJETA') && !nuevoPago.referencia.trim() && !nuevoPago.numeroOperacion.trim()) {
-    return 'Transferencia/Tarjeta requiere referencia o número de operación';
-  }
+  if (requiereBancoEntidad.value && !nuevoPago.bancoEntidad.trim()) return 'Debes informar banco/entidad';
+  if (requiereComprobanteExterno.value && !nuevoPago.comprobanteExterno.trim()) return 'Debes informar comprobante externo';
   return '';
 });
 
 function agregarPago() {
   if (mensajeValidacionPago.value) return;
-  const referencia = esEntregaUsado.value
-    ? String(nuevoPago.tasacionUsadoId ?? '')
-    : [nuevoPago.referencia.trim(), nuevoPago.numeroOperacion.trim()].filter(Boolean).join(' | ');
-  emit('agregar', nuevoPago.monto, nuevoPago.metodoPago, nuevoPago.moneda, referencia);
+  emit(
+    'agregar',
+    nuevoPago.monto,
+    nuevoPago.metodoPago,
+    nuevoPago.moneda,
+    nuevoPago.tasacionUsadoId,
+    nuevoPago.bancoEntidad.trim(),
+    nuevoPago.comprobanteExterno.trim(),
+    nuevoPago.observaciones.trim(),
+  );
   nuevoPago.monto = 0;
   nuevoPago.metodoPago = null;
   nuevoPago.moneda = props.monedaDefault ?? null;
-  nuevoPago.referencia = '';
-  nuevoPago.numeroOperacion = '';
   nuevoPago.tasacionUsadoId = null;
+  nuevoPago.bancoEntidad = '';
+  nuevoPago.comprobanteExterno = '';
+  nuevoPago.observaciones = '';
 }
 
 function abrirModalAnulacion(pago: PagoLocal) {
@@ -206,4 +226,3 @@ function tasacionMonedaLabel(t: ITasacionUsado) {
   return t.moneda?.simbolo || t.moneda?.codigo || props.monedaBaseCodigo || 'ARS';
 }
 </script>
-

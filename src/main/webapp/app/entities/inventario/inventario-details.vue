@@ -65,7 +65,7 @@
                 <dd>{{ inventario.fechaIngreso ? formatDateLong(inventario.fechaIngreso) : 'Sin dato' }}</dd>
 
                 <dt>Ubicacion</dt>
-                <dd>{{ inventario.ubicacion || 'Sin definir' }}</dd>
+                <dd>{{ ubicacionLabel }}</dd>
               </dl>
             </div>
           </div>

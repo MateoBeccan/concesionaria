@@ -48,7 +48,9 @@ public class InventarioAsserts {
         assertThat(actual)
             .as("Verify Inventario relevant properties")
             .satisfies(a -> assertThat(a.getFechaIngreso()).as("check fechaIngreso").isEqualTo(expected.getFechaIngreso()))
-            .satisfies(a -> assertThat(a.getUbicacion()).as("check ubicacion").isEqualTo(expected.getUbicacion()))
+            .satisfies(a ->
+                assertThat(a.getUbicacionStock()).as("check ubicacionStock").isEqualTo(expected.getUbicacionStock())
+            )
             .satisfies(a -> assertThat(a.getEstadoInventario()).as("check estadoInventario").isEqualTo(expected.getEstadoInventario()))
             .satisfies(a -> assertThat(a.getObservaciones()).as("check observaciones").isEqualTo(expected.getObservaciones()))
             .satisfies(a -> assertThat(a.getCreatedDate()).as("check createdDate").isEqualTo(expected.getCreatedDate()))

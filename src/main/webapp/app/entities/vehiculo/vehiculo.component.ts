@@ -2,7 +2,9 @@ import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } fr
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
+import { type IInventario } from '@/shared/model/inventario.model';
 import { type IVehiculo } from '@/shared/model/vehiculo.model';
+import InventarioService from '@/entities/inventario/inventario.service';
 
 import VehiculoService from './vehiculo.service';
 
@@ -11,6 +13,7 @@ export default defineComponent({
   setup() {
     const dateFormat = useDateFormat();
     const vehiculoService = inject('vehiculoService', () => new VehiculoService());
+    const inventarioService = inject('inventarioService', () => new InventarioService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const itemsPerPage = ref(20);
@@ -27,6 +30,8 @@ export default defineComponent({
     const filtroEstado = ref('');
     const filtroStock = ref('');
     const filtroTipo = ref('');
+    const filtroOrigen = ref('');
+    const vehiculosTomadosPagoIds: Ref<Set<number>> = ref(new Set());
 
     const tipoVehiculoOptions = computed(() => {
       const tipos = new Set(
@@ -55,8 +60,9 @@ export default defineComponent({
         const matchEstado = !filtroEstado.value || vehiculo.estado === filtroEstado.value;
         const matchStock = !filtroStock.value || vehiculo.estadoInventario === filtroStock.value;
         const matchTipo = !filtroTipo.value || vehiculo.tipoVehiculo?.nombre === filtroTipo.value;
+        const matchOrigen = !filtroOrigen.value || (vehiculo.id != null && vehiculosTomadosPagoIds.value.has(vehiculo.id));
 
-        return matchSearch && matchEstado && matchStock && matchTipo;
+        return matchSearch && matchEstado && matchStock && matchTipo && matchOrigen;
       });
     });
 
@@ -69,6 +75,7 @@ export default defineComponent({
       filtroEstado.value = '';
       filtroStock.value = '';
       filtroTipo.value = '';
+      filtroOrigen.value = '';
     };
 
     const sort = (): Array<any> => {
@@ -98,12 +105,32 @@ export default defineComponent({
       }
     };
 
+    const retrieveOrigenTomaUsado = async () => {
+      try {
+        const res = await inventarioService().retrieve({
+          page: 0,
+          size: 500,
+          sort: ['id,desc'],
+        });
+        const ids = new Set<number>();
+        for (const item of (res.data as IInventario[]) ?? []) {
+          if (item.origenVehiculo === 'TOMA_USADO' && item.vehiculo?.id != null) {
+            ids.add(item.vehiculo.id);
+          }
+        }
+        vehiculosTomadosPagoIds.value = ids;
+      } catch (err: any) {
+        alertService.showHttpError(err.response);
+      }
+    };
+
     const handleSyncList = () => {
       retrieveVehiculos();
+      retrieveOrigenTomaUsado();
     };
 
     onMounted(async () => {
-      await retrieveVehiculos();
+      await Promise.all([retrieveVehiculos(), retrieveOrigenTomaUsado()]);
     });
 
     const removeId: Ref<number | null> = ref(null);
@@ -181,6 +208,7 @@ export default defineComponent({
       filtroEstado,
       filtroStock,
       filtroTipo,
+      filtroOrigen,
       tipoVehiculoOptions,
       resetFiltros,
       handleSyncList,

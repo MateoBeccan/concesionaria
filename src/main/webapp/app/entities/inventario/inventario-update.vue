@@ -90,16 +90,23 @@
             </div>
 
             <div class="col-md-8">
-              <label class="form-label">Ubicacion</label>
-              <input
-                v-model="v$.ubicacion.$model"
-                type="text"
-                class="form-control"
-                :class="{ 'is-invalid': v$.ubicacion.$dirty && v$.ubicacion.$invalid }"
-                placeholder="Salon principal, deposito, playa externa..."
-              />
+              <label class="form-label">Ubicacion de stock <span class="text-danger">*</span></label>
+              <select
+                v-model="v$.ubicacionStock.$model"
+                class="form-select"
+                :class="{ 'is-invalid': v$.ubicacionStock.$dirty && v$.ubicacionStock.$invalid }"
+              >
+                <option :value="null">Seleccionar ubicacion</option>
+                <option
+                  v-for="ubicacion in ubicacionesStock"
+                  :key="ubicacion.id"
+                  :value="inventario.ubicacionStock && inventario.ubicacionStock.id === ubicacion.id ? inventario.ubicacionStock : ubicacion"
+                >
+                  {{ ubicacion.nombre }} ({{ ubicacion.codigo }}) - {{ ubicacion.tipoUbicacion }}
+                </option>
+              </select>
               <div class="invalid-feedback">
-                <span v-for="error of v$.ubicacion.$errors" :key="error.$uid">{{ error.$message }}</span>
+                <span v-for="error of v$.ubicacionStock.$errors" :key="error.$uid">{{ error.$message }}</span>
               </div>
             </div>
           </div>
@@ -177,7 +184,7 @@
             class="form-control"
             rows="3"
             :class="{ 'is-invalid': v$.observaciones.$dirty && v$.observaciones.$invalid }"
-            placeholder="Notas operativas, ubicacion fisica o aclaraciones de la reserva..."
+            placeholder="Notas operativas o aclaraciones de la reserva..."
           />
           <div class="invalid-feedback">
             <span v-for="error of v$.observaciones.$errors" :key="error.$uid">{{ error.$message }}</span>

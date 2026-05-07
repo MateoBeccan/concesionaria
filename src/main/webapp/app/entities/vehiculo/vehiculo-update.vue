@@ -310,7 +310,14 @@
               <span class="badge" :class="inventarioAsociado.estadoInventario === 'DISPONIBLE' ? 'bg-success' : 'bg-secondary'">
                 {{ inventarioAsociado.estadoInventario === 'DISPONIBLE' ? 'Disponible' : 'No disponible' }}
               </span>
-              <span class="text-muted small">Ubicacion: {{ inventarioAsociado.ubicacion ?? 'Sin definir' }}</span>
+              <span class="text-muted small">
+                Ubicacion:
+                {{
+                  inventarioAsociado.ubicacionStock?.nombre
+                    ? `${inventarioAsociado.ubicacionStock.nombre}${inventarioAsociado.ubicacionStock.codigo ? ` (${inventarioAsociado.ubicacionStock.codigo})` : ''}`
+                    : 'Sin definir'
+                }}
+              </span>
             </div>
             <div v-if="inventarioWarning" class="alert alert-warning mb-0 py-2">
               {{ inventarioWarning }}

@@ -175,7 +175,6 @@ public class InventarioServiceImpl implements InventarioService {
         inventario.setEstadoOperativoDocumental(dto.getEstadoOperativoDocumental());
         inventario.setProveedorReferencia(dto.getProveedorReferencia());
         inventario.setNumeroInternoStock(dto.getNumeroInternoStock());
-        inventario.setUbicacion(dto.getUbicacion());
         inventario.setUbicacionStock(resolveUbicacionStock(dto));
         inventario.setEstadoInventario(dto.getEstadoInventario());
         inventario.setObservaciones(dto.getObservaciones());
@@ -199,7 +198,13 @@ public class InventarioServiceImpl implements InventarioService {
         if (ubicacionId == null) {
             return null;
         }
-        return ubicacionStockRepository.findById(ubicacionId).orElseThrow(() -> new BadRequestException("La ubicacion de stock no existe"));
+        UbicacionStock ubicacionStock = ubicacionStockRepository
+            .findById(ubicacionId)
+            .orElseThrow(() -> new BadRequestException("La ubicacion de stock no existe"));
+        if (!Boolean.TRUE.equals(ubicacionStock.getActiva())) {
+            throw new BadRequestException("La ubicacion de stock seleccionada no esta activa");
+        }
+        return ubicacionStock;
     }
 
     private void validarYNormalizar(Inventario inventario, Long inventarioId, Vehiculo vehiculo) {
@@ -221,6 +226,14 @@ public class InventarioServiceImpl implements InventarioService {
         if (inventario.getEstadoInventario() == null) {
             throw new BadRequestException("El estado de inventario es obligatorio");
         }
+
+        if (inventario.getUbicacionStock() == null || inventario.getUbicacionStock().getId() == null) {
+            throw new BadRequestException("La ubicacion de stock es obligatoria");
+        }
+        if (!Boolean.TRUE.equals(inventario.getUbicacionStock().getActiva())) {
+            throw new BadRequestException("La ubicacion de stock debe estar activa");
+        }
+
         if (inventario.getEstadoInventario() == EstadoInventario.RESERVADO) {
             throw new BadRequestException("Las reservas se gestionan exclusivamente desde la entidad Reserva");
         }

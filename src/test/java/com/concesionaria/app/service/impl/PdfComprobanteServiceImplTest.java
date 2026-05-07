@@ -16,6 +16,7 @@ import com.concesionaria.app.domain.Version;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoVehiculo;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.PagoRepository;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import java.io.IOException;
@@ -35,11 +36,22 @@ class PdfComprobanteServiceImplTest {
     @Mock
     private ComprobanteRepository comprobanteRepository;
 
+    @Mock
+    private PagoRepository pagoRepository;
+
     private PdfComprobanteServiceImpl pdfComprobanteService;
 
     @BeforeEach
     void setUp() {
-        pdfComprobanteService = new PdfComprobanteServiceImpl(comprobanteRepository);
+        pdfComprobanteService = new PdfComprobanteServiceImpl(
+            comprobanteRepository,
+            pagoRepository,
+            "Concesionaria MB",
+            "Av. Siempre Viva 1234 - CABA",
+            "+54 11 4000-1234",
+            "ventas@concesionariamb.com",
+            "30-12345678-9"
+        );
     }
 
     @Test

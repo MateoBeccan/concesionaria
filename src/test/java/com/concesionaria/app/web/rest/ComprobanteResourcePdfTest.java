@@ -8,13 +8,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
 import com.concesionaria.app.service.ComprobanteService;
 import com.concesionaria.app.service.PdfComprobanteService;
 import com.concesionaria.app.service.dto.ComprobantePdfResult;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -25,12 +30,26 @@ class ComprobanteResourcePdfTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder
+            .getContext()
+            .setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                    "admin",
+                    "n/a",
+                    java.util.List.of(new SimpleGrantedAuthority(AuthoritiesConstants.ADMIN))
+                )
+            );
         ComprobanteService comprobanteService = mock(ComprobanteService.class);
         ComprobanteRepository comprobanteRepository = mock(ComprobanteRepository.class);
         pdfComprobanteService = mock(PdfComprobanteService.class);
 
         ComprobanteResource resource = new ComprobanteResource(comprobanteService, comprobanteRepository, pdfComprobanteService);
         mockMvc = MockMvcBuilders.standaloneSetup(resource).build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test

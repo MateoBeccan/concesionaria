@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Locale;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +50,14 @@ public class PagoServiceImpl implements PagoService {
     private static final int ESCALA_MONETARIA = 2;
     private static final int ESCALA_COTIZACION = 8;
     private static final RoundingMode REDONDEO = RoundingMode.HALF_UP;
-    private static final String MENSAJE_VENTA_MONEDA_BASE = "La venta debe estar registrada en moneda base ARS";
+    private static final String CODIGO_CONTADO = "CONTADO";
+    private static final String CODIGO_TRANSFERENCIA = "TRANSFERENCIA";
+    private static final String CODIGO_DEPOSITO = "DEPOSITO";
+    private static final String CODIGO_CHEQUE = "CHEQUE";
+    private static final String CODIGO_AJUSTE = "AJUSTE";
+    private static final String CODIGO_BONIFICACION = "BONIFICACION";
+    private static final String CODIGO_ENTREGA_USADO = "ENTREGA_USADO";
+    private static final String CODIGO_TARJETA = "TARJETA";
 
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
@@ -146,8 +154,9 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO) {
+        Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
-        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
         validarVentaEnMonedaBase(venta);
         if (venta.getEstado() == EstadoVenta.PAGADA) {
             throw new BadRequestException("La venta ya esta completamente pagada");
@@ -171,9 +180,7 @@ public class PagoServiceImpl implements PagoService {
         }
         validarMetodoPagoEspecial(metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        if (metodoPago != null && Boolean.TRUE.equals(metodoPago.getRequiereReferencia()) && (pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank())) {
-            throw new BadRequestException("La referencia es obligatoria para el metodo de pago seleccionado");
-        }
+        validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
         if (esMetodoEntregaUsado(metodoPago)) {
             return registrarPagoEntregaUsado(venta, pagoDTO, metodoPago);
         }
@@ -184,7 +191,7 @@ public class PagoServiceImpl implements PagoService {
         if (monedaVenta == null || monedaVenta.getId() == null) {
             throw new BadRequestException("La venta no tiene moneda configurada");
         }
-        Instant fechaPago = pagoDTO.getFecha() != null ? pagoDTO.getFecha() : Instant.now();
+        Instant fechaPago = pagoDTO.getFecha() != null ? pagoDTO.getFecha() : ahora;
         Moneda monedaPago = resolverMonedaPago(pagoDTO, monedaVenta);
         CotizacionConversionDTO conversion = currencyConversionService.convertir(
             pagoDTO.getMonto(),
@@ -231,8 +238,9 @@ public class PagoServiceImpl implements PagoService {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        pago.setCreatedDate(Instant.now());
-        pago.setLastModifiedDate(Instant.now());
+        completarDatosOperacion(pago, metodoPago, null);
+        pago.setCreatedDate(ahora);
+        pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
         pago.setTasacionUsado(null);
         normalizarCamposTextoPago(pago);
@@ -252,6 +260,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPagoReserva(Long reservaId, PagoDTO pagoDTO) {
+        Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
         Reserva reserva = reservaRepository.findById(reservaId).orElseThrow(() -> new BadRequestException("La reserva no existe"));
         if (reserva.getEstado() != EstadoReserva.ACTIVA) {
@@ -269,9 +278,7 @@ public class PagoServiceImpl implements PagoService {
         }
         validarMetodoPagoEspecial(metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        if (metodoPago != null && Boolean.TRUE.equals(metodoPago.getRequiereReferencia()) && (pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank())) {
-            throw new BadRequestException("La referencia es obligatoria para el metodo de pago seleccionado");
-        }
+        validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
         if (esMetodoEntregaUsado(metodoPago)) {
             throw new BadRequestException("ENTREGA_USADO solo puede registrarse sobre una venta");
         }
@@ -288,7 +295,7 @@ public class PagoServiceImpl implements PagoService {
         if (pago.getTipoMovimiento() == null) {
             pago.setTipoMovimiento(TipoMovimientoPago.ANTICIPO);
         }
-        Instant fechaPago = pagoDTO.getFecha() != null ? pagoDTO.getFecha() : Instant.now();
+        Instant fechaPago = pagoDTO.getFecha() != null ? pagoDTO.getFecha() : ahora;
         Moneda monedaPago = resolverMonedaPago(pagoDTO, reserva.getMoneda());
         Moneda monedaReserva = reserva.getMoneda() != null ? reserva.getMoneda() : monedaPago;
         if (monedaReserva == null || monedaReserva.getId() == null) {
@@ -310,8 +317,9 @@ public class PagoServiceImpl implements PagoService {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        pago.setCreatedDate(Instant.now());
-        pago.setLastModifiedDate(Instant.now());
+        completarDatosOperacion(pago, metodoPago, null);
+        pago.setCreatedDate(ahora);
+        pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
         pago.setTasacionUsado(null);
         normalizarCamposTextoPago(pago);
@@ -331,6 +339,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO anularPago(Long pagoId, String motivo) {
+        Instant ahora = Instant.now();
         Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago no existe"));
         if (pago.getEstado() == EstadoPago.ANULADO) {
             throw new BadRequestException("El pago ya se encuentra anulado");
@@ -352,15 +361,15 @@ public class PagoServiceImpl implements PagoService {
         }
         if (pago.getTipoMovimiento() == TipoMovimientoPago.ENTREGA_USADO && venta != null && venta.getTasacionUsado() != null) {
             venta.setTasacionUsado(null);
-            venta.setLastModifiedDate(Instant.now());
+            venta.setLastModifiedDate(ahora);
             ventaRepository.save(venta);
         }
         String usuarioAnulacion = currentUserLogin();
-        Instant fechaAnulacion = Instant.now();
+        Instant fechaAnulacion = ahora;
         pago.setMotivoAnulacion(motivo.trim());
         pago.setUsuarioAnulacion(usuarioAnulacion);
         pago.setFechaAnulacion(fechaAnulacion);
-        pago.setLastModifiedDate(Instant.now());
+        pago.setLastModifiedDate(ahora);
         normalizarCamposTextoPago(pago);
         LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
         Pago pagoActualizado = pagoRepository.save(pago);
@@ -377,6 +386,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private void recalcularVentaEInventario(Venta venta) {
+        Instant ahora = Instant.now();
         BigDecimal totalPagado = totalPagadoRegistrado(venta.getId());
         BigDecimal total = venta.getTotal() == null ? BigDecimal.ZERO : venta.getTotal();
         BigDecimal saldo = normalizarMoneda(total.subtract(totalPagado));
@@ -386,7 +396,7 @@ public class PagoServiceImpl implements PagoService {
 
         venta.setTotalPagado(totalPagado);
         venta.setSaldo(saldo);
-        venta.setLastModifiedDate(Instant.now());
+        venta.setLastModifiedDate(ahora);
         ventaRepository.save(venta);
 
         if (saldo.compareTo(BigDecimal.ZERO) == 0) {
@@ -398,7 +408,7 @@ public class PagoServiceImpl implements PagoService {
             } else {
                 venta.setEstado(EstadoVenta.PENDIENTE);
             }
-            venta.setLastModifiedDate(Instant.now());
+            venta.setLastModifiedDate(ahora);
             ventaRepository.save(venta);
             ventaService.sincronizarInventarioConVenta(venta.getId());
         }
@@ -416,9 +426,10 @@ public class PagoServiceImpl implements PagoService {
         if (reserva.getId() == null) {
             return;
         }
+        Instant ahora = Instant.now();
         BigDecimal total = pagoRepository.sumMontoByReservaId(reserva.getId());
         reserva.setMontoSenia(total == null ? normalizarMoneda(BigDecimal.ZERO) : normalizarMoneda(total));
-        reserva.setLastModifiedDate(Instant.now());
+        reserva.setLastModifiedDate(ahora);
         reservaRepository.save(reserva);
     }
 
@@ -442,33 +453,63 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private void validarMetodoPagoEspecial(MetodoPago metodoPago) {
-        if (metodoPago == null || metodoPago.getCodigo() == null) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (codigoMetodo == null) {
             return;
         }
-        String codigoMetodo = metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
-        if (("TRANSFERENCIA".equals(codigoMetodo) || "TARJETA".equals(codigoMetodo)) && (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())) {
+        if ((CODIGO_TRANSFERENCIA.equals(codigoMetodo) || CODIGO_TARJETA.equals(codigoMetodo)) && (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())) {
             LOG.warn("Metodo de pago {} deberia requerir referencia para trazabilidad", codigoMetodo);
         }
     }
 
     private void validarDatosOperacionParaMetodo(PagoDTO pagoDTO, MetodoPago metodoPago) {
-        if (metodoPago == null || metodoPago.getCodigo() == null) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (codigoMetodo == null) {
             return;
         }
-        String codigoMetodo = metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
-        boolean referenciaVacia = pagoDTO.getReferencia() == null || pagoDTO.getReferencia().isBlank();
-        boolean numeroOperacionVacio = pagoDTO.getNumeroOperacion() == null || pagoDTO.getNumeroOperacion().isBlank();
-        if ("EFECTIVO".equals(codigoMetodo)) {
+        if (CODIGO_CONTADO.equals(codigoMetodo)) {
             return;
         }
-        if ("TRANSFERENCIA".equals(codigoMetodo) || "TARJETA".equals(codigoMetodo)) {
-            if (referenciaVacia && numeroOperacionVacio) {
-                throw new BadRequestException("Transferencia/Tarjeta requiere referencia o numero de operacion");
-            }
+        // Referencia y numero de operacion se autogeneran en backend cuando no son informados.
+    }
+
+    private void validarDatosAdministrativosPorMetodo(PagoDTO pagoDTO, MetodoPago metodoPago) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (codigoMetodo == null) {
+            return;
+        }
+        boolean bancoVacio = pagoDTO.getBancoEntidad() == null || pagoDTO.getBancoEntidad().isBlank();
+        boolean comprobanteVacio = pagoDTO.getComprobanteExterno() == null || pagoDTO.getComprobanteExterno().isBlank();
+        boolean observacionesVacio = pagoDTO.getObservaciones() == null || pagoDTO.getObservaciones().isBlank();
+
+        switch (codigoMetodo) {
+            case CODIGO_TRANSFERENCIA:
+            case CODIGO_DEPOSITO:
+                if (bancoVacio) {
+                    throw new BadRequestException("Para " + codigoMetodo + " debe informar banco/entidad");
+                }
+                break;
+            case CODIGO_CHEQUE:
+                if (bancoVacio) {
+                    throw new BadRequestException("Para CHEQUE debe informar banco/entidad");
+                }
+                if (comprobanteVacio) {
+                    throw new BadRequestException("Para CHEQUE debe informar numero de cheque o comprobante externo");
+                }
+                break;
+            case CODIGO_AJUSTE:
+            case CODIGO_BONIFICACION:
+                if (observacionesVacio) {
+                    throw new BadRequestException("Para " + codigoMetodo + " debe informar observaciones");
+                }
+                break;
+            default:
+                break;
         }
     }
 
     private PagoDTO registrarPagoEntregaUsado(Venta venta, PagoDTO pagoDTO, MetodoPago metodoPago) {
+        Instant ahora = Instant.now();
         if (pagoDTO.getTasacionUsadoId() == null) {
             throw new BadRequestException("Debe informar tasacion_usado_id para registrar ENTREGA_USADO");
         }
@@ -510,15 +551,16 @@ public class PagoServiceImpl implements PagoService {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         if (pago.getFecha() == null) {
-            pago.setFecha(Instant.now());
+            pago.setFecha(ahora);
         }
-        pago.setCreatedDate(Instant.now());
-        pago.setLastModifiedDate(Instant.now());
+        completarDatosOperacion(pago, metodoPago, tasacion);
+        pago.setCreatedDate(ahora);
+        pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
         normalizarCamposTextoPago(pago);
 
         venta.setTasacionUsado(tasacion);
-        venta.setLastModifiedDate(Instant.now());
+        venta.setLastModifiedDate(ahora);
         ventaRepository.save(venta);
 
         LOG.info(
@@ -551,7 +593,7 @@ public class PagoServiceImpl implements PagoService {
         boolean tasacionEnMonedaBase = tasacion.getMoneda().getCodigo().equalsIgnoreCase(monedaBaseCodigo);
         boolean tasacionEnMonedaVenta = venta.getMoneda() != null && venta.getMoneda().getId() != null && venta.getMoneda().getId().equals(tasacion.getMoneda().getId());
         if (!tasacionEnMonedaBase || !tasacionEnMonedaVenta) {
-            throw new BadRequestException("La tasacion debe estar en moneda base ARS para aplicarse a la venta");
+            throw new BadRequestException("La tasacion debe estar en moneda base configurada: " + monedaBaseCodigo + " para aplicarse a la venta");
         }
         if (tasacion.getInventarioGenerado() != null) {
             throw new BadRequestException("La tasacion ya genero inventario y no puede reutilizarse");
@@ -570,7 +612,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private boolean esMetodoEntregaUsado(MetodoPago metodoPago) {
-        return metodoPago != null && metodoPago.getCodigo() != null && "ENTREGA_USADO".equalsIgnoreCase(metodoPago.getCodigo());
+        return metodoPago != null && CODIGO_ENTREGA_USADO.equals(normalizarCodigoMetodo(metodoPago));
     }
 
     private void validarContextoEntradaPago(PagoDTO pagoDTO) {
@@ -594,6 +636,39 @@ public class PagoServiceImpl implements PagoService {
         pago.setUsuarioRegistro(normalizarTexto(pago.getUsuarioRegistro(), 50));
         pago.setMotivoAnulacion(normalizarTexto(pago.getMotivoAnulacion(), 500));
         pago.setUsuarioAnulacion(normalizarTexto(pago.getUsuarioAnulacion(), 50));
+    }
+
+    private void completarDatosOperacion(Pago pago, MetodoPago metodoPago, TasacionUsado tasacionUsado) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (codigoMetodo == null) {
+            codigoMetodo = "PAGO";
+        }
+        String timestamp = String.valueOf(Instant.now().toEpochMilli());
+        String token = UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+
+        if (CODIGO_CONTADO.equals(codigoMetodo)) {
+            pago.setReferencia(null);
+            pago.setNumeroOperacion(null);
+            return;
+        }
+
+        if (CODIGO_ENTREGA_USADO.equals(codigoMetodo)) {
+            String tasacionRef = tasacionUsado != null && tasacionUsado.getId() != null ? String.valueOf(tasacionUsado.getId()) : token;
+            if (pago.getReferencia() == null || pago.getReferencia().isBlank()) {
+                pago.setReferencia("TAS-" + tasacionRef);
+            }
+            if (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank()) {
+                pago.setNumeroOperacion("ENT-" + timestamp.substring(Math.max(0, timestamp.length() - 8)));
+            }
+            return;
+        }
+
+        if (pago.getReferencia() == null || pago.getReferencia().isBlank()) {
+            pago.setReferencia(codigoMetodo + "-REF-" + token);
+        }
+        if (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank()) {
+            pago.setNumeroOperacion(codigoMetodo + "-OP-" + timestamp.substring(Math.max(0, timestamp.length() - 8)));
+        }
     }
 
     private String normalizarTexto(String value, int max) {
@@ -634,7 +709,7 @@ public class PagoServiceImpl implements PagoService {
     private void validarVentaEnMonedaBase(Venta venta) {
         Moneda monedaVenta = venta.getMoneda();
         if (monedaVenta == null) {
-            throw new BadRequestException(MENSAJE_VENTA_MONEDA_BASE);
+            throw new BadRequestException(mensajeVentaMonedaBaseConfigurada());
         }
         Moneda monedaBase = monedaRepository.findByCodigoIgnoreCase(monedaBaseCodigo).orElse(null);
         boolean esMonedaBase = false;
@@ -645,7 +720,18 @@ public class PagoServiceImpl implements PagoService {
             esMonedaBase = monedaVenta.getCodigo().equalsIgnoreCase(monedaBaseCodigo);
         }
         if (!esMonedaBase) {
-            throw new BadRequestException(MENSAJE_VENTA_MONEDA_BASE);
+            throw new BadRequestException(mensajeVentaMonedaBaseConfigurada());
         }
+    }
+
+    private String normalizarCodigoMetodo(MetodoPago metodoPago) {
+        if (metodoPago == null || metodoPago.getCodigo() == null) {
+            return null;
+        }
+        return metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String mensajeVentaMonedaBaseConfigurada() {
+        return "La venta debe estar registrada en moneda base configurada: " + monedaBaseCodigo;
     }
 }

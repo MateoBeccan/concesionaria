@@ -42,7 +42,7 @@
     <section class="card-shell filter-card">
       <div class="row g-3">
         <div class="col-md-4">
-          <input v-model="search" class="form-control" placeholder="Buscar por patente, marca, modelo, cliente o ubicacion" />
+          <input v-model="search" class="form-control" placeholder="Buscar por patente, marca, modelo, cliente o ubicacion de stock" />
         </div>
 
         <div class="col-md-2">
@@ -51,6 +51,13 @@
             <option value="DISPONIBLE">Disponible</option>
             <option value="RESERVADO">Reservado</option>
             <option value="VENDIDO">Vendido</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 d-grid">
+          <select v-model="filtroOrigen" class="form-select">
+            <option value="">Todos los ingresos</option>
+            <option value="TOMA_USADO">Parte de pago</option>
           </select>
         </div>
 
@@ -71,7 +78,7 @@
               <th>Unidad</th>
               <th @click="changeOrder('estadoInventario')">Estado</th>
               <th>Disponibilidad</th>
-              <th @click="changeOrder('ubicacion')">Ubicacion</th>
+              <th>Ubicacion</th>
               <th @click="changeOrder('fechaIngreso')">Ingreso</th>
               <th class="text-end">Acciones</th>
             </tr>
@@ -105,7 +112,7 @@
                 </span>
               </td>
 
-              <td>{{ inventario.ubicacion || 'Sin definir' }}</td>
+              <td>{{ ubicacionLabel(inventario) }}</td>
               <td>{{ formatDateShort(inventario.fechaIngreso) || '-' }}</td>
 
               <td class="text-end">

@@ -22,7 +22,7 @@
 
     <div class="card shadow-sm p-3 mb-4">
       <div class="row g-3">
-        <div class="col-md-4">
+        <div class="col-md-3">
           <input v-model="search" class="form-control" placeholder="Buscar por patente, marca, modelo, version o motor" />
         </div>
 
@@ -50,7 +50,14 @@
           </select>
         </div>
 
-        <div class="col-md-2 d-grid">
+        <div class="col-md-2">
+          <select v-model="filtroOrigen" class="form-control">
+            <option value="">Todos los ingresos</option>
+            <option value="TOMA_USADO">Parte de pago</option>
+          </select>
+        </div>
+
+        <div class="col-md-1 d-grid">
           <button class="btn btn-outline-secondary" @click="resetFiltros">Limpiar</button>
         </div>
       </div>

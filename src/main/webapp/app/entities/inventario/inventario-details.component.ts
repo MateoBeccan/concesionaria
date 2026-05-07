@@ -58,6 +58,15 @@ export default defineComponent({
       return actionDate ? formatDateLong(actionDate) : 'No disponible';
     });
 
+    const ubicacionLabel = computed(() => {
+      if (inventario.value.ubicacionStock?.nombre) {
+        return inventario.value.ubicacionStock.codigo
+          ? `${inventario.value.ubicacionStock.nombre} (${inventario.value.ubicacionStock.codigo})`
+          : inventario.value.ubicacionStock.nombre;
+      }
+      return 'Sin definir';
+    });
+
     return {
       ...dateFormat,
       alertService,
@@ -65,6 +74,7 @@ export default defineComponent({
       traceStatus,
       traceLastAction,
       traceLastActionAt,
+      ubicacionLabel,
       previousState,
     };
   },

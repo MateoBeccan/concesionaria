@@ -375,7 +375,7 @@ const adminCatalogLinks = [
 const adminAlerts = computed(() => {
   return {
     expiredReservations: inventarioItems.value.filter(item => item.estadoInventario === 'RESERVADO').length,
-    withoutLocation: inventarioItems.value.filter(item => !String(item.ubicacion ?? '').trim()).length,
+    withoutLocation: inventarioItems.value.filter(item => !item.ubicacionStock?.id).length,
   };
 });
 
