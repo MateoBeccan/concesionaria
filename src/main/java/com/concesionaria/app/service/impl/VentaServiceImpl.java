@@ -32,8 +32,6 @@ import com.concesionaria.app.repository.VentaHistorialRepository;
 import com.concesionaria.app.repository.UserRepository;
 import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.CurrencyConversionService;
-import com.concesionaria.app.service.InventarioVentaSyncService;
-import com.concesionaria.app.service.TomaUsadoInventarioService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
@@ -54,7 +52,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -80,8 +77,6 @@ public class VentaServiceImpl implements VentaService {
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final VentaHistorialRepository ventaHistorialRepository;
     private final CurrencyConversionService currencyConversionService;
-    private final TomaUsadoInventarioService tomaUsadoInventarioService;
-    private final InventarioVentaSyncService inventarioVentaSyncService;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -102,9 +97,7 @@ public class VentaServiceImpl implements VentaService {
         ReservaRepository reservaRepository,
         TasacionUsadoRepository tasacionUsadoRepository,
         VentaHistorialRepository ventaHistorialRepository,
-        CurrencyConversionService currencyConversionService,
-        TomaUsadoInventarioService tomaUsadoInventarioService,
-        InventarioVentaSyncService inventarioVentaSyncService
+        CurrencyConversionService currencyConversionService
     ) {
         this.ventaRepository = ventaRepository;
         this.ventaMapper = ventaMapper;
@@ -119,13 +112,10 @@ public class VentaServiceImpl implements VentaService {
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.ventaHistorialRepository = ventaHistorialRepository;
         this.currencyConversionService = currencyConversionService;
-        this.tomaUsadoInventarioService = tomaUsadoInventarioService;
-        this.inventarioVentaSyncService = inventarioVentaSyncService;
     }
 
     @Override
     public VentaDTO save(VentaDTO dto) {
-        normalizarAltaVentaDesdeFormulario(dto);
         validarVentaDto(dto);
         Instant now = Instant.now();
         String currentUser = currentUserLogin();
@@ -152,24 +142,6 @@ public class VentaServiceImpl implements VentaService {
         sincronizarReservaDesdeVenta(saved);
         sincronizarInventarioConVenta(saved.getId());
         return ventaMapper.toDto(saved);
-    }
-
-    private void normalizarAltaVentaDesdeFormulario(VentaDTO dto) {
-        if (dto == null || dto.getId() != null) {
-            return;
-        }
-        if (dto.getTotalPagado() != null && dto.getTotalPagado().compareTo(BigDecimal.ZERO) > 0) {
-            LOG.warn(
-                "Alta de venta con totalPagado={} ignorada; los pagos deben registrarse desde PagoService",
-                dto.getTotalPagado()
-            );
-        }
-        dto.setTotalPagado(BigDecimal.ZERO);
-        dto.setSaldo(null);
-        if (dto.getEstado() == EstadoVenta.PAGADA || dto.getEstado() == EstadoVenta.FINALIZADA || dto.getEstado() == EstadoVenta.RESERVADA) {
-            LOG.warn("Alta de venta con estado {} normalizada a PENDIENTE", dto.getEstado());
-            dto.setEstado(EstadoVenta.PENDIENTE);
-        }
     }
 
     @Override
@@ -310,6 +282,13 @@ public class VentaServiceImpl implements VentaService {
         if (totalPagado.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("El total pagado no puede ser negativo");
         }
+        if (totalPagado.compareTo(BigDecimal.ZERO) == 0) {
+            throw new BadRequestException(
+                "La venta requiere un pago minimo del " +
+                porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
+                "% del valor del vehiculo"
+            );
+        }
         if (saldo.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("El saldo no puede ser negativo");
         }
@@ -346,34 +325,38 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public Page<VentaDTO> findAll(Pageable pageable) {
-        return ventaRepository.findAll(pageable).map(ventaMapper::toDto);
+        Page<Venta> page = ventaRepository.findAll(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
     }
 
     @Override
     public Page<VentaDTO> findAllWithEagerRelationships(Pageable pageable) {
-        return ventaRepository.findAllWithEagerRelationships(pageable).map(ventaMapper::toDto);
+        Page<Venta> page = ventaRepository.findAllWithEagerRelationships(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<VentaDTO> findAllCurrentUser(Pageable pageable) {
-        return ventaRepository.findByUserIsCurrentUser(pageable).map(ventaMapper::toDto);
+        Page<Venta> page = ventaRepository.findByUserIsCurrentUser(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<VentaDTO> findAllCurrentUserWithEagerRelationships(Pageable pageable) {
-        return ventaRepository.findAllCurrentUserWithToOneRelationships(pageable).map(ventaMapper::toDto);
+        Page<Venta> page = ventaRepository.findAllCurrentUserWithToOneRelationships(pageable);
+        reconciliarInventarioVentasActivas(page.getContent());
+        return page.map(ventaMapper::toDto);
     }
 
     @Override
     public Optional<VentaDTO> findOne(Long id) {
-        validarAccesoVenta(id);
-        Optional<VentaDTO> result = ventaRepository.findOneWithEagerRelationships(id).map(ventaMapper::toDto);
-        if (result.isEmpty()) {
-            LOG.warn("Venta inexistente para id {}", id);
-        }
-        return result;
+        sincronizarInventarioConVenta(id);
+        return ventaRepository.findOneWithEagerRelationships(id).map(ventaMapper::toDto);
     }
 
     @Override
@@ -387,7 +370,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public void delete(Long id) {
-        throw new BadRequestException("La venta no puede eliminarse. Debe cancelarse o anularse.");
+        ventaRepository.deleteById(id);
     }
 
     @Override
@@ -469,9 +452,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public void confirmarVenta(Long ventaId) {
-        Venta venta = ventaRepository.findByIdForUpdate(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
-        Instant ahora = Instant.now();
-        String usuario = currentUserLogin();
+        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
 
         if (venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
             throw new BadRequestException("La venta no esta totalmente paga");
@@ -486,8 +467,8 @@ public class VentaServiceImpl implements VentaService {
             EstadoInventario estadoAnterior = inv.getEstadoInventario();
 
             inv.setEstadoInventario(EstadoInventario.VENDIDO);
-            inv.setLastModifiedDate(ahora);
-            inv.setLastModifiedBy(usuario);
+            inv.setLastModifiedDate(Instant.now());
+            inv.setLastModifiedBy(currentUserLogin());
             inventarioRepository.save(inv);
             cerrarReservaActiva(inv, EstadoReserva.CONVERTIDA, "Reserva convertida en venta pagada", venta);
             registrarHistorial(inv, estadoAnterior, EstadoInventario.VENDIDO, "VENTA_CONFIRMADA", "Venta finalizada por pago completo");
@@ -495,10 +476,10 @@ public class VentaServiceImpl implements VentaService {
 
         EstadoVenta estadoAnterior = venta.getEstado();
         venta.setEstado(EstadoVenta.PAGADA);
-        venta.setLastModifiedDate(ahora);
-        venta.setLastModifiedBy(usuario);
+        venta.setLastModifiedDate(Instant.now());
+        venta.setLastModifiedBy(currentUserLogin());
         ventaRepository.save(venta);
-        tomaUsadoInventarioService.generarSiCorresponde(venta, usuario);
+        generarInventarioTomaUsadoSiCorresponde(venta);
         registrarCambioEstadoVentaSiCorresponde(venta, estadoAnterior, "VENTA_CONFIRMADA", "Venta confirmada por pago completo");
     }
 
@@ -506,7 +487,65 @@ public class VentaServiceImpl implements VentaService {
     public void sincronizarInventarioConVenta(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
         asegurarIngresoUsadoSiVentaCobrada(venta);
-        inventarioVentaSyncService.sincronizarInventarioConVenta(ventaId, currentUserLogin());
+        Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
+        if (vehiculoIds.isEmpty()) {
+            return;
+        }
+
+        for (Long vehiculoId : vehiculoIds) {
+            Inventario inventario = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
+
+            normalizarReservaVencida(inventario);
+            EstadoInventario estadoAnterior = inventario.getEstadoInventario();
+
+            switch (venta.getEstado()) {
+                case PAGADA, FINALIZADA -> marcarInventarioVendido(inventario);
+                case PENDIENTE, RESERVADA -> {
+                    if (cumpleMinimoReserva(venta)) {
+                        marcarInventarioReservado(inventario, venta.getCliente(), venta);
+                    } else {
+                        liberarInventario(inventario);
+                    }
+                }
+                case CANCELADA -> liberarInventario(inventario);
+            }
+
+            EstadoVenta estadoEsperado = calcularEstadoSegunPagos(venta);
+            if (venta.getEstado() != estadoEsperado) {
+                EstadoVenta estadoAnteriorVenta = venta.getEstado();
+                venta.setEstado(estadoEsperado);
+                venta.setLastModifiedDate(Instant.now());
+                venta.setLastModifiedBy(currentUserLogin());
+                ventaRepository.save(venta);
+                registrarCambioEstadoVentaSiCorresponde(
+                    venta,
+                    estadoAnteriorVenta,
+                    "VENTA_ESTADO_RECALCULADO",
+                    "Estado recalculado segun pagos e inventario"
+                );
+            }
+
+            inventario.setLastModifiedDate(Instant.now());
+            inventario.setLastModifiedBy(currentUserLogin());
+            inventarioRepository.save(inventario);
+
+            if (estadoAnterior != inventario.getEstadoInventario()) {
+                boolean reservaConSeniaConfirmada =
+                    inventario.getEstadoInventario() == EstadoInventario.RESERVADO && (venta.getEstado() == EstadoVenta.PENDIENTE || venta.getEstado() == EstadoVenta.RESERVADA);
+                registrarHistorial(
+                    inventario,
+                    estadoAnterior,
+                    inventario.getEstadoInventario(),
+                    reservaConSeniaConfirmada ? "RESERVA_CONFIRMADA" : accionPorEstadoVenta(venta.getEstado()),
+                    reservaConSeniaConfirmada
+                        ?
+                        "Reserva generada con sena del " +
+                        porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
+                        "%"
+                        : "Sincronizacion automatica desde venta " + venta.getId()
+                );
+            }
+        }
     }
 
     @Override
@@ -549,7 +588,7 @@ public class VentaServiceImpl implements VentaService {
         if (venta.getSaldo() != null && venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
             return;
         }
-        tomaUsadoInventarioService.generarSiCorresponde(venta, currentUserLogin());
+        generarInventarioTomaUsadoSiCorresponde(venta);
     }
 
     private void marcarInventarioReservado(Inventario inventario, Cliente cliente, Venta venta) {
@@ -711,23 +750,6 @@ public class VentaServiceImpl implements VentaService {
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
-    }
-
-    private void validarAccesoVenta(Long ventaId) {
-        if (ventaId == null) {
-            return;
-        }
-        boolean isAdmin = SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN");
-        if (isAdmin) {
-            LOG.debug("Acceso administrativo a venta {}", ventaId);
-            return;
-        }
-        String login = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new AccessDeniedException("Usuario no autenticado"));
-        boolean allowed = ventaRepository.existsAccessibleByIdForUser(ventaId, login);
-        if (!allowed) {
-            LOG.warn("Acceso denegado a venta {} para usuario {}", ventaId, login);
-            throw new AccessDeniedException("No tienes permisos para acceder a esta venta");
-        }
     }
 
     private User resolveUsuarioOperador(VentaDTO dto) {

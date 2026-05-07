@@ -31,17 +31,10 @@ import com.concesionaria.app.repository.VehiculoRepository;
 import com.concesionaria.app.repository.VentaHistorialRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.CurrencyConversionService;
-import com.concesionaria.app.service.InventarioVentaSyncService;
-import com.concesionaria.app.service.TomaUsadoInventarioService;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,29 +60,9 @@ class VentaServiceImplBusinessTest {
     @Mock private CurrencyConversionService currencyConversionService;
 
     private VentaServiceImpl service;
-    private TomaUsadoInventarioService tomaUsadoInventarioService;
-    private InventarioVentaSyncService inventarioVentaSyncService;
 
     @BeforeEach
     void setUp() {
-        tomaUsadoInventarioService =
-            new TomaUsadoInventarioServiceImpl(
-                pagoRepository,
-                tasacionUsadoRepository,
-                vehiculoRepository,
-                inventarioRepository,
-                inventarioHistorialRepository,
-                ventaRepository,
-                monedaRepository
-            );
-        inventarioVentaSyncService =
-            new InventarioVentaSyncServiceImpl(
-                ventaRepository,
-                inventarioRepository,
-                reservaRepository,
-                inventarioHistorialRepository,
-                pagoRepository
-            );
         service =
             new VentaServiceImpl(
                 ventaRepository,
@@ -104,13 +77,9 @@ class VentaServiceImplBusinessTest {
                 reservaRepository,
                 tasacionUsadoRepository,
                 ventaHistorialRepository,
-                currencyConversionService,
-                tomaUsadoInventarioService,
-                inventarioVentaSyncService
+                currencyConversionService
             );
         ReflectionTestUtils.setField(service, "monedaBaseCodigo", "ARS");
-        ReflectionTestUtils.setField(tomaUsadoInventarioService, "monedaBaseCodigo", "ARS");
-        ReflectionTestUtils.setField(inventarioVentaSyncService, "porcentajeMinimoReserva", new BigDecimal("0.10"));
     }
 
     @Test
@@ -170,7 +139,6 @@ class VentaServiceImplBusinessTest {
         inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
         inventarioVenta.setVehiculo(venta.getVehiculo());
 
-        when(ventaRepository.findByIdForUpdate(200L)).thenReturn(java.util.Optional.of(venta));
         when(ventaRepository.findById(200L)).thenReturn(java.util.Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(900L)).thenReturn(java.util.Optional.of(inventarioVenta));
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> {
@@ -212,7 +180,6 @@ class VentaServiceImplBusinessTest {
         inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
         inventarioVenta.setVehiculo(venta.getVehiculo());
 
-        when(ventaRepository.findByIdForUpdate(201L)).thenReturn(java.util.Optional.of(venta));
         when(ventaRepository.findById(201L)).thenReturn(java.util.Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(901L)).thenReturn(java.util.Optional.of(inventarioVenta));
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> {
@@ -259,7 +226,6 @@ class VentaServiceImplBusinessTest {
         inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
         inventarioVenta.setVehiculo(venta.getVehiculo());
 
-        when(ventaRepository.findByIdForUpdate(204L)).thenReturn(java.util.Optional.of(venta));
         when(ventaRepository.findById(204L)).thenReturn(java.util.Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(904L)).thenReturn(java.util.Optional.of(inventarioVenta));
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> {
@@ -302,7 +268,7 @@ class VentaServiceImplBusinessTest {
         Venta venta = ventaBase(202L, EstadoVenta.CANCELADA, ars, new BigDecimal("0.00"));
         venta.setTasacionUsado(tasacionCompleta(302L, ars));
 
-        when(ventaRepository.findByIdForUpdate(202L)).thenReturn(java.util.Optional.of(venta));
+        when(ventaRepository.findById(202L)).thenReturn(java.util.Optional.of(venta));
 
         assertThrows(BadRequestException.class, () -> service.confirmarVenta(202L));
         verify(vehiculoRepository, never()).save(any(Vehiculo.class));
@@ -370,51 +336,6 @@ class VentaServiceImplBusinessTest {
         verify(tasacionUsadoRepository, times(1)).save(any(TasacionUsado.class));
         assertThat(tasacion.getInventarioGenerado()).isNotNull();
         assertThat(tasacion.getInventarioGenerado().getId()).isEqualTo(705L);
-    }
-
-    @Test
-    void deleteDeVentaEstaBloqueado() {
-        assertThrows(BadRequestException.class, () -> service.delete(99L));
-        verify(ventaRepository, never()).deleteById(any(Long.class));
-    }
-
-    @Test
-    void confirmarVentaUsaLockPesimista() {
-        Moneda ars = moneda(1L, "ARS");
-        Venta venta = ventaBase(210L, EstadoVenta.PAGADA, ars, BigDecimal.ZERO);
-        Inventario inventarioVenta = new Inventario();
-        inventarioVenta.setId(510L);
-        inventarioVenta.setEstadoInventario(EstadoInventario.RESERVADO);
-        inventarioVenta.setVehiculo(venta.getVehiculo());
-
-        when(ventaRepository.findByIdForUpdate(210L)).thenReturn(java.util.Optional.of(venta));
-        when(ventaRepository.findById(210L)).thenReturn(java.util.Optional.of(venta));
-        when(inventarioRepository.findByVehiculoId(910L)).thenReturn(java.util.Optional.of(inventarioVenta));
-        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        service.confirmarVenta(210L);
-        verify(ventaRepository, times(1)).findByIdForUpdate(210L);
-    }
-
-    @Test
-    void findAllYFindOneNoDisparanSincronizacionConEfectosSecundarios() {
-        Venta venta = new Venta();
-        venta.setId(999L);
-        when(ventaRepository.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(java.util.List.of(venta), PageRequest.of(0, 20), 1));
-        when(ventaRepository.findOneWithEagerRelationships(999L)).thenReturn(java.util.Optional.of(venta));
-        when(ventaRepository.existsAccessibleByIdForUser(999L, "user")).thenReturn(true);
-        when(ventaMapper.toDto(any(Venta.class))).thenReturn(new com.concesionaria.app.service.dto.VentaDTO());
-
-        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken("user", "n/a"));
-        try {
-            service.findAll(PageRequest.of(0, 20));
-            service.findOne(999L);
-        } finally {
-            SecurityContextHolder.clearContext();
-        }
-
-        verify(inventarioRepository, never()).findByVehiculoId(any(Long.class));
     }
 
     private Moneda moneda(Long id, String codigo) {
