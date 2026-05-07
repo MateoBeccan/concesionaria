@@ -67,10 +67,6 @@ public class Inventario implements Serializable {
     @Column(name = "numero_interno_stock", length = 30)
     private String numeroInternoStock;
 
-    @Size(max = 100)
-    @Column(name = "ubicacion", length = 100)
-    private String ubicacion;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ubicacion_stock_id")
     private UbicacionStock ubicacionStock;
@@ -223,19 +219,6 @@ public class Inventario implements Serializable {
         this.numeroInternoStock = numeroInternoStock;
     }
 
-    public String getUbicacion() {
-        return this.ubicacion;
-    }
-
-    public Inventario ubicacion(String ubicacion) {
-        this.setUbicacion(ubicacion);
-        return this;
-    }
-
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
-    }
-
     public UbicacionStock getUbicacionStock() {
         return ubicacionStock;
     }
@@ -369,7 +352,6 @@ public class Inventario implements Serializable {
             ", estadoOperativoDocumental='" + getEstadoOperativoDocumental() + "'" +
             ", proveedorReferencia='" + getProveedorReferencia() + "'" +
             ", numeroInternoStock='" + getNumeroInternoStock() + "'" +
-            ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
             ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +

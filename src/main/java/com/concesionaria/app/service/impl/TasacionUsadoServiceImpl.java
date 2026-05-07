@@ -19,15 +19,19 @@ import java.time.Instant;
 import java.time.Year;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
 public class TasacionUsadoServiceImpl implements TasacionUsadoService {
+    private static final Logger LOG = LoggerFactory.getLogger(TasacionUsadoServiceImpl.class);
 
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final VentaRepository ventaRepository;
@@ -104,13 +108,18 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
     @Override
     @Transactional(readOnly = true)
     public Page<TasacionUsadoDTO> findAllCurrentUser(Pageable pageable) {
-        return tasacionUsadoRepository.findAllCurrentUser(pageable).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
+        return tasacionUsadoRepository.findAllCurrentUser(currentUserLogin(), pageable).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<TasacionUsadoDTO> findOne(Long id) {
-        return tasacionUsadoRepository.findById(id).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
+        validarAccesoTasacion(id);
+        Optional<TasacionUsadoDTO> result = tasacionUsadoRepository.findById(id).map(tasacionUsadoMapper::toDto).map(this::enriquecerConVentaAplicada);
+        if (result.isEmpty()) {
+            LOG.warn("Tasacion inexistente para id {}", id);
+        }
+        return result;
     }
 
     @Override
@@ -244,5 +253,22 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
         Long ventaId = ventaRepository.findAllByTasacionUsadoIdOrderByFechaDesc(dto.getId()).stream().findFirst().map(v -> v.getId()).orElse(null);
         dto.setVentaAplicadaId(ventaId);
         return dto;
+    }
+
+    private String currentUserLogin() {
+        return com.concesionaria.app.security.SecurityUtils.getCurrentUserLogin().orElse("system");
+    }
+
+    private void validarAccesoTasacion(Long tasacionId) {
+        if (tasacionId == null || com.concesionaria.app.security.SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN")) {
+            return;
+        }
+        String login = currentUserLogin();
+        // Legacy compatibility: keep usuarioTasador as fallback while tasadorUser is fully normalized.
+        boolean allowed = tasacionUsadoRepository.existsAccessibleByIdForUser(tasacionId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a tasacion {} para usuario {}", tasacionId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a esta tasacion");
+        }
     }
 }

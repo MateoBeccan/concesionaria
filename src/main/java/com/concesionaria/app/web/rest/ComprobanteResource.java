@@ -22,10 +22,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -193,12 +192,14 @@ public class ComprobanteResource {
 
     private void validatePdfReadPermission(Long comprobanteId) {
         if (SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN)) {
+            LOG.debug("Acceso administrativo a PDF de comprobante {}", comprobanteId);
             return;
         }
-        String login = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN));
-        boolean allowed = comprobanteRepository.existsByIdAndVentaUserLogin(comprobanteId, login);
+        String login = SecurityUtils.getCurrentUserLogin().orElseThrow(() -> new AccessDeniedException("Usuario no autenticado"));
+        boolean allowed = comprobanteRepository.existsAccessibleByIdForUser(comprobanteId, login);
         if (!allowed) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para descargar este comprobante");
+            LOG.warn("Acceso denegado a PDF de comprobante {} para usuario {}", comprobanteId, login);
+            throw new AccessDeniedException("No tienes permisos para descargar este comprobante");
         }
     }
 

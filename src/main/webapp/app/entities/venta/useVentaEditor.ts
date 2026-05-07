@@ -30,6 +30,10 @@ export interface PagoLocal {
   montoAplicadoMonedaVenta: number;
   fecha: Date;
   referencia: string;
+  numeroOperacion?: string;
+  bancoEntidad?: string;
+  comprobanteExterno?: string;
+  observaciones?: string;
   metodoPago: IMetodoPago | null;
   moneda: IMoneda | null;
   cotizacionUsada: number;
@@ -451,11 +455,19 @@ export function useVentaEditor() {
     error.value = null;
   }
 
-  async function agregarPago(monto: number, metodoPago: IMetodoPago | null, moneda: IMoneda | null, referencia = '') {
+  async function agregarPago(
+    monto: number,
+    metodoPago: IMetodoPago | null,
+    moneda: IMoneda | null,
+    tasacionUsadoId?: number | null,
+    bancoEntidad = '',
+    comprobanteExterno = '',
+    observaciones = '',
+  ) {
     const esEntregaUsado = (metodoPago?.codigo ?? '').toUpperCase() === 'ENTREGA_USADO';
     let tasacionSeleccionada: ITasacionUsado | null = null;
     if (esEntregaUsado) {
-      const tasacionId = Number(referencia);
+      const tasacionId = Number(tasacionUsadoId ?? 0);
       tasacionSeleccionada = tasacionesUsadoDisponibles.value.find(item => item.id === tasacionId) ?? null;
       if (!tasacionSeleccionada) {
         error.value = 'Debes seleccionar una tasacion aceptada para ENTREGA_USADO';
@@ -467,10 +479,8 @@ export function useVentaEditor() {
       }
       monto = Number(tasacionSeleccionada.montoTasacion ?? 0);
       moneda = venta.value.moneda ?? moneda ?? null;
-      referencia = '';
     }
     const montoNormalizado = Number(monto ?? 0);
-    const referenciaNormalizada = referencia.trim();
 
     if (!Number.isFinite(montoNormalizado) || montoNormalizado <= 0) {
       error.value = 'El monto debe ser mayor que 0';
@@ -504,18 +514,17 @@ export function useVentaEditor() {
       return;
     }
 
-    if (!esEntregaUsado && metodoPago?.requiereReferencia && !referenciaNormalizada) {
-      error.value = `La referencia es obligatoria para ${metodoPago.descripcion ?? metodoPago.codigo ?? 'el metodo de pago seleccionado'}`;
-      return;
-    }
-
     error.value = null;
     pagos.value.push({
       _key: `tmp-pago-${Date.now()}`,
       monto: montoNormalizado,
       montoAplicadoMonedaVenta,
       fecha: new Date(),
-      referencia: referenciaNormalizada,
+      referencia: '',
+      numeroOperacion: '',
+      bancoEntidad: bancoEntidad.trim(),
+      comprobanteExterno: comprobanteExterno.trim(),
+      observaciones: observaciones.trim(),
       metodoPago,
       moneda: monedaPago,
       cotizacionUsada,
@@ -604,11 +613,6 @@ export function useVentaEditor() {
         throw new Error('Todos los pagos deben tener un monto mayor a 0');
       }
 
-      if (pago.metodoPago?.requiereReferencia && !pago.referencia.trim()) {
-        throw new Error(
-          `La referencia es obligatoria para ${pago.metodoPago.descripcion ?? pago.metodoPago.codigo ?? 'el metodo de pago seleccionado'}`,
-        );
-      }
     }
 
     if (sumaPagos.value - total > EPSILON) {
@@ -664,6 +668,9 @@ export function useVentaEditor() {
         monto: pago.monto,
         fecha: pago.fecha,
         referencia: pago.referencia || null,
+        bancoEntidad: pago.bancoEntidad || null,
+        comprobanteExterno: pago.comprobanteExterno || null,
+        observaciones: pago.observaciones || null,
         cotizacionUsada: pago.cotizacionUsada,
         tasacionUsadoId: pago.tasacionUsadoId ?? null,
         venta: { id: ventaId },
@@ -673,6 +680,11 @@ export function useVentaEditor() {
 
       const res = await axios.post(`api/pagos/registrar?ventaId=${ventaId}`, payload);
       pago.id = res.data.id;
+      pago.referencia = res.data.referencia ?? pago.referencia ?? '';
+      pago.numeroOperacion = res.data.numeroOperacion ?? pago.numeroOperacion ?? '';
+      pago.bancoEntidad = res.data.bancoEntidad ?? pago.bancoEntidad ?? '';
+      pago.comprobanteExterno = res.data.comprobanteExterno ?? pago.comprobanteExterno ?? '';
+      pago.observaciones = res.data.observaciones ?? pago.observaciones ?? '';
       pago.guardado = true;
       pago.estado = res.data.estado ?? EstadoPago.REGISTRADO;
     }
@@ -741,6 +753,10 @@ export function useVentaEditor() {
       montoAplicadoMonedaVenta: Number(pago.montoAplicadoVenta ?? pago.monto ?? 0),
         fecha: new Date(pago.fecha!),
         referencia: pago.referencia ?? '',
+        numeroOperacion: pago.numeroOperacion ?? '',
+        bancoEntidad: pago.bancoEntidad ?? '',
+        comprobanteExterno: pago.comprobanteExterno ?? '',
+        observaciones: pago.observaciones ?? '',
         metodoPago: pago.metodoPago ?? null,
         moneda: pago.moneda ?? null,
         cotizacionUsada: Number(pago.cotizacionUsada ?? 1),
@@ -790,6 +806,10 @@ export function useVentaEditor() {
       montoAplicadoMonedaVenta: Number(item.montoAplicadoVenta ?? item.monto ?? 0),
         fecha: new Date(item.fecha!),
         referencia: item.referencia ?? '',
+        numeroOperacion: item.numeroOperacion ?? '',
+        bancoEntidad: item.bancoEntidad ?? '',
+        comprobanteExterno: item.comprobanteExterno ?? '',
+        observaciones: item.observaciones ?? '',
         metodoPago: item.metodoPago ?? null,
         moneda: item.moneda ?? null,
         cotizacionUsada: Number(item.cotizacionUsada ?? 1),

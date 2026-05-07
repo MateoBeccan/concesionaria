@@ -40,8 +40,8 @@ class InventarioResourceIT {
     private static final Instant DEFAULT_FECHA_INGRESO = Instant.ofEpochMilli(0L);
     private static final Instant UPDATED_FECHA_INGRESO = Instant.now().truncatedTo(ChronoUnit.MILLIS);
 
-    private static final String DEFAULT_UBICACION = "AAAAAAAAAA";
-    private static final String UPDATED_UBICACION = "BBBBBBBBBB";
+    private static final String DEFAULT_CODIGO_INTERNO_STOCK = "STK-TEST-0001";
+    private static final String UPDATED_CODIGO_INTERNO_STOCK = "STK-TEST-0002";
 
     private static final EstadoInventario DEFAULT_ESTADO_INVENTARIO = EstadoInventario.DISPONIBLE;
     private static final EstadoInventario UPDATED_ESTADO_INVENTARIO = EstadoInventario.RESERVADO;
@@ -89,7 +89,7 @@ class InventarioResourceIT {
     public static Inventario createEntity() {
         return new Inventario()
             .fechaIngreso(DEFAULT_FECHA_INGRESO)
-            .ubicacion(DEFAULT_UBICACION)
+            .codigoInternoStock(DEFAULT_CODIGO_INTERNO_STOCK)
             .estadoInventario(DEFAULT_ESTADO_INVENTARIO)
             .observaciones(DEFAULT_OBSERVACIONES)
             .createdDate(DEFAULT_CREATED_DATE)
@@ -105,7 +105,7 @@ class InventarioResourceIT {
     public static Inventario createUpdatedEntity() {
         return new Inventario()
             .fechaIngreso(UPDATED_FECHA_INGRESO)
-            .ubicacion(UPDATED_UBICACION)
+            .codigoInternoStock(UPDATED_CODIGO_INTERNO_STOCK)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
             .createdDate(UPDATED_CREATED_DATE)
@@ -214,7 +214,7 @@ class InventarioResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.[*].id").value(hasItem(inventario.getId().intValue())))
             .andExpect(jsonPath("$.[*].fechaIngreso").value(hasItem(DEFAULT_FECHA_INGRESO.toString())))
-            .andExpect(jsonPath("$.[*].ubicacion").value(hasItem(DEFAULT_UBICACION)))
+            .andExpect(jsonPath("$.[*].codigoInternoStock").value(hasItem(DEFAULT_CODIGO_INTERNO_STOCK)))
             .andExpect(jsonPath("$.[*].estadoInventario").value(hasItem(DEFAULT_ESTADO_INVENTARIO.toString())))
             .andExpect(jsonPath("$.[*].observaciones").value(hasItem(DEFAULT_OBSERVACIONES)))
             .andExpect(jsonPath("$.[*].createdDate").value(hasItem(DEFAULT_CREATED_DATE.toString())))
@@ -234,7 +234,7 @@ class InventarioResourceIT {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON_VALUE))
             .andExpect(jsonPath("$.id").value(inventario.getId().intValue()))
             .andExpect(jsonPath("$.fechaIngreso").value(DEFAULT_FECHA_INGRESO.toString()))
-            .andExpect(jsonPath("$.ubicacion").value(DEFAULT_UBICACION))
+            .andExpect(jsonPath("$.codigoInternoStock").value(DEFAULT_CODIGO_INTERNO_STOCK))
             .andExpect(jsonPath("$.estadoInventario").value(DEFAULT_ESTADO_INVENTARIO.toString()))
             .andExpect(jsonPath("$.observaciones").value(DEFAULT_OBSERVACIONES))
             .andExpect(jsonPath("$.createdDate").value(DEFAULT_CREATED_DATE.toString()))
@@ -262,7 +262,7 @@ class InventarioResourceIT {
         em.detach(updatedInventario);
         updatedInventario
             .fechaIngreso(UPDATED_FECHA_INGRESO)
-            .ubicacion(UPDATED_UBICACION)
+            .codigoInternoStock(UPDATED_CODIGO_INTERNO_STOCK)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
             .createdDate(UPDATED_CREATED_DATE)
@@ -392,7 +392,7 @@ class InventarioResourceIT {
 
         partialUpdatedInventario
             .fechaIngreso(UPDATED_FECHA_INGRESO)
-            .ubicacion(UPDATED_UBICACION)
+            .codigoInternoStock(UPDATED_CODIGO_INTERNO_STOCK)
             .estadoInventario(UPDATED_ESTADO_INVENTARIO)
             .observaciones(UPDATED_OBSERVACIONES)
             .createdDate(UPDATED_CREATED_DATE)

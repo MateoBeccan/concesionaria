@@ -5,6 +5,7 @@ import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -56,6 +57,17 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     )
     Optional<Venta> findOneWithToOneRelationships(@Param("id") Long id);
 
+    @Query(
+        """
+        select (count(v) > 0)
+        from Venta v
+        join v.user u
+        where v.id = :ventaId
+          and u.login = :login
+        """
+    )
+    boolean existsAccessibleByIdForUser(@Param("ventaId") Long ventaId, @Param("login") String login);
+
     Optional<Venta> findFirstByReservaIdOrderByFechaDesc(Long reservaId);
 
     boolean existsByReservaId(Long reservaId);
@@ -69,4 +81,8 @@ public interface VentaRepository extends JpaRepository<Venta, Long> {
     boolean existsByVehiculoIdAndEstadoIn(Long vehiculoId, Collection<EstadoVenta> estados);
 
     boolean existsByVehiculoIdAndEstadoInAndIdNot(Long vehiculoId, Collection<EstadoVenta> estados, Long ventaId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select venta from Venta venta where venta.id = :id")
+    Optional<Venta> findByIdForUpdate(@Param("id") Long id);
 }

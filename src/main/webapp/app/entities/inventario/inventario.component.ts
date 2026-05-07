@@ -28,6 +28,7 @@ export default defineComponent({
 
     const search = ref('');
     const filtroEstado = ref('');
+    const filtroOrigen = ref('');
 
     const inventorySummary = computed(() => ({
       disponible: inventarios.value.filter(item => item.estadoInventario === 'DISPONIBLE').length,
@@ -42,14 +43,16 @@ export default defineComponent({
           inventario.vehiculo?.version?.modelo?.marca?.nombre ?? '',
           inventario.vehiculo?.version?.modelo?.nombre ?? '',
           inventario.vehiculo?.version?.nombre ?? '',
-          inventario.ubicacion ?? '',
+          inventario.ubicacionStock?.nombre ?? '',
+          inventario.ubicacionStock?.codigo ?? '',
         ]
           .join(' ')
           .toLowerCase();
 
         const matchSearch = !search.value || texto.includes(search.value.toLowerCase());
         const matchEstado = !filtroEstado.value || inventario.estadoInventario === filtroEstado.value;
-        return matchSearch && matchEstado;
+        const matchOrigen = !filtroOrigen.value || inventario.origenVehiculo === filtroOrigen.value;
+        return matchSearch && matchEstado && matchOrigen;
       });
     });
 
@@ -60,6 +63,7 @@ export default defineComponent({
     const resetFiltros = () => {
       search.value = '';
       filtroEstado.value = '';
+      filtroOrigen.value = '';
     };
 
     const sort = (): Array<any> => {
@@ -169,6 +173,15 @@ export default defineComponent({
       return `${patente} · ${version}`;
     };
 
+    const ubicacionLabel = (inventario: IInventario) => {
+      if (inventario.ubicacionStock?.nombre) {
+        return inventario.ubicacionStock.codigo
+          ? `${inventario.ubicacionStock.nombre} (${inventario.ubicacionStock.codigo})`
+          : inventario.ubicacionStock.nombre;
+      }
+      return 'Sin definir';
+    };
+
     const reservaActivaId = (inventarioId?: number | null) => (inventarioId ? reservasActivasByInventario.value[inventarioId] ?? null : null);
 
     watch([propOrder, reverse], async () => {
@@ -189,6 +202,7 @@ export default defineComponent({
       filteredInventarios,
       search,
       filtroEstado,
+      filtroOrigen,
       resetFiltros,
       handleSyncList,
       isFetching,
@@ -210,6 +224,7 @@ export default defineComponent({
       badgeEstado,
       badgeDisponibilidad,
       vehiculoLabel,
+      ubicacionLabel,
       reservaActivaId,
     };
   },

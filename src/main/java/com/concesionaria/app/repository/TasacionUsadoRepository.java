@@ -16,18 +16,29 @@ public interface TasacionUsadoRepository extends JpaRepository<TasacionUsado, Lo
         select t
         from TasacionUsado t
         left join t.tasadorUser tu
-        where tu.login = ?#{authentication.name}
-           or t.usuarioTasador = ?#{authentication.name}
+        where tu.login = :login
+           or t.usuarioTasador = :login
         """,
         countQuery = """
         select count(t)
         from TasacionUsado t
         left join t.tasadorUser tu
-        where tu.login = ?#{authentication.name}
-           or t.usuarioTasador = ?#{authentication.name}
+        where tu.login = :login
+           or t.usuarioTasador = :login
         """
     )
-    Page<TasacionUsado> findAllCurrentUser(Pageable pageable);
+    Page<TasacionUsado> findAllCurrentUser(@Param("login") String login, Pageable pageable);
+
+    @Query(
+        """
+        select (count(t) > 0)
+        from TasacionUsado t
+        left join t.tasadorUser tu
+        where t.id = :tasacionId
+          and (tu.login = :login or t.usuarioTasador = :login)
+        """
+    )
+    boolean existsAccessibleByIdForUser(@Param("tasacionId") Long tasacionId, @Param("login") String login);
 
     List<TasacionUsado> findAllByClienteIdOrderByFechaTasacionDesc(Long clienteId);
 

@@ -4,6 +4,8 @@ import com.concesionaria.app.domain.Comprobante;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -15,6 +17,36 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> {
     @Query(
+        value = """
+        select c
+        from Comprobante c
+        join c.venta v
+        join v.user u
+        where u.login = :login
+        """,
+        countQuery = """
+        select count(c)
+        from Comprobante c
+        join c.venta v
+        join v.user u
+        where u.login = :login
+        """
+    )
+    Page<Comprobante> findAllCurrentUser(@Param("login") String login, Pageable pageable);
+
+    @Query(
+        """
+        select (count(c) > 0)
+        from Comprobante c
+        join c.venta v
+        join v.user u
+        where c.id = :comprobanteId
+          and u.login = :login
+        """
+    )
+    boolean existsAccessibleByIdForUser(@Param("comprobanteId") Long comprobanteId, @Param("login") String login);
+
+    @Query(
         "select c from Comprobante c " +
         "left join fetch c.tipoComprobante tc " +
         "left join fetch c.moneda m " +
@@ -22,6 +54,17 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
         "order by c.fechaEmision desc, c.id desc"
     )
     List<Comprobante> findAllByVentaIdWithRelaciones(@Param("ventaId") Long ventaId);
+
+    @Query(
+        "select c from Comprobante c " +
+        "join c.venta v " +
+        "join v.user u " +
+        "left join fetch c.tipoComprobante tc " +
+        "left join fetch c.moneda m " +
+        "where c.venta.id = :ventaId and u.login = :login " +
+        "order by c.fechaEmision desc, c.id desc"
+    )
+    List<Comprobante> findAllByVentaIdWithRelacionesForUser(@Param("ventaId") Long ventaId, @Param("login") String login);
 
     @Query(
         "select c from Comprobante c " +
@@ -37,8 +80,6 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
         "where c.id = :id"
     )
     Optional<Comprobante> findOneForPdf(@Param("id") Long id);
-
-    boolean existsByIdAndVentaUserLogin(Long id, String login);
 
     boolean existsByVentaIdAndEstado(Long ventaId, EstadoComprobante estado);
 

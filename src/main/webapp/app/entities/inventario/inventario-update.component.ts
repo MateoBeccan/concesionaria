@@ -1,5 +1,6 @@
 import { computed, defineComponent, inject, ref, type Ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
 
 import { helpers } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
@@ -11,6 +12,7 @@ import { useDateFormat, useValidation } from '@/shared/composables';
 import { EstadoInventario } from '@/shared/model/enumerations/estado-inventario.model';
 import type { IInventario } from '@/shared/model/inventario.model';
 import { Inventario } from '@/shared/model/inventario.model';
+import type { IUbicacionStock } from '@/shared/model/ubicacion-stock.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 
 import InventarioService from './inventario.service';
@@ -33,6 +35,7 @@ export default defineComponent({
       estadoInventario: EstadoInventario.DISPONIBLE,
     });
     const vehiculos: Ref<IVehiculo[]> = ref([]);
+    const ubicacionesStock: Ref<IUbicacionStock[]> = ref([]);
     const isSaving = ref(false);
     const loadingRelations = ref(false);
 
@@ -88,9 +91,9 @@ export default defineComponent({
       codigoInternoStock: {
         maxLength: validations.maxLength('El codigo interno no puede superar los 30 caracteres.', 30),
       },
-      ubicacion: {
-        maxLength: validations.maxLength('La ubicacion no puede superar los 100 caracteres.', 100),
-      },
+          ubicacionStock: {
+            required: helpers.withMessage('Selecciona una ubicacion de stock activa.', value => !!value?.id),
+          },
       estadoInventario: {
         required: validations.required('Selecciona el estado del inventario.'),
       },
@@ -123,6 +126,10 @@ export default defineComponent({
       try {
         const vehiculosRes = await vehiculoService().retrieve({ page: 0, size: 500, sort: ['createdDate,desc'] });
         vehiculos.value = [...vehiculosRes.data].sort((a, b) => `${a.patente ?? 'ZZZ'}-${a.id ?? 0}`.localeCompare(`${b.patente ?? 'ZZZ'}-${b.id ?? 0}`));
+        const ubicacionesRes = await axios.get<IUbicacionStock[]>('api/ubicacion-stocks', {
+          params: { page: 0, size: 500, sort: ['nombre,asc'] },
+        });
+        ubicacionesStock.value = (ubicacionesRes.data ?? []).filter(item => item.activa !== false);
       } catch (error: any) {
         alertService.showHttpError(error.response);
       } finally {
@@ -143,6 +150,7 @@ export default defineComponent({
       estadoInventarioValues,
       isSaving,
       vehiculos,
+      ubicacionesStock,
       selectedVehiculo,
       loadingRelations,
       businessErrors,
@@ -167,6 +175,7 @@ export default defineComponent({
         const payload = {
           ...this.inventario,
           codigoInternoStock: this.inventario.codigoInternoStock?.trim().toUpperCase() || null,
+          ubicacionStock: this.inventario.ubicacionStock ? { id: this.inventario.ubicacionStock.id } : null,
           vehiculo: this.inventario.vehiculo ? { id: this.inventario.vehiculo.id } : null,
         };
 

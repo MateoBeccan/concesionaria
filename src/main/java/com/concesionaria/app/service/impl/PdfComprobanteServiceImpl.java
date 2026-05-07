@@ -2,10 +2,12 @@ package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Comprobante;
+import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.service.PdfComprobanteService;
 import com.concesionaria.app.service.dto.ComprobantePdfResult;
 import com.lowagie.text.Chunk;
@@ -29,6 +31,7 @@ import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.awt.Color;
@@ -56,6 +59,7 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
     private static final Font FONT_TOTAL = new Font(Font.HELVETICA, 10, Font.BOLD);
 
     private final ComprobanteRepository comprobanteRepository;
+    private final PagoRepository pagoRepository;
     private final String companyName;
     private final String companyAddress;
     private final String companyPhone;
@@ -64,6 +68,7 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
 
     public PdfComprobanteServiceImpl(
         ComprobanteRepository comprobanteRepository,
+        PagoRepository pagoRepository,
         @Value("${app.comprobante.pdf.company.name:Concesionaria MB}") String companyName,
         @Value("${app.comprobante.pdf.company.address:Av. Siempre Viva 1234 - CABA}") String companyAddress,
         @Value("${app.comprobante.pdf.company.phone:+54 11 4000-1234}") String companyPhone,
@@ -71,6 +76,7 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         @Value("${app.comprobante.pdf.company.cuit:30-12345678-9}") String companyCuit
     ) {
         this.comprobanteRepository = comprobanteRepository;
+        this.pagoRepository = pagoRepository;
         this.companyName = companyName;
         this.companyAddress = companyAddress;
         this.companyPhone = companyPhone;
@@ -107,6 +113,8 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
             addVehiculoSection(document, comprobante.getVenta() != null ? comprobante.getVenta().getVehiculo() : null);
             document.add(Chunk.NEWLINE);
             addFinancieroSection(document, comprobante);
+            document.add(Chunk.NEWLINE);
+            addPagosSection(document, comprobante.getVenta());
             document.add(Chunk.NEWLINE);
             addFooter(document);
 
@@ -237,6 +245,45 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         document.add(footer2);
     }
 
+    private void addPagosSection(Document document, Venta venta) throws DocumentException {
+        document.add(new Paragraph("Pagos aplicados", FONT_SUBTITLE));
+
+        if (venta == null || venta.getId() == null) {
+            document.add(new Paragraph("Sin datos de pagos asociados.", FONT_VALUE));
+            return;
+        }
+
+        List<Pago> pagos = pagoRepository.findAllByVentaIdWithRelaciones(venta.getId());
+        if (pagos.isEmpty()) {
+            document.add(new Paragraph("No hay pagos registrados para esta venta.", FONT_VALUE));
+            return;
+        }
+
+        PdfPTable table = new PdfPTable(new float[] { 1.2f, 2.2f, 1.4f, 2f, 1.2f, 1.2f });
+        table.setWidthPercentage(100f);
+        addHeaderCell(table, "Fecha");
+        addHeaderCell(table, "Metodo");
+        addHeaderCell(table, "Referencia");
+        addHeaderCell(table, "Monto original");
+        addHeaderCell(table, "Aplicado ARS");
+        addHeaderCell(table, "Estado");
+
+        for (Pago pago : pagos) {
+            String moneda = pago.getMoneda() != null ? nullSafe(pago.getMoneda().getCodigo(), "") : "";
+            String simbolo = pago.getMoneda() != null ? nullSafe(pago.getMoneda().getSimbolo(), "") : "";
+            String montoOriginal = (simbolo.isBlank() ? "" : simbolo + " ") + formatAmount(pago.getMonto()) + (moneda.isBlank() ? "" : " " + moneda);
+
+            addValueCell(table, formatDateTime(pago.getFecha()));
+            addValueCell(table, buildMetodoPagoLabel(pago));
+            addValueCell(table, nullSafe(pago.getReferencia(), pago.getNumeroOperacion(), "-"));
+            addValueCell(table, montoOriginal);
+            addValueCell(table, formatAmount(pago.getMontoAplicadoVenta() != null ? pago.getMontoAplicadoVenta() : pago.getMonto()));
+            addValueCell(table, pago.getEstado() != null ? pago.getEstado().name() : "-");
+        }
+
+        document.add(table);
+    }
+
     private void addWatermark(PdfWriter writer, String text) {
         try {
             PdfContentByte canvas = writer.getDirectContentUnder();
@@ -269,6 +316,19 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         PdfPCell valueCell = new PdfPCell(new Phrase(nullSafe(value, "-"), FONT_VALUE));
         valueCell.setPadding(6f);
         table.addCell(valueCell);
+    }
+
+    private void addHeaderCell(PdfPTable table, String value) {
+        PdfPCell cell = new PdfPCell(new Phrase(value, FONT_LABEL));
+        cell.setPadding(6f);
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        table.addCell(cell);
+    }
+
+    private void addValueCell(PdfPTable table, String value) {
+        PdfPCell cell = new PdfPCell(new Phrase(nullSafe(value, "-"), FONT_VALUE));
+        cell.setPadding(6f);
+        table.addCell(cell);
     }
 
     private void addMoneyField(PdfPTable table, String label, BigDecimal amount, String currency, boolean highlight) {
@@ -314,6 +374,18 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
             return fallbackValue;
         }
         return defaultValue;
+    }
+
+    private String buildMetodoPagoLabel(Pago pago) {
+        if (pago.getMetodoPago() == null) {
+            return "-";
+        }
+        String codigo = nullSafe(pago.getMetodoPago().getCodigo(), "");
+        String descripcion = nullSafe(pago.getMetodoPago().getDescripcion(), "");
+        if (!descripcion.isBlank()) {
+            return descripcion + (codigo.isBlank() ? "" : " (" + codigo + ")");
+        }
+        return codigo.isBlank() ? "-" : codigo;
     }
 
     private void validateComprobanteForPdf(Comprobante comprobante) {

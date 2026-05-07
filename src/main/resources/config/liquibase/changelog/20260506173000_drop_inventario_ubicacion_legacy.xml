@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260506173000-01-drop-inventario-ubicacion-legacy" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="inventario" columnName="ubicacion"/>
+        </preConditions>
+        <dropColumn tableName="inventario" columnName="ubicacion"/>
+    </changeSet>
+
+</databaseChangeLog>

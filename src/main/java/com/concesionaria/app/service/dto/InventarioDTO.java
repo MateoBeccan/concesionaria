@@ -44,9 +44,6 @@ public class InventarioDTO implements Serializable {
     @Size(max = 30)
     private String numeroInternoStock;
 
-    @Size(max = 100)
-    private String ubicacion;
-
     private UbicacionStockDTO ubicacionStock;
 
     @NotNull
@@ -153,14 +150,6 @@ public class InventarioDTO implements Serializable {
         this.numeroInternoStock = numeroInternoStock;
     }
 
-    public String getUbicacion() {
-        return ubicacion;
-    }
-
-    public void setUbicacion(String ubicacion) {
-        this.ubicacion = ubicacion;
-    }
-
     public UbicacionStockDTO getUbicacionStock() {
         return ubicacionStock;
     }
@@ -261,7 +250,6 @@ public class InventarioDTO implements Serializable {
             ", estadoOperativoDocumental='" + getEstadoOperativoDocumental() + "'" +
             ", proveedorReferencia='" + getProveedorReferencia() + "'" +
             ", numeroInternoStock='" + getNumeroInternoStock() + "'" +
-            ", ubicacion='" + getUbicacion() + "'" +
             ", estadoInventario='" + getEstadoInventario() + "'" +
             ", observaciones='" + getObservaciones() + "'" +
             ", createdDate='" + getCreatedDate() + "'" +

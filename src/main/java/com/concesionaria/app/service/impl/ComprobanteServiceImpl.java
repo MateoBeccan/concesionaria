@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -76,21 +77,33 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     @Transactional(readOnly = true)
     public Page<ComprobanteDTO> findAll(Pageable pageable) {
         LOG.debug("Request to get all Comprobantes");
-        return comprobanteRepository.findAll(pageable).map(comprobanteMapper::toDto);
+        if (isAdmin()) {
+            LOG.debug("Acceso administrativo a listado global de comprobantes");
+            return comprobanteRepository.findAll(pageable).map(comprobanteMapper::toDto);
+        }
+        return comprobanteRepository.findAllCurrentUser(currentUserLogin(), pageable).map(comprobanteMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ComprobanteDTO> findOne(Long id) {
         LOG.debug("Request to get Comprobante : {}", id);
-        return comprobanteRepository.findById(id).map(comprobanteMapper::toDto);
+        validarAccesoComprobante(id);
+        Optional<ComprobanteDTO> result = comprobanteRepository.findById(id).map(comprobanteMapper::toDto);
+        if (result.isEmpty()) {
+            LOG.warn("Comprobante inexistente para id {}", id);
+        }
+        return result;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ComprobanteDTO> findByVentaId(Long ventaId) {
         LOG.debug("Request to get Comprobantes by Venta : {}", ventaId);
-        return comprobanteRepository.findAllByVentaIdWithRelaciones(ventaId).stream().map(comprobanteMapper::toDto).toList();
+        if (isAdmin()) {
+            return comprobanteRepository.findAllByVentaIdWithRelaciones(ventaId).stream().map(comprobanteMapper::toDto).toList();
+        }
+        return comprobanteRepository.findAllByVentaIdWithRelacionesForUser(ventaId, currentUserLogin()).stream().map(comprobanteMapper::toDto).toList();
     }
 
     @Override
@@ -203,5 +216,21 @@ public class ComprobanteServiceImpl implements ComprobanteService {
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
+    }
+
+    private boolean isAdmin() {
+        return SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN");
+    }
+
+    private void validarAccesoComprobante(Long comprobanteId) {
+        if (comprobanteId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = comprobanteRepository.existsAccessibleByIdForUser(comprobanteId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a comprobante {} para usuario {}", comprobanteId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a este comprobante");
+        }
     }
 }

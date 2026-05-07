@@ -26,6 +26,9 @@ import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class ReservaServiceImpl implements ReservaService {
+    private static final Logger LOG = LoggerFactory.getLogger(ReservaServiceImpl.class);
 
     private final ReservaRepository reservaRepository;
     private final ReservaMapper reservaMapper;
@@ -113,13 +117,18 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional(readOnly = true)
     public Page<ReservaDTO> findAllCurrentUser(Pageable pageable) {
-        return reservaRepository.findAllCurrentUser(pageable).map(this::toDtoEnriquecido);
+        return reservaRepository.findAllCurrentUser(currentUserLogin(), pageable).map(this::toDtoEnriquecido);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<ReservaDTO> findOne(Long id) {
-        return reservaRepository.findById(id).map(this::toDtoEnriquecido);
+        validarAccesoReserva(id);
+        Optional<ReservaDTO> result = reservaRepository.findById(id).map(this::toDtoEnriquecido);
+        if (result.isEmpty()) {
+            LOG.warn("Reserva inexistente para id {}", id);
+        }
+        return result;
     }
 
     @Override
@@ -277,6 +286,18 @@ public class ReservaServiceImpl implements ReservaService {
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
+    }
+
+    private void validarAccesoReserva(Long reservaId) {
+        if (reservaId == null || SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN")) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = reservaRepository.existsAccessibleByIdForUser(reservaId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a reserva {} para usuario {}", reservaId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a esta reserva");
+        }
     }
 
     private ReservaDTO toDtoEnriquecido(Reserva reserva) {
