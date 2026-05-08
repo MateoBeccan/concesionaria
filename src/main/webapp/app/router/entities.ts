@@ -48,6 +48,7 @@ const TipoComprobanteDetails = () => import('@/entities/tipo-comprobante/tipo-co
 const Pago = () => import('@/entities/pago/pago.vue');
 const PagoUpdate = () => import('@/entities/pago/pago-update.vue');
 const PagoDetails = () => import('@/entities/pago/pago-details.vue');
+const MovimientoCaja = () => import('@/entities/movimiento-caja/movimiento-caja.vue');
 
 const MetodoPago = () => import('@/entities/metodo-pago/metodo-pago.vue');
 const MetodoPagoUpdate = () => import('@/entities/metodo-pago/metodo-pago-update.vue');
@@ -379,6 +380,12 @@ export default {
       path: 'pago/:pagoId/view',
       name: 'PagoView',
       component: PagoDetails,
+      meta: { authorities: ADMIN_ONLY },
+    },
+    {
+      path: 'movimiento-caja',
+      name: 'MovimientoCaja',
+      component: MovimientoCaja,
       meta: { authorities: ADMIN_ONLY },
     },
     {

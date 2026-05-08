@@ -13,6 +13,7 @@ import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.TipoComprobanteRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.dto.ComprobanteDTO;
@@ -41,6 +42,9 @@ class ComprobanteServiceImplBusinessTest {
     @Mock
     private TipoComprobanteRepository tipoComprobanteRepository;
 
+    @Mock
+    private PagoRepository pagoRepository;
+
     private ComprobanteServiceImpl comprobanteService;
 
     @BeforeEach
@@ -49,7 +53,8 @@ class ComprobanteServiceImplBusinessTest {
             comprobanteRepository,
             comprobanteMapper,
             ventaRepository,
-            tipoComprobanteRepository
+            tipoComprobanteRepository,
+            pagoRepository
         );
     }
 

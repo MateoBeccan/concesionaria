@@ -2,10 +2,12 @@ package com.concesionaria.app.service.mapper;
 
 import com.concesionaria.app.domain.Comprobante;
 import com.concesionaria.app.domain.Moneda;
+import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.service.dto.ComprobanteDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
+import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.dto.TipoComprobanteDTO;
 import com.concesionaria.app.service.dto.VentaDTO;
 import org.mapstruct.*;
@@ -16,6 +18,7 @@ import org.mapstruct.*;
 @Mapper(componentModel = "spring")
 public interface ComprobanteMapper extends EntityMapper<ComprobanteDTO, Comprobante> {
     @Mapping(target = "venta", source = "venta", qualifiedByName = "ventaId")
+    @Mapping(target = "pago", source = "pago", qualifiedByName = "pagoIdResumen")
     @Mapping(target = "tipoComprobante", source = "tipoComprobante", qualifiedByName = "tipoComprobanteResumen")
     @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaResumen")
     ComprobanteDTO toDto(Comprobante s);
@@ -39,4 +42,13 @@ public interface ComprobanteMapper extends EntityMapper<ComprobanteDTO, Comproba
     @Mapping(target = "descripcion", source = "descripcion")
     @Mapping(target = "simbolo", source = "simbolo")
     MonedaDTO toDtoMonedaResumen(Moneda moneda);
+
+    @Named("pagoIdResumen")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "referencia", source = "referencia")
+    @Mapping(target = "numeroOperacion", source = "numeroOperacion")
+    @Mapping(target = "monto", source = "monto")
+    @Mapping(target = "estado", source = "estado")
+    PagoDTO toDtoPagoResumen(Pago pago);
 }

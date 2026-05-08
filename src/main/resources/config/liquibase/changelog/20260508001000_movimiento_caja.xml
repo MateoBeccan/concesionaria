@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260508001000-1" author="codex">
+    <createTable tableName="movimiento_caja">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="fecha" type="datetime(6)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="usuario" type="varchar(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tipo_movimiento" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="monto_original" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="cotizacion_usada" type="decimal(21,8)"/>
+      <column name="monto_aplicado_ars" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="referencia" type="varchar(100)"/>
+      <column name="numero_operacion" type="varchar(100)"/>
+      <column name="created_date" type="datetime(6)"/>
+      <column name="last_modified_date" type="datetime(6)"/>
+      <column name="pago_id" type="bigint"/>
+      <column name="venta_id" type="bigint"/>
+      <column name="reserva_id" type="bigint"/>
+      <column name="metodo_pago_id" type="bigint"/>
+      <column name="moneda_id" type="bigint"/>
+      <column name="entidad_financiera_id" type="bigint"/>
+    </createTable>
+
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_fecha">
+      <column name="fecha"/>
+    </createIndex>
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_usuario">
+      <column name="usuario"/>
+    </createIndex>
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_tipo_estado">
+      <column name="tipo_movimiento"/>
+      <column name="estado"/>
+    </createIndex>
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_pago">
+      <column name="pago_id"/>
+    </createIndex>
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_venta">
+      <column name="venta_id"/>
+    </createIndex>
+    <createIndex tableName="movimiento_caja" indexName="idx_mov_caja_reserva">
+      <column name="reserva_id"/>
+    </createIndex>
+
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="pago_id"
+      referencedTableName="pago"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_pago"/>
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="venta_id"
+      referencedTableName="venta"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_venta"/>
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="reserva_id"
+      referencedTableName="reserva"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_reserva"/>
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="metodo_pago_id"
+      referencedTableName="metodo_pago"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_metodo_pago"/>
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="moneda_id"
+      referencedTableName="moneda"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_moneda"/>
+    <addForeignKeyConstraint
+      baseTableName="movimiento_caja"
+      baseColumnNames="entidad_financiera_id"
+      referencedTableName="entidad_financiera"
+      referencedColumnNames="id"
+      constraintName="fk_mov_caja_entidad_financiera"/>
+  </changeSet>
+
+</databaseChangeLog>

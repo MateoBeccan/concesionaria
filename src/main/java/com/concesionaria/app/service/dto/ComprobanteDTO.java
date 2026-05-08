@@ -53,6 +53,8 @@ public class ComprobanteDTO implements Serializable {
 
     private MonedaDTO moneda;
 
+    private PagoDTO pago;
+
     public Long getId() {
         return id;
     }
@@ -197,6 +199,14 @@ public class ComprobanteDTO implements Serializable {
         this.moneda = moneda;
     }
 
+    public PagoDTO getPago() {
+        return pago;
+    }
+
+    public void setPago(PagoDTO pago) {
+        this.pago = pago;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -240,6 +250,7 @@ public class ComprobanteDTO implements Serializable {
             ", venta=" + getVenta() +
             ", tipoComprobante=" + getTipoComprobante() +
             ", moneda=" + getMoneda() +
+            ", pago=" + getPago() +
             "}";
     }
 }

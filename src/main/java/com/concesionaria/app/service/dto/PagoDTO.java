@@ -69,6 +69,7 @@ public class PagoDTO implements Serializable {
     private MetodoPagoDTO metodoPago;
 
     private MonedaDTO moneda;
+    private EntidadFinancieraDTO entidadFinanciera;
 
     private EstadoPago estado;
 
@@ -264,6 +265,14 @@ public class PagoDTO implements Serializable {
         this.moneda = moneda;
     }
 
+    public EntidadFinancieraDTO getEntidadFinanciera() {
+        return entidadFinanciera;
+    }
+
+    public void setEntidadFinanciera(EntidadFinancieraDTO entidadFinanciera) {
+        this.entidadFinanciera = entidadFinanciera;
+    }
+
     public EstadoPago getEstado() {
         return estado;
     }
@@ -317,6 +326,7 @@ public class PagoDTO implements Serializable {
             ", reserva=" + getReserva() +
             ", metodoPago=" + getMetodoPago() +
             ", moneda=" + getMoneda() +
+            ", entidadFinanciera=" + getEntidadFinanciera() +
             "}";
     }
 }

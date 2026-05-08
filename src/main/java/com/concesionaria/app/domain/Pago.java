@@ -104,6 +104,10 @@ public class Pago implements Serializable {
     private Moneda moneda;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entidad_financiera_id")
+    private EntidadFinanciera entidadFinanciera;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cotizacion_id")
     private Cotizacion cotizacionRef;
 
@@ -352,6 +356,14 @@ public class Pago implements Serializable {
     public Pago moneda(Moneda moneda) {
         this.setMoneda(moneda);
         return this;
+    }
+
+    public EntidadFinanciera getEntidadFinanciera() {
+        return entidadFinanciera;
+    }
+
+    public void setEntidadFinanciera(EntidadFinanciera entidadFinanciera) {
+        this.entidadFinanciera = entidadFinanciera;
     }
 
     public Cotizacion getCotizacionRef() {

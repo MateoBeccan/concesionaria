@@ -6,6 +6,8 @@ import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.Venta;
+import com.concesionaria.app.domain.EntidadFinanciera;
+import com.concesionaria.app.service.dto.EntidadFinancieraDTO;
 import com.concesionaria.app.service.dto.MetodoPagoDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.PagoDTO;
@@ -23,6 +25,7 @@ public interface PagoMapper extends EntityMapper<PagoDTO, Pago> {
     @Mapping(target = "reserva", source = "reserva", qualifiedByName = "reservaId")
     @Mapping(target = "metodoPago", source = "metodoPago", qualifiedByName = "metodoPagoResumen")
     @Mapping(target = "moneda", source = "moneda", qualifiedByName = "monedaResumen")
+    @Mapping(target = "entidadFinanciera", source = "entidadFinanciera", qualifiedByName = "entidadFinancieraResumen")
     @Mapping(target = "cotizacionId", source = "cotizacionRef.id")
     @Mapping(target = "tasacionUsadoId", source = "tasacionUsado.id")
     @Mapping(target = "tasacionUsado", source = "tasacionUsado", qualifiedByName = "tasacionUsadoResumen")
@@ -53,6 +56,13 @@ public interface PagoMapper extends EntityMapper<PagoDTO, Pago> {
     @Mapping(target = "descripcion", source = "descripcion")
     @Mapping(target = "simbolo", source = "simbolo")
     MonedaDTO toDtoMonedaResumen(Moneda moneda);
+
+    @Named("entidadFinancieraResumen")
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "codigo", source = "codigo")
+    @Mapping(target = "nombre", source = "nombre")
+    EntidadFinancieraDTO toDtoEntidadFinancieraResumen(EntidadFinanciera entidadFinanciera);
 
     @Named("tasacionUsadoResumen")
     @BeanMapping(ignoreByDefault = true)

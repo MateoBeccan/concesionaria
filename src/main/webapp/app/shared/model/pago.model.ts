@@ -3,6 +3,7 @@ import { type IMoneda } from '@/shared/model/moneda.model';
 import { type IReserva } from '@/shared/model/reserva.model';
 import { type ITasacionUsado } from '@/shared/model/tasacion-usado.model';
 import { type IVenta } from '@/shared/model/venta.model';
+import { type IEntidadFinanciera } from '@/shared/model/entidad-financiera.model';
 import { type EstadoPago } from '@/shared/model/estado-pago.model';
 import { type TipoMovimientoPago } from '@/shared/model/tipo-movimiento-pago.model';
 
@@ -21,6 +22,7 @@ export interface IPago {
   comprobanteExterno?: string | null;
   bancoEntidad?: string | null;
   numeroOperacion?: string | null;
+  entidadFinanciera?: IEntidadFinanciera | null;
   motivoAnulacion?: string | null;
   fechaAnulacion?: Date | null;
   usuarioAnulacion?: string | null;
@@ -50,6 +52,7 @@ export class Pago implements IPago {
     public comprobanteExterno?: string | null,
     public bancoEntidad?: string | null,
     public numeroOperacion?: string | null,
+    public entidadFinanciera?: IEntidadFinanciera | null,
     public motivoAnulacion?: string | null,
     public fechaAnulacion?: Date | null,
     public usuarioAnulacion?: string | null,

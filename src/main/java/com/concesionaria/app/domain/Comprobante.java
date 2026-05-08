@@ -91,6 +91,10 @@ public class Comprobante implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     private Moneda moneda;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pago_id")
+    private Pago pago;
+
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
     public Long getId() {
@@ -305,6 +309,14 @@ public class Comprobante implements Serializable {
     public Comprobante moneda(Moneda moneda) {
         this.setMoneda(moneda);
         return this;
+    }
+
+    public Pago getPago() {
+        return pago;
+    }
+
+    public void setPago(Pago pago) {
+        this.pago = pago;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

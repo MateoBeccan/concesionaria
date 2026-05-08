@@ -1,11 +1,13 @@
 package com.concesionaria.app.service.impl;
 
 import com.concesionaria.app.domain.Comprobante;
+import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.TipoComprobanteRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.security.SecurityUtils;
@@ -40,17 +42,20 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     private final VentaRepository ventaRepository;
 
     private final TipoComprobanteRepository tipoComprobanteRepository;
+    private final PagoRepository pagoRepository;
 
     public ComprobanteServiceImpl(
         ComprobanteRepository comprobanteRepository,
         ComprobanteMapper comprobanteMapper,
         VentaRepository ventaRepository,
-        TipoComprobanteRepository tipoComprobanteRepository
+        TipoComprobanteRepository tipoComprobanteRepository,
+        PagoRepository pagoRepository
     ) {
         this.comprobanteRepository = comprobanteRepository;
         this.comprobanteMapper = comprobanteMapper;
         this.ventaRepository = ventaRepository;
         this.tipoComprobanteRepository = tipoComprobanteRepository;
+        this.pagoRepository = pagoRepository;
     }
 
     @Override
@@ -107,6 +112,15 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<ComprobanteDTO> findByPagoId(Long pagoId) {
+        if (isAdmin()) {
+            return comprobanteRepository.findAllByPagoIdOrderByFechaEmisionDescIdDesc(pagoId).stream().map(comprobanteMapper::toDto).toList();
+        }
+        return comprobanteRepository.findAllByPagoIdForUser(pagoId, currentUserLogin()).stream().map(comprobanteMapper::toDto).toList();
+    }
+
+    @Override
     public ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId) {
         LOG.debug("Request to emitir comprobante para venta {} y tipo {}", ventaId, tipoComprobanteId);
 
@@ -137,6 +151,51 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         comprobante.setTotal(venta.getTotal());
         comprobante.setMoneda(venta.getMoneda());
         comprobante.setVenta(venta);
+        comprobante.setTipoComprobante(tipoComprobante);
+        comprobante.setPago(null);
+        comprobante.setEstado(EstadoComprobante.EMITIDO);
+        comprobante.setCreatedDate(now);
+        comprobante.setCreatedBy(currentUser);
+        comprobante.setUsuarioEmision(currentUser);
+        comprobante.setLastModifiedDate(now);
+        comprobante.setLastModifiedBy(currentUser);
+
+        Comprobante saved = comprobanteRepository.save(comprobante);
+        return comprobanteMapper.toDto(saved);
+    }
+
+    @Override
+    public ComprobanteDTO emitirComprobantePago(Long pagoId, Long tipoComprobanteId) {
+        Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago informado no existe"));
+        if (pago.getVenta() == null || pago.getVenta().getId() == null) {
+            throw new BadRequestException("Solo se puede emitir comprobante para pagos asociados a una venta");
+        }
+        Venta venta = ventaRepository.findById(pago.getVenta().getId()).orElseThrow(() -> new BadRequestException("La venta asociada no existe"));
+        if (tipoComprobanteId == null) {
+            throw new BadRequestException("Debe informar tipo de comprobante para el pago");
+        }
+        TipoComprobante tipoComprobante = tipoComprobanteRepository
+            .findById(tipoComprobanteId)
+            .orElseThrow(() -> new BadRequestException("El tipo de comprobante no existe"));
+
+        if (comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(pagoId, tipoComprobanteId, EstadoComprobante.EMITIDO)) {
+            throw new BadRequestException("El pago ya posee un comprobante activo de ese tipo");
+        }
+
+        Long siguienteCorrelativo = (comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(tipoComprobanteId) + 1);
+        String numeroComprobante = generarNumeroComprobante(tipoComprobante, siguienteCorrelativo);
+        Instant now = Instant.now();
+        String currentUser = currentUserLogin();
+
+        Comprobante comprobante = new Comprobante();
+        comprobante.setNumeroComprobante(numeroComprobante);
+        comprobante.setFechaEmision(now);
+        comprobante.setImporteNeto(pago.getMontoAplicadoVenta() != null ? pago.getMontoAplicadoVenta() : pago.getMonto());
+        comprobante.setImpuesto(java.math.BigDecimal.ZERO);
+        comprobante.setTotal(pago.getMontoAplicadoVenta() != null ? pago.getMontoAplicadoVenta() : pago.getMonto());
+        comprobante.setMoneda(venta.getMoneda());
+        comprobante.setVenta(venta);
+        comprobante.setPago(pago);
         comprobante.setTipoComprobante(tipoComprobante);
         comprobante.setEstado(EstadoComprobante.EMITIDO);
         comprobante.setCreatedDate(now);

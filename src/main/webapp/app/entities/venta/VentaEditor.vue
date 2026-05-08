@@ -134,6 +134,7 @@
               :metodo-pagos="metodoPagos"
               :monedas="monedas"
               :tasaciones-usado="tasacionesUsadoDisponibles"
+              :entidades-financieras="entidadesFinancieras"
               :moneda-default="venta.moneda ?? null"
               :moneda-base-codigo="venta.moneda?.codigo ?? 'ARS'"
               @agregar="agregarPago"
@@ -239,6 +240,7 @@ const {
   monedas,
   metodoPagos,
   tipoComprobantes,
+  entidadesFinancieras,
   porcentajeMinimoReserva,
   tieneComprobanteActivo,
   cumpleMinimoReserva,
@@ -339,11 +341,12 @@ const flowSteps = computed(() => [
 ]);
 
 onMounted(async () => {
-  const [monedasRes, metodosRes, tiposRes, reservaConfigRes] = await Promise.all([
+  const [monedasRes, metodosRes, tiposRes, reservaConfigRes, entidadesRes] = await Promise.all([
     axios.get('api/monedas?activo.equals=true&page=0&size=50'),
     axios.get('api/metodo-pagos?activo.equals=true&page=0&size=50'),
     axios.get('api/tipo-comprobantes?page=0&size=50'),
     axios.get('api/ventas/reserva-config'),
+    axios.get('api/entidades-financieras'),
   ]);
 
   monedas.value = monedasRes.data;
@@ -363,6 +366,7 @@ onMounted(async () => {
 
   metodoPagos.value = metodosRes.data;
   tipoComprobantes.value = tiposRes.data;
+  entidadesFinancieras.value = entidadesRes.data ?? [];
   setPorcentajeMinimoReserva(Number(reservaConfigRes.data?.porcentajeMinimo ?? 0.1));
 
   if (route.params?.ventaId) {

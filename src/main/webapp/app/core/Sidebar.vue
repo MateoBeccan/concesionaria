@@ -97,6 +97,7 @@ const ADMIN_SECTIONS: SidebarSection[] = [
       { name: 'Cliente', label: 'Clientes', icon: 'CL' },
       { name: 'Vehiculo', label: 'Catalogo de vehiculos', icon: 'VH' },
       { name: 'Inventario', label: 'Inventario', icon: 'IN' },
+      { name: 'MovimientoCaja', label: 'Caja', icon: 'CJ' },
     ],
   },
   {

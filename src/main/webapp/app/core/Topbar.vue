@@ -137,6 +137,12 @@ const pageContext = computed<PageContext>(() => {
         subtitle: 'Controla disponibilidad, reservas, vencimientos y consistencia del stock.',
         action: { label: 'Nuevo registro', to: { name: 'InventarioCreate' } },
       };
+    case 'MovimientoCaja':
+      return {
+        eyebrow: 'Finanzas',
+        title: 'Caja',
+        subtitle: 'Monitorea ingresos, reversos y trazabilidad operativa de pagos.',
+      };
     case 'Cliente':
       return {
         eyebrow: 'Clientes',

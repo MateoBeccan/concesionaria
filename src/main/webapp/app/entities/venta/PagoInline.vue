@@ -23,8 +23,11 @@
             </select>
           </div>
           <div class="col-md-3" v-if="requiereBancoEntidad">
-            <label class="form-label form-label-sm">Banco / Entidad <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" v-model.trim="nuevoPago.bancoEntidad" maxlength="100" />
+            <label class="form-label form-label-sm">Entidad financiera <span class="text-danger">*</span></label>
+            <select class="form-select form-select-sm" v-model="nuevoPago.entidadFinanciera">
+              <option :value="null">- Seleccionar -</option>
+              <option v-for="e in entidadesFinancieras" :key="e.id" :value="e">{{ e.nombre ?? e.codigo }}</option>
+            </select>
           </div>
           <div class="col-md-3" v-if="requiereComprobanteExterno">
             <label class="form-label form-label-sm">Comprobante externo <span class="text-danger">*</span></label>
@@ -68,6 +71,7 @@
             <th>Ref./Operacion</th>
             <th>Detalle</th>
             <th>Estado</th>
+            <th>Comprobante</th>
             <th>Usuario</th>
             <th class="text-end">Acciones</th>
           </tr>
@@ -81,12 +85,13 @@
             <td class="text-end">{{ fmt(p.cotizacionUsada) }}</td>
             <td class="text-end fw-semibold">{{ fmt(p.montoAplicadoMonedaVenta) }}</td>
             <td>{{ p.referencia || p.numeroOperacion || '-' }}</td>
-            <td>{{ p.bancoEntidad || p.comprobanteExterno || p.observaciones || '-' }}</td>
+            <td>{{ p.entidadFinanciera?.nombre || p.bancoEntidad || p.comprobanteExterno || p.observaciones || '-' }}</td>
             <td>
               <span class="badge" :class="p.estado === EstadoPago.ANULADO ? 'bg-secondary' : 'bg-success'">
                 {{ p.estado === EstadoPago.ANULADO ? 'ANULADO' : 'REGISTRADO' }}
               </span>
             </td>
+            <td>{{ p.comprobanteNumero || '-' }}</td>
             <td>{{ p.usuarioRegistro ?? '-' }}</td>
             <td class="text-end">
               <button class="btn btn-sm btn-outline-danger" @click="abrirModalAnulacion(p)" :disabled="p.estado === EstadoPago.ANULADO" v-if="p.guardado">
@@ -117,6 +122,7 @@ import type { PagoLocal } from './useVentaEditor';
 import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
 import type { ITasacionUsado } from '@/shared/model/tasacion-usado.model';
+import type { IEntidadFinanciera } from '@/shared/model/entidad-financiera.model';
 import { EstadoPago } from '@/shared/model/estado-pago.model';
 
 const props = defineProps<{
@@ -126,6 +132,7 @@ const props = defineProps<{
   metodoPagos: IMetodoPago[];
   monedas: IMoneda[];
   tasacionesUsado: ITasacionUsado[];
+  entidadesFinancieras: IEntidadFinanciera[];
   monedaDefault?: IMoneda | null;
   monedaBaseCodigo?: string;
 }>();
@@ -136,6 +143,7 @@ const emit = defineEmits<{
     metodoPago: IMetodoPago | null,
     moneda: IMoneda | null,
     tasacionUsadoId?: number | null,
+    entidadFinanciera?: IEntidadFinanciera | null,
     bancoEntidad?: string,
     comprobanteExterno?: string,
     observaciones?: string,
@@ -151,6 +159,7 @@ const nuevoPago = reactive({
   moneda: props.monedaDefault ?? null,
   tasacionUsadoId: null as number | null,
   bancoEntidad: '',
+  entidadFinanciera: null as IEntidadFinanciera | null,
   comprobanteExterno: '',
   observaciones: '',
 });
@@ -170,7 +179,7 @@ const mensajeValidacionPago = computed(() => {
   if (esEntregaUsado.value && !nuevoPago.tasacionUsadoId) return 'Debes seleccionar una tasacion aceptada';
   if (!esEntregaUsado.value && (!nuevoPago.monto || nuevoPago.monto <= 0)) return 'Ingresa un monto mayor a 0';
   if (props.saldoPendiente <= 0) return 'La venta no tiene saldo pendiente';
-  if (requiereBancoEntidad.value && !nuevoPago.bancoEntidad.trim()) return 'Debes informar banco/entidad';
+  if (requiereBancoEntidad.value && !nuevoPago.entidadFinanciera?.id && !nuevoPago.bancoEntidad.trim()) return 'Debes informar una entidad financiera';
   if (requiereComprobanteExterno.value && !nuevoPago.comprobanteExterno.trim()) return 'Debes informar comprobante externo';
   return '';
 });
@@ -183,6 +192,7 @@ function agregarPago() {
     nuevoPago.metodoPago,
     nuevoPago.moneda,
     nuevoPago.tasacionUsadoId,
+    nuevoPago.entidadFinanciera,
     nuevoPago.bancoEntidad.trim(),
     nuevoPago.comprobanteExterno.trim(),
     nuevoPago.observaciones.trim(),
@@ -192,6 +202,7 @@ function agregarPago() {
   nuevoPago.moneda = props.monedaDefault ?? null;
   nuevoPago.tasacionUsadoId = null;
   nuevoPago.bancoEntidad = '';
+  nuevoPago.entidadFinanciera = null;
   nuevoPago.comprobanteExterno = '';
   nuevoPago.observaciones = '';
 }

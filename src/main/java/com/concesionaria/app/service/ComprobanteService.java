@@ -52,7 +52,11 @@ public interface ComprobanteService {
 
     List<ComprobanteDTO> findByVentaId(Long ventaId);
 
+    List<ComprobanteDTO> findByPagoId(Long pagoId);
+
     ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId);
+
+    ComprobanteDTO emitirComprobantePago(Long pagoId, Long tipoComprobanteId);
 
     ComprobanteDTO anularComprobante(Long comprobanteId, String motivo);
 

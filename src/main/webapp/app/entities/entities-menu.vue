@@ -24,6 +24,10 @@
       <font-awesome-icon icon="asterisk" />
       <span>Metodos de pago</span>
     </b-dropdown-item>
+    <b-dropdown-item to="/movimiento-caja" active-class="active">
+      <font-awesome-icon icon="asterisk" />
+      <span>Caja</span>
+    </b-dropdown-item>
     <b-dropdown-item to="/moneda" active-class="active">
       <font-awesome-icon icon="asterisk" />
       <span>Monedas</span>

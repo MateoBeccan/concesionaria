@@ -25,7 +25,12 @@ import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.ReservaRepository;
 import com.concesionaria.app.repository.TasacionUsadoRepository;
 import com.concesionaria.app.repository.VentaRepository;
+import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.TipoComprobanteRepository;
+import com.concesionaria.app.repository.EntidadFinancieraRepository;
 import com.concesionaria.app.service.CurrencyConversionService;
+import com.concesionaria.app.service.ComprobanteService;
+import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
@@ -72,6 +77,21 @@ class PagoServiceImplBusinessTest {
     @Mock
     private TasacionUsadoRepository tasacionUsadoRepository;
 
+    @Mock
+    private EntidadFinancieraRepository entidadFinancieraRepository;
+
+    @Mock
+    private ComprobanteService comprobanteService;
+
+    @Mock
+    private TipoComprobanteRepository tipoComprobanteRepository;
+
+    @Mock
+    private ComprobanteRepository comprobanteRepository;
+
+    @Mock
+    private MovimientoCajaService movimientoCajaService;
+
     private PagoServiceImpl pagoService;
 
     @BeforeEach
@@ -85,8 +105,13 @@ class PagoServiceImplBusinessTest {
                 ventaService,
                 metodoPagoRepository,
                 monedaRepository,
+                entidadFinancieraRepository,
                 tasacionUsadoRepository,
-                currencyConversionService
+                currencyConversionService,
+                comprobanteService,
+                tipoComprobanteRepository,
+                comprobanteRepository,
+                movimientoCajaService
             );
         ReflectionTestUtils.setField(pagoService, "monedaBaseCodigo", "ARS");
     }
@@ -150,6 +175,7 @@ class PagoServiceImplBusinessTest {
         assertThat(pago.getEstado()).isEqualTo(EstadoPago.REGISTRADO);
         assertThat(venta.getTotalPagado()).isEqualByComparingTo("1500.00");
         assertThat(venta.getSaldo()).isEqualByComparingTo("8500.00");
+        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.REGISTRADO), eq(true));
         verify(ventaRepository).findByIdForUpdate(30L);
         verify(ventaService).sincronizarInventarioConVenta(30L);
         verify(ventaService, never()).confirmarVenta(any());
@@ -259,6 +285,7 @@ class PagoServiceImplBusinessTest {
         assertThat(resultado.getEstado()).isEqualTo(EstadoPago.ANULADO);
         assertThat(venta.getTotalPagado()).isEqualByComparingTo("0.00");
         assertThat(venta.getSaldo()).isEqualByComparingTo("1000.00");
+        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.ANULADO), eq(true));
         verify(ventaService).sincronizarInventarioConVenta(60L);
         verify(ventaService, never()).confirmarVenta(any());
     }
@@ -396,6 +423,7 @@ class PagoServiceImplBusinessTest {
         assertThat(pago.getCotizacionUsada()).isEqualByComparingTo("1.00000000");
         assertThat(pago.getTasacionUsado()).isNotNull();
         assertThat(venta.getTasacionUsado()).isNotNull();
+        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.REGISTRADO), eq(false));
         verify(ventaService).sincronizarInventarioConVenta(110L);
     }
 
@@ -544,7 +572,7 @@ class PagoServiceImplBusinessTest {
         when(metodoPagoRepository.findById(3L)).thenReturn(Optional.of(transferencia));
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(120L, pagoDTO));
-        assertThat(ex.getMessage()).contains("debe informar banco/entidad");
+        assertThat(ex.getMessage()).contains("debe informar entidad financiera");
     }
 
     @Test

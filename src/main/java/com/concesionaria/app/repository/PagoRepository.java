@@ -57,6 +57,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         "select p from Pago p " +
         "left join fetch p.metodoPago mp " +
         "left join fetch p.moneda m " +
+        "left join fetch p.entidadFinanciera ef " +
         "left join fetch p.tasacionUsado tu " +
         "where p.venta.id = :ventaId " +
         "order by p.fecha desc, p.id desc"
@@ -69,6 +70,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         "join v.user u " +
         "left join fetch p.metodoPago mp " +
         "left join fetch p.moneda m " +
+        "left join fetch p.entidadFinanciera ef " +
         "left join fetch p.tasacionUsado tu " +
         "where p.venta.id = :ventaId and u.login = :login " +
         "order by p.fecha desc, p.id desc"
@@ -86,6 +88,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         "select p from Pago p " +
         "left join fetch p.metodoPago mp " +
         "left join fetch p.moneda m " +
+        "left join fetch p.entidadFinanciera ef " +
         "left join fetch p.tasacionUsado tu " +
         "where p.reserva.id = :reservaId " +
         "order by p.fecha desc, p.id desc"
@@ -97,6 +100,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         "join p.reserva r " +
         "left join fetch p.metodoPago mp " +
         "left join fetch p.moneda m " +
+        "left join fetch p.entidadFinanciera ef " +
         "left join fetch p.tasacionUsado tu " +
         "where p.reserva.id = :reservaId and r.usuarioCreacion = :login " +
         "order by p.fecha desc, p.id desc"

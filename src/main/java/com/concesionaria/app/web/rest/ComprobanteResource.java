@@ -209,6 +209,12 @@ public class ComprobanteResource {
         return ResponseEntity.ok(comprobanteService.findByVentaId(ventaId));
     }
 
+    @GetMapping("/by-pago/{pagoId}")
+    public ResponseEntity<List<ComprobanteDTO>> getComprobantesByPago(@PathVariable("pagoId") Long pagoId) {
+        LOG.debug("REST request to get Comprobantes by Pago : {}", pagoId);
+        return ResponseEntity.ok(comprobanteService.findByPagoId(pagoId));
+    }
+
     /**
      * {@code DELETE  /comprobantes/:id} : delete the "id" comprobante.
      *
@@ -231,6 +237,18 @@ public class ComprobanteResource {
     ) throws URISyntaxException {
         LOG.debug("REST request para emitir comprobante. ventaId={}, tipoComprobanteId={}", ventaId, tipoComprobanteId);
         ComprobanteDTO result = comprobanteService.emitirComprobante(ventaId, tipoComprobanteId);
+        return ResponseEntity.created(new URI("/api/comprobantes/" + result.getId()))
+            .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
+            .body(result);
+    }
+
+    @PostMapping("/emitir-pago")
+    public ResponseEntity<ComprobanteDTO> emitirComprobantePago(
+        @RequestParam("pagoId") Long pagoId,
+        @RequestParam("tipoComprobanteId") Long tipoComprobanteId
+    ) throws URISyntaxException {
+        LOG.debug("REST request para emitir comprobante de pago. pagoId={}, tipoComprobanteId={}", pagoId, tipoComprobanteId);
+        ComprobanteDTO result = comprobanteService.emitirComprobantePago(pagoId, tipoComprobanteId);
         return ResponseEntity.created(new URI("/api/comprobantes/" + result.getId()))
             .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getId().toString()))
             .body(result);

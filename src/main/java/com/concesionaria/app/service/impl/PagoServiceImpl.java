@@ -6,21 +6,31 @@ import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.Cotizacion;
+import com.concesionaria.app.domain.EntidadFinanciera;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.enumeration.EstadoTasacionUsado;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.EstadoReserva;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.MonedaRepository;
+import com.concesionaria.app.repository.EntidadFinancieraRepository;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.ReservaRepository;
 import com.concesionaria.app.repository.TasacionUsadoRepository;
+import com.concesionaria.app.repository.TipoComprobanteRepository;
 import com.concesionaria.app.repository.VentaRepository;
+import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.domain.Comprobante;
+import com.concesionaria.app.domain.TipoComprobante;
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
+import com.concesionaria.app.service.ComprobanteService;
+import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.PagoDTO;
@@ -55,10 +65,15 @@ public class PagoServiceImpl implements PagoService {
     private static final String CODIGO_TRANSFERENCIA = "TRANSFERENCIA";
     private static final String CODIGO_DEPOSITO = "DEPOSITO";
     private static final String CODIGO_CHEQUE = "CHEQUE";
+    private static final String CODIGO_DEBITO = "DEBITO";
+    private static final String CODIGO_CREDITO = "CREDITO";
     private static final String CODIGO_AJUSTE = "AJUSTE";
     private static final String CODIGO_BONIFICACION = "BONIFICACION";
     private static final String CODIGO_ENTREGA_USADO = "ENTREGA_USADO";
     private static final String CODIGO_TARJETA = "TARJETA";
+    private static final String CODIGO_SENIA = "SENIA";
+    private static final String TIPO_COMPROBANTE_REC = "REC";
+    private static final String TIPO_COMPROBANTE_SEN = "SEN";
 
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
@@ -67,8 +82,13 @@ public class PagoServiceImpl implements PagoService {
     private final VentaService ventaService;
     private final MetodoPagoRepository metodoPagoRepository;
     private final MonedaRepository monedaRepository;
+    private final EntidadFinancieraRepository entidadFinancieraRepository;
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final CurrencyConversionService currencyConversionService;
+    private final ComprobanteService comprobanteService;
+    private final TipoComprobanteRepository tipoComprobanteRepository;
+    private final ComprobanteRepository comprobanteRepository;
+    private final MovimientoCajaService movimientoCajaService;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -84,8 +104,13 @@ public class PagoServiceImpl implements PagoService {
         VentaService ventaService,
         MetodoPagoRepository metodoPagoRepository,
         MonedaRepository monedaRepository,
+        EntidadFinancieraRepository entidadFinancieraRepository,
         TasacionUsadoRepository tasacionUsadoRepository,
-        CurrencyConversionService currencyConversionService
+        CurrencyConversionService currencyConversionService,
+        ComprobanteService comprobanteService,
+        TipoComprobanteRepository tipoComprobanteRepository,
+        ComprobanteRepository comprobanteRepository,
+        MovimientoCajaService movimientoCajaService
     ) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
@@ -94,8 +119,13 @@ public class PagoServiceImpl implements PagoService {
         this.ventaService = ventaService;
         this.metodoPagoRepository = metodoPagoRepository;
         this.monedaRepository = monedaRepository;
+        this.entidadFinancieraRepository = entidadFinancieraRepository;
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.currencyConversionService = currencyConversionService;
+        this.comprobanteService = comprobanteService;
+        this.tipoComprobanteRepository = tipoComprobanteRepository;
+        this.comprobanteRepository = comprobanteRepository;
+        this.movimientoCajaService = movimientoCajaService;
     }
 
     @Override
@@ -198,6 +228,7 @@ public class PagoServiceImpl implements PagoService {
         validarMetodoPagoEspecial(metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
         if (esMetodoEntregaUsado(metodoPago)) {
             return registrarPagoEntregaUsado(venta, pagoDTO, metodoPago);
         }
@@ -247,6 +278,7 @@ public class PagoServiceImpl implements PagoService {
             pago.setTipoMovimiento(TipoMovimientoPago.PAGO_RECIBIDO);
         }
         pago.setMoneda(monedaPago);
+        pago.setEntidadFinanciera(entidadFinanciera);
         pago.setCotizacionUsada(cotizacionUsada);
         pago.setMontoAplicadoVenta(montoAplicadoVenta);
         pago.setFechaCotizacionUsada(conversion.getFechaCotizacionUsada());
@@ -256,6 +288,7 @@ public class PagoServiceImpl implements PagoService {
         }
         pago.setFecha(fechaPago);
         completarDatosOperacion(pago, metodoPago, null);
+        completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -270,6 +303,8 @@ public class PagoServiceImpl implements PagoService {
             montoAplicadoVenta
         );
         pago = pagoRepository.save(pago);
+        movimientoCajaService.registrarDesdePago(pago, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        emitirComprobanteDePagoSiCorresponde(pago, metodoPago);
 
         recalcularVentaEInventario(venta);
         return pagoMapper.toDto(pago);
@@ -296,6 +331,7 @@ public class PagoServiceImpl implements PagoService {
         validarMetodoPagoEspecial(metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
         if (esMetodoEntregaUsado(metodoPago)) {
             throw new BadRequestException("ENTREGA_USADO solo puede registrarse sobre una venta");
         }
@@ -319,6 +355,7 @@ public class PagoServiceImpl implements PagoService {
             throw new BadRequestException("No se pudo resolver la moneda de la reserva para aplicar el pago");
         }
         pago.setMoneda(monedaPago);
+        pago.setEntidadFinanciera(entidadFinanciera);
         CotizacionConversionDTO conversion = currencyConversionService.convertir(
             pagoDTO.getMonto(),
             monedaPago.getId(),
@@ -335,6 +372,7 @@ public class PagoServiceImpl implements PagoService {
         }
         pago.setFecha(fechaPago);
         completarDatosOperacion(pago, metodoPago, null);
+        completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -349,6 +387,8 @@ public class PagoServiceImpl implements PagoService {
             pago.getMontoAplicadoVenta()
         );
         Pago pagoGuardado = pagoRepository.save(pago);
+        movimientoCajaService.registrarDesdePago(pagoGuardado, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        emitirComprobanteDePagoSiCorresponde(pagoGuardado, metodoPago);
 
         recalcularMontoSeniaReserva(reserva);
         return pagoMapper.toDto(pagoGuardado);
@@ -390,6 +430,14 @@ public class PagoServiceImpl implements PagoService {
         normalizarCamposTextoPago(pago);
         LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
         Pago pagoActualizado = pagoRepository.save(pago);
+        boolean monetario = pagoActualizado.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO;
+        movimientoCajaService.registrarDesdePago(
+            pagoActualizado,
+            monetario ? TipoMovimientoCaja.REVERSO : TipoMovimientoCaja.INFORMATIVO,
+            EstadoPago.ANULADO,
+            monetario
+        );
+        anularComprobantesAsociadosAPago(pagoActualizado, motivo, usuarioAnulacion, fechaAnulacion);
 
         if (venta != null && venta.getId() != null) {
             recalcularVentaEInventario(venta);
@@ -490,7 +538,13 @@ public class PagoServiceImpl implements PagoService {
         if (codigoMetodo == null) {
             return;
         }
-        if ((CODIGO_TRANSFERENCIA.equals(codigoMetodo) || CODIGO_TARJETA.equals(codigoMetodo)) && (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())) {
+        if (
+            (CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
+                CODIGO_TARJETA.equals(codigoMetodo) ||
+                CODIGO_DEBITO.equals(codigoMetodo) ||
+                CODIGO_CREDITO.equals(codigoMetodo)) &&
+            (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())
+        ) {
             LOG.warn("Metodo de pago {} deberia requerir referencia para trazabilidad", codigoMetodo);
         }
     }
@@ -512,19 +566,21 @@ public class PagoServiceImpl implements PagoService {
             return;
         }
         boolean bancoVacio = pagoDTO.getBancoEntidad() == null || pagoDTO.getBancoEntidad().isBlank();
+        boolean entidadVacia = pagoDTO.getEntidadFinanciera() == null || pagoDTO.getEntidadFinanciera().getId() == null;
+        boolean sinIdentificacionEntidad = bancoVacio && entidadVacia;
         boolean comprobanteVacio = pagoDTO.getComprobanteExterno() == null || pagoDTO.getComprobanteExterno().isBlank();
         boolean observacionesVacio = pagoDTO.getObservaciones() == null || pagoDTO.getObservaciones().isBlank();
 
         switch (codigoMetodo) {
             case CODIGO_TRANSFERENCIA:
             case CODIGO_DEPOSITO:
-                if (bancoVacio) {
-                    throw new BadRequestException("Para " + codigoMetodo + " debe informar banco/entidad");
+                if (sinIdentificacionEntidad) {
+                    throw new BadRequestException("Para " + codigoMetodo + " debe informar entidad financiera");
                 }
                 break;
             case CODIGO_CHEQUE:
-                if (bancoVacio) {
-                    throw new BadRequestException("Para CHEQUE debe informar banco/entidad");
+                if (sinIdentificacionEntidad) {
+                    throw new BadRequestException("Para CHEQUE debe informar entidad financiera");
                 }
                 if (comprobanteVacio) {
                     throw new BadRequestException("Para CHEQUE debe informar numero de cheque o comprobante externo");
@@ -573,6 +629,7 @@ public class PagoServiceImpl implements PagoService {
         pago.setReserva(null);
         pago.setMetodoPago(metodoPago);
         pago.setMoneda(monedaVenta);
+        pago.setEntidadFinanciera(null);
         pago.setMonto(montoTasado);
         pago.setTipoMovimiento(TipoMovimientoPago.ENTREGA_USADO);
         pago.setCotizacionUsada(normalizarCotizacion(BigDecimal.ONE));
@@ -603,8 +660,65 @@ public class PagoServiceImpl implements PagoService {
             montoTasado
         );
         Pago pagoGuardado = pagoRepository.save(pago);
+        movimientoCajaService.registrarDesdePago(pagoGuardado, TipoMovimientoCaja.INFORMATIVO, EstadoPago.REGISTRADO, false);
+        emitirComprobanteDePagoSiCorresponde(pagoGuardado, metodoPago);
         recalcularVentaEInventario(venta);
         return pagoMapper.toDto(pagoGuardado);
+    }
+
+    private void emitirComprobanteDePagoSiCorresponde(Pago pago, MetodoPago metodoPago) {
+        if (pago == null || pago.getId() == null || pago.getVenta() == null || pago.getVenta().getId() == null) {
+            return;
+        }
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (codigoMetodo == null) {
+            return;
+        }
+        boolean emitible = CODIGO_CONTADO.equals(codigoMetodo) ||
+            CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
+            CODIGO_DEPOSITO.equals(codigoMetodo) ||
+            CODIGO_CHEQUE.equals(codigoMetodo) ||
+            CODIGO_TARJETA.equals(codigoMetodo) ||
+            CODIGO_DEBITO.equals(codigoMetodo) ||
+            CODIGO_CREDITO.equals(codigoMetodo) ||
+            CODIGO_ENTREGA_USADO.equals(codigoMetodo) ||
+            CODIGO_SENIA.equals(codigoMetodo);
+        if (!emitible) {
+            return;
+        }
+
+        String codigoTipo = CODIGO_SENIA.equals(codigoMetodo) ? TIPO_COMPROBANTE_SEN : TIPO_COMPROBANTE_REC;
+        TipoComprobante tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(codigoTipo).orElse(null);
+        if (tipo == null && !TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
+            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(TIPO_COMPROBANTE_REC).orElse(null);
+        }
+        if (tipo == null || tipo.getId() == null) {
+            LOG.warn("No se emitio comprobante de pago para pagoId={} por falta de tipo comprobante REC/SEN", pago.getId());
+            return;
+        }
+        if (comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(pago.getId(), tipo.getId(), EstadoComprobante.EMITIDO)) {
+            return;
+        }
+        comprobanteService.emitirComprobantePago(pago.getId(), tipo.getId());
+    }
+
+    private void anularComprobantesAsociadosAPago(Pago pago, String motivo, String usuario, Instant fecha) {
+        if (pago == null || pago.getId() == null) {
+            return;
+        }
+        List<Comprobante> comprobantes = comprobanteRepository.findAllByPagoIdOrderByFechaEmisionDescIdDesc(pago.getId());
+        for (Comprobante comprobante : comprobantes) {
+            if (comprobante.getEstado() == EstadoComprobante.ANULADO) {
+                continue;
+            }
+            comprobante.setEstado(EstadoComprobante.ANULADO);
+            comprobante.setMotivoAnulacion("Anulado por anulacion de pago: " + motivo);
+            comprobante.setUsuarioAnulacion(usuario);
+            comprobante.setFechaAnulacion(fecha);
+            comprobante.setLastModifiedBy(usuario);
+            comprobante.setLastModifiedDate(fecha);
+            comprobanteRepository.save(comprobante);
+        }
     }
 
     private void validarTasacionParaEntrega(Venta venta, TasacionUsado tasacion) {
@@ -701,6 +815,40 @@ public class PagoServiceImpl implements PagoService {
         }
         if (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank()) {
             pago.setNumeroOperacion(codigoMetodo + "-OP-" + timestamp.substring(Math.max(0, timestamp.length() - 8)));
+        }
+    }
+
+    private EntidadFinanciera resolverEntidadFinanciera(PagoDTO pagoDTO, MetodoPago metodoPago) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        boolean requiereEntidad = CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
+            CODIGO_DEPOSITO.equals(codigoMetodo) ||
+            CODIGO_CHEQUE.equals(codigoMetodo) ||
+            CODIGO_TARJETA.equals(codigoMetodo) ||
+            CODIGO_DEBITO.equals(codigoMetodo) ||
+            CODIGO_CREDITO.equals(codigoMetodo);
+
+        Long entidadId = pagoDTO.getEntidadFinanciera() != null ? pagoDTO.getEntidadFinanciera().getId() : null;
+        if (!requiereEntidad) {
+            return entidadId == null ? null : entidadFinancieraRepository.findById(entidadId).orElse(null);
+        }
+        if (entidadId != null) {
+            return entidadFinancieraRepository
+                .findById(entidadId)
+                .filter(EntidadFinanciera::getActiva)
+                .orElseThrow(() -> new BadRequestException("La entidad financiera no existe o no esta activa"));
+        }
+        if (pagoDTO.getBancoEntidad() != null && !pagoDTO.getBancoEntidad().isBlank()) {
+            return null;
+        }
+        throw new BadRequestException("Para " + codigoMetodo + " debe informar entidad financiera");
+    }
+
+    private void completarBancoEntidadLegacy(Pago pago, EntidadFinanciera entidadFinanciera) {
+        if (entidadFinanciera == null) {
+            return;
+        }
+        if (pago.getBancoEntidad() == null || pago.getBancoEntidad().isBlank()) {
+            pago.setBancoEntidad(entidadFinanciera.getNombre());
         }
     }
 

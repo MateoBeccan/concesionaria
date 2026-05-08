@@ -85,6 +85,19 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
 
     boolean existsByVentaIdAndTipoComprobanteIdAndEstado(Long ventaId, Long tipoComprobanteId, EstadoComprobante estado);
 
+    boolean existsByPagoIdAndTipoComprobanteIdAndEstado(Long pagoId, Long tipoComprobanteId, EstadoComprobante estado);
+
+    List<Comprobante> findAllByPagoIdOrderByFechaEmisionDescIdDesc(Long pagoId);
+
+    @Query(
+        "select c from Comprobante c " +
+        "join c.venta v " +
+        "join v.user u " +
+        "where c.pago.id = :pagoId and u.login = :login " +
+        "order by c.fechaEmision desc, c.id desc"
+    )
+    List<Comprobante> findAllByPagoIdForUser(@Param("pagoId") Long pagoId, @Param("login") String login);
+
     @Query(
         value = "select coalesce(max(cast(substring_index(c.numero_comprobante, '-', -1) as unsigned)), 0) from comprobante c where c.tipo_comprobante_id = :tipoComprobanteId",
         nativeQuery = true

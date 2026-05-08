@@ -3,6 +3,7 @@ import axios from 'axios';
 
 import type { ICliente } from '@/shared/model/cliente.model';
 import type { IComprobante } from '@/shared/model/comprobante.model';
+import type { IEntidadFinanciera } from '@/shared/model/entidad-financiera.model';
 import { EstadoVenta } from '@/shared/model/estado-venta.model';
 import type { IMetodoPago } from '@/shared/model/metodo-pago.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
@@ -32,6 +33,7 @@ export interface PagoLocal {
   referencia: string;
   numeroOperacion?: string;
   bancoEntidad?: string;
+  entidadFinanciera?: IEntidadFinanciera | null;
   comprobanteExterno?: string;
   observaciones?: string;
   metodoPago: IMetodoPago | null;
@@ -42,6 +44,7 @@ export interface PagoLocal {
   estado: EstadoPago;
   guardado: boolean;
   usuarioRegistro?: string | null;
+  comprobanteNumero?: string | null;
 }
 
 interface ICotizacionConversion {
@@ -109,6 +112,7 @@ export function useVentaEditor() {
   const tipoComprobantes = ref<ITipoComprobante[]>([]);
   const cotizacionActiva = ref<ICotizacionConversion | null>(null);
   const cotizacionesDisponibles = ref<ICotizacion[]>([]);
+  const entidadesFinancieras = ref<IEntidadFinanciera[]>([]);
   const tasacionesUsadoDisponibles = ref<ITasacionUsado[]>([]);
   const cotizacionSeleccionadaId = ref<number | null>(null);
   const cargandoCotizaciones = ref(false);
@@ -460,6 +464,7 @@ export function useVentaEditor() {
     metodoPago: IMetodoPago | null,
     moneda: IMoneda | null,
     tasacionUsadoId?: number | null,
+    entidadFinanciera: IEntidadFinanciera | null = null,
     bancoEntidad = '',
     comprobanteExterno = '',
     observaciones = '',
@@ -523,6 +528,7 @@ export function useVentaEditor() {
       referencia: '',
       numeroOperacion: '',
       bancoEntidad: bancoEntidad.trim(),
+      entidadFinanciera,
       comprobanteExterno: comprobanteExterno.trim(),
       observaciones: observaciones.trim(),
       metodoPago,
@@ -669,6 +675,7 @@ export function useVentaEditor() {
         fecha: pago.fecha,
         referencia: pago.referencia || null,
         bancoEntidad: pago.bancoEntidad || null,
+        entidadFinanciera: pago.entidadFinanciera?.id ? { id: pago.entidadFinanciera.id } : null,
         comprobanteExterno: pago.comprobanteExterno || null,
         observaciones: pago.observaciones || null,
         cotizacionUsada: pago.cotizacionUsada,
@@ -683,10 +690,25 @@ export function useVentaEditor() {
       pago.referencia = res.data.referencia ?? pago.referencia ?? '';
       pago.numeroOperacion = res.data.numeroOperacion ?? pago.numeroOperacion ?? '';
       pago.bancoEntidad = res.data.bancoEntidad ?? pago.bancoEntidad ?? '';
+      pago.entidadFinanciera = res.data.entidadFinanciera ?? pago.entidadFinanciera ?? null;
       pago.comprobanteExterno = res.data.comprobanteExterno ?? pago.comprobanteExterno ?? '';
       pago.observaciones = res.data.observaciones ?? pago.observaciones ?? '';
       pago.guardado = true;
       pago.estado = res.data.estado ?? EstadoPago.REGISTRADO;
+      await refrescarComprobantePago(pago);
+    }
+  }
+
+  async function refrescarComprobantePago(pago: PagoLocal) {
+    if (!pago.id) {
+      return;
+    }
+    try {
+      const res = await axios.get<IComprobante[]>(`api/comprobantes/by-pago/${pago.id}`);
+      const emitido = (res.data ?? []).find(item => item.estado === EstadoComprobante.EMITIDO) ?? res.data?.[0];
+      pago.comprobanteNumero = emitido?.numeroComprobante ?? null;
+    } catch {
+      pago.comprobanteNumero = null;
     }
   }
 
@@ -755,6 +777,7 @@ export function useVentaEditor() {
         referencia: pago.referencia ?? '',
         numeroOperacion: pago.numeroOperacion ?? '',
         bancoEntidad: pago.bancoEntidad ?? '',
+        entidadFinanciera: pago.entidadFinanciera ?? null,
         comprobanteExterno: pago.comprobanteExterno ?? '',
         observaciones: pago.observaciones ?? '',
         metodoPago: pago.metodoPago ?? null,
@@ -765,7 +788,9 @@ export function useVentaEditor() {
         estado: pago.estado ?? EstadoPago.REGISTRADO,
         guardado: true,
         usuarioRegistro: pago.usuarioRegistro ?? null,
+        comprobanteNumero: null,
       }));
+      await Promise.all(pagos.value.map(item => refrescarComprobantePago(item)));
 
       comprobantes.value = comprobantesRes.data as IComprobante[];
 
@@ -808,6 +833,7 @@ export function useVentaEditor() {
         referencia: item.referencia ?? '',
         numeroOperacion: item.numeroOperacion ?? '',
         bancoEntidad: item.bancoEntidad ?? '',
+        entidadFinanciera: item.entidadFinanciera ?? null,
         comprobanteExterno: item.comprobanteExterno ?? '',
         observaciones: item.observaciones ?? '',
         metodoPago: item.metodoPago ?? null,
@@ -818,7 +844,9 @@ export function useVentaEditor() {
         estado: item.estado ?? EstadoPago.REGISTRADO,
         guardado: true,
         usuarioRegistro: item.usuarioRegistro ?? null,
+        comprobanteNumero: null,
       }));
+      await Promise.all(pagos.value.map(entry => refrescarComprobantePago(entry)));
     }
 
     recalcularSaldo();
@@ -848,6 +876,7 @@ export function useVentaEditor() {
     tipoComprobantes,
     cotizacionActiva,
     cotizacionesDisponibles,
+    entidadesFinancieras,
     tasacionesUsadoDisponibles,
     cotizacionSeleccionadaId,
     cargandoCotizaciones,
