@@ -1,11 +1,11 @@
 <template>
-  <div class="container-fluid py-4" style="max-width: 1200px">
-    <div class="page-header mb-4">
+  <div class="container-fluid py-4 venta-wizard">
+    <div class="wizard-header">
       <div>
-        <h1 class="page-title mb-0">{{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}</h1>
-        <p class="page-subtitle">Registrá una venta o reserva</p>
+        <h1 class="wizard-title">{{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}</h1>
+        <p class="wizard-subtitle">Flujo secuencial: cliente, vehiculo, pagos y cierre.</p>
       </div>
-      <button class="btn btn-sm btn-outline-secondary" @click="router.push({ name: 'VentaList' })">Volver</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="router.push({ name: 'Venta' })">Volver</button>
     </div>
 
     <div v-if="error" class="alert alert-danger d-flex justify-content-between align-items-center mb-3">
@@ -13,24 +13,30 @@
       <button class="btn-close btn-sm" @click="error = null" />
     </div>
 
-    <section class="process-strip mb-4">
-      <article v-for="step in flowSteps" :key="step.number" class="process-step" :class="{ done: step.done, current: step.current }">
-        <div class="process-number">{{ step.number }}</div>
-        <div>
-          <div class="process-title">{{ step.title }}</div>
-          <div class="process-copy">{{ step.copy }}</div>
-        </div>
-      </article>
+    <section class="wizard-steps mb-4">
+      <button
+        v-for="step in stepsUi"
+        :key="step.number"
+        type="button"
+        class="wizard-step"
+        :class="{ active: currentStep === step.number, done: step.done }"
+        :disabled="!canJumpTo(step.number)"
+        @click="goToStep(step.number)"
+      >
+        <span class="wizard-step-number">{{ step.number }}</span>
+        <span class="wizard-step-text">
+          <strong>{{ step.title }}</strong>
+          <small>{{ step.copy }}</small>
+        </span>
+      </button>
     </section>
 
     <div class="row g-4">
       <div class="col-lg-8">
-        <div class="card mb-3">
+        <div v-if="currentStep === 1" class="card">
           <div class="card-header">
-            <div>
-              <div class="section-title">1. Cliente</div>
-              <div class="section-copy">Selecciona al cliente para iniciar la operación.</div>
-            </div>
+            <div class="section-title">1. Cliente</div>
+            <div class="section-copy">Selecciona y confirma el cliente.</div>
           </div>
           <div class="card-body">
             <div class="row g-3">
@@ -44,14 +50,7 @@
                   <button class="btn btn-sm btn-outline-secondary" @click="venta.cliente = null">Cambiar</button>
                 </div>
                 <div v-else>
-                  <div class="d-flex gap-2">
-                    <input
-                      v-model="busquedaCliente"
-                      class="form-control"
-                      placeholder="Buscar por nombre, DNI o email..."
-                      @input="buscarClientes"
-                    />
-                  </div>
+                  <input v-model="busquedaCliente" class="form-control" placeholder="Buscar por nombre, DNI o email..." @input="buscarClientes" />
                   <ul v-if="resultadosCliente.length" class="list-group mt-1 shadow-sm">
                     <li
                       v-for="clienteItem in resultadosCliente"
@@ -66,43 +65,25 @@
                   </ul>
                 </div>
               </div>
-
-              <div class="col-md-4">
-                <label class="form-label">% IVA</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" v-model.number="venta.porcentajeImpuesto" min="0" max="100" step="0.5" />
-                  <span class="input-group-text">%</span>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Estado</label>
-                <div class="form-control d-flex align-items-center justify-content-between bg-light">
-                  <span>{{ labelEstado(estadoCalculado) }}</span>
-                  <span class="badge" :class="badgeEstado(estadoCalculado)">{{ labelEstado(estadoCalculado) }}</span>
-                </div>
-              </div>
-
-              <div class="col-md-4">
-                <label class="form-label">Reserva</label>
-                <div class="form-control bg-light">La reserva requiere una seña mínima.</div>
-              </div>
-
               <div class="col-12">
                 <label class="form-label">Observaciones</label>
-                <textarea class="form-control" v-model="venta.observaciones" rows="2" placeholder="Notas adicionales..." />
+                <textarea class="form-control" v-model="venta.observaciones" rows="2" placeholder="Notas de la operacion..." />
               </div>
+            </div>
+
+            <div class="wizard-actions mt-3">
+              <button class="btn btn-primary" :disabled="!venta.cliente?.id" @click="confirmarPasoCliente">Confirmar cliente y continuar</button>
             </div>
           </div>
         </div>
 
-        <div class="card mb-3">
+        <div v-if="currentStep === 2" class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <div>
-              <div class="section-title">2. Vehículo</div>
-              <div class="section-copy">Selecciona la unidad y revisa el precio final.</div>
+              <div class="section-title">2. Vehiculo</div>
+              <div class="section-copy">Agrega la unidad y confirma para avanzar.</div>
             </div>
-            <span class="badge bg-primary">{{ detalles.length }} vehículo(s)</span>
+            <span class="badge bg-primary">{{ detalles.length }} unidad(es)</span>
           </div>
           <div class="card-body">
             <DetalleVentaInline
@@ -113,17 +94,22 @@
               @quitar="quitarDetalle"
               @actualizar-precio="actualizarPrecioDetalle"
             />
+
+            <div class="wizard-actions mt-3">
+              <button class="btn btn-outline-secondary" @click="goToStep(1)">Atras</button>
+              <button class="btn btn-primary" :disabled="detalles.length === 0" @click="confirmarPasoVehiculo">Confirmar vehiculo y continuar</button>
+            </div>
           </div>
         </div>
 
-        <div class="card mb-3">
+        <div v-if="currentStep === 3" class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <div>
               <div class="section-title">3. Pagos</div>
-              <div class="section-copy">Registra pagos y controla el saldo pendiente.</div>
+              <div class="section-copy">Registra los pagos necesarios para reserva o venta.</div>
             </div>
-            <span class="badge" :class="Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'bg-success' : 'bg-warning text-dark'">
-              {{ Number(venta.saldo ?? 0) === 0 && detalles.length > 0 ? 'Saldado' : `Saldo: ${venta.moneda?.simbolo ?? '$'} ${fmt(venta.saldo)}` }}
+            <span class="badge" :class="Number(venta.saldo ?? 0) <= 0 ? 'bg-success' : 'bg-warning text-dark'">
+              {{ Number(venta.saldo ?? 0) <= 0 ? 'Saldado' : `Saldo ${venta.moneda?.simbolo ?? '$'} ${fmt(venta.saldo)}` }}
             </span>
           </div>
           <div class="card-body">
@@ -142,15 +128,19 @@
               @anular="anularPago"
               @crear-tasacion="crearTasacionDesdeVenta"
             />
+
+            <div class="wizard-actions mt-3">
+              <button class="btn btn-outline-secondary" @click="goToStep(2)">Atras</button>
+              <button class="btn btn-primary" :disabled="!canConfirmPagoStep" @click="confirmarPasoPagos">Confirmar pagos y continuar</button>
+            </div>
+            <p v-if="!canConfirmPagoStep" class="text-muted small mt-2 mb-0">Para continuar registra al menos un pago valido.</p>
           </div>
         </div>
 
-        <div class="card mb-3">
+        <div v-if="currentStep === 4" class="card">
           <div class="card-header">
-            <div>
-              <div class="section-title">4. Confirmación</div>
-              <div class="section-copy">Confirma la reserva o cierra la venta.</div>
-            </div>
+            <div class="section-title">4. Comprobantes y cierre</div>
+            <div class="section-copy">Emite comprobante opcional y confirma reserva o venta.</div>
           </div>
           <div class="card-body">
             <div class="row g-3 align-items-center">
@@ -165,6 +155,21 @@
                 <div class="alert alert-warning py-2 mb-0 small">La venta ya tiene un comprobante activo emitido.</div>
               </div>
             </div>
+
+            <div class="wizard-actions mt-3">
+              <button class="btn btn-outline-secondary" @click="goToStep(3)">Atras</button>
+              <button class="btn btn-warning" @click="confirmarReserva" :disabled="guardando || !puedeConfirmarReserva">
+                <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
+                Confirmar reserva
+              </button>
+              <button class="btn btn-success" @click="confirmarVenta" :disabled="guardando || !puedeConfirmarVenta">
+                <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
+                Confirmar venta
+              </button>
+            </div>
+
+            <p v-if="!puedeConfirmarVenta" class="text-muted small mt-2 mb-0">Para confirmar venta, el saldo debe quedar en cero.</p>
+            <p v-if="!puedeConfirmarReserva && Number(venta.saldo ?? 0) > 0" class="text-muted small mt-1 mb-0">La reserva requiere una seña minima.</p>
           </div>
         </div>
       </div>
@@ -181,29 +186,7 @@
           :saldo="venta.saldo"
           :estado="estadoCalculado"
           :moneda="venta.moneda"
-        >
-          <template #acciones>
-            <div class="summary-flow mb-3">
-              <div class="summary-flow-item" :class="{ ready: !!venta.cliente?.id }">Cliente</div>
-              <div class="summary-flow-item" :class="{ ready: detalles.length > 0 }">Vehículo</div>
-              <div class="summary-flow-item" :class="{ ready: Number(venta.total ?? 0) > 0 }">Resumen</div>
-              <div class="summary-flow-item" :class="{ ready: pagos.length > 0 }">Pagos</div>
-            </div>
-            <button class="btn btn-warning w-100" @click="confirmarReserva" :disabled="guardando || !puedeConfirmarReserva">
-              <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
-              Confirmar reserva
-            </button>
-            <button class="btn btn-success w-100" @click="confirmarVenta" :disabled="guardando || !puedeConfirmar">
-              <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
-              Confirmar venta
-            </button>
-            <p v-if="!puedeConfirmarReserva && !mensajeValidacion" class="text-danger small text-center mb-0">La reserva requiere una seña mínima.</p>
-            <p v-if="!puedeConfirmar && !mensajeValidacion" class="text-danger small text-center mb-0">Confirmar venta requiere pago total (100%).</p>
-            <p v-if="mensajeValidacion" class="text-muted small text-center mb-0">
-              {{ mensajeValidacion }}
-            </p>
-          </template>
-        </VentaResumen>
+        />
       </div>
     </div>
   </div>
@@ -223,8 +206,8 @@ import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 
 import DetalleVentaInline from './DetalleVentaInline.vue';
 import PagoInline from './PagoInline.vue';
-import { useVentaEditor } from './useVentaEditor';
 import VentaResumen from './VentaResumen.vue';
+import { useVentaEditor } from './useVentaEditor';
 
 const router = useRouter();
 const route = useRoute();
@@ -241,7 +224,6 @@ const {
   metodoPagos,
   tipoComprobantes,
   entidadesFinancieras,
-  porcentajeMinimoReserva,
   tieneComprobanteActivo,
   cumpleMinimoReserva,
   estadoCalculado,
@@ -265,7 +247,77 @@ const {
 const tipoComprobanteSeleccionado = ref<ITipoComprobante | null>(null);
 const busquedaCliente = ref('');
 const resultadosCliente = ref<ICliente[]>([]);
+const currentStep = ref(1);
+const stepConfirmed = ref({ cliente: false, vehiculo: false, pagos: false });
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const canConfirmPagoStep = computed(() => pagosActivos.value > 0);
+const pagosActivos = computed(() => pagos.value.filter(item => item.estado !== 'ANULADO').length);
+const puedeConfirmarVenta = computed(() => Number(venta.value.total ?? 0) > 0 && Number(venta.value.saldo ?? 0) === 0);
+const puedeConfirmarReserva = computed(
+  () =>
+    Number(venta.value.total ?? 0) > 0 &&
+    Number(venta.value.saldo ?? 0) > 0 &&
+    Number(venta.value.totalPagado ?? 0) > 0 &&
+    cumpleMinimoReserva.value,
+);
+
+const stepsUi = computed(() => [
+  {
+    number: 1,
+    title: 'Cliente',
+    copy: stepConfirmed.value.cliente ? 'Confirmado' : 'Seleccionar',
+    done: stepConfirmed.value.cliente,
+  },
+  {
+    number: 2,
+    title: 'Vehiculo',
+    copy: stepConfirmed.value.vehiculo ? 'Confirmado' : 'Seleccionar',
+    done: stepConfirmed.value.vehiculo,
+  },
+  {
+    number: 3,
+    title: 'Pagos',
+    copy: stepConfirmed.value.pagos ? 'Confirmado' : 'Registrar',
+    done: stepConfirmed.value.pagos,
+  },
+  {
+    number: 4,
+    title: 'Cierre',
+    copy: 'Reserva o venta',
+    done: false,
+  },
+]);
+
+function canJumpTo(step: number) {
+  if (step <= 1) return true;
+  if (step === 2) return stepConfirmed.value.cliente;
+  if (step === 3) return stepConfirmed.value.cliente && stepConfirmed.value.vehiculo;
+  return stepConfirmed.value.cliente && stepConfirmed.value.vehiculo && stepConfirmed.value.pagos;
+}
+
+function goToStep(step: number) {
+  if (!canJumpTo(step)) return;
+  currentStep.value = step;
+}
+
+function confirmarPasoCliente() {
+  if (!venta.value.cliente?.id) return;
+  stepConfirmed.value.cliente = true;
+  goToStep(2);
+}
+
+function confirmarPasoVehiculo() {
+  if (!detalles.value.length) return;
+  stepConfirmed.value.vehiculo = true;
+  goToStep(3);
+}
+
+function confirmarPasoPagos() {
+  if (!canConfirmPagoStep.value) return;
+  stepConfirmed.value.pagos = true;
+  goToStep(4);
+}
 
 function buscarClientes() {
   if (debounceTimer) clearTimeout(debounceTimer);
@@ -291,54 +343,35 @@ function seleccionarCliente(cliente: ICliente) {
   void cargarTasacionesUsadoCliente();
 }
 
-const mensajeValidacion = computed(() => {
-  try {
-    validarVentaAntesDeGuardar();
-    return '';
-  } catch (e: any) {
-    return e.message ?? 'Revisa los datos de la venta';
+watch(
+  () => venta.value.cliente?.id,
+  value => {
+    if (!value) {
+      stepConfirmed.value.cliente = false;
+      stepConfirmed.value.vehiculo = false;
+      stepConfirmed.value.pagos = false;
+      if (currentStep.value > 1) currentStep.value = 1;
+    }
+  },
+);
+
+watch(
+  () => detalles.value.length,
+  value => {
+    if (!value) {
+      stepConfirmed.value.vehiculo = false;
+      stepConfirmed.value.pagos = false;
+      if (currentStep.value > 2) currentStep.value = 2;
+    }
+  },
+);
+
+watch(pagosActivos, value => {
+  if (!value) {
+    stepConfirmed.value.pagos = false;
+    if (currentStep.value > 3) currentStep.value = 3;
   }
 });
-
-const puedeConfirmar = computed(() => !mensajeValidacion.value && Number(venta.value.total ?? 0) > 0 && Number(venta.value.saldo ?? 0) === 0);
-const puedeConfirmarReserva = computed(
-  () =>
-    !mensajeValidacion.value &&
-    Number(venta.value.total ?? 0) > 0 &&
-    Number(venta.value.saldo ?? 0) > 0 &&
-    Number(venta.value.totalPagado ?? 0) > 0 &&
-    cumpleMinimoReserva.value,
-);
-const flowSteps = computed(() => [
-  {
-    number: '01',
-    title: 'Cliente',
-    copy: venta.value.cliente?.id ? 'Cliente seleccionado.' : 'Buscá o seleccioná el cliente.',
-    done: !!venta.value.cliente?.id,
-    current: !venta.value.cliente?.id,
-  },
-  {
-    number: '02',
-    title: 'Vehículo',
-    copy: detalles.value.length > 0 ? `${detalles.value.length} unidad(es) agregada(s).` : 'Agregá al menos una unidad disponible.',
-    done: detalles.value.length > 0,
-    current: !!venta.value.cliente?.id && detalles.value.length === 0,
-  },
-  {
-    number: '03',
-    title: 'Resumen',
-    copy: Number(venta.value.total ?? 0) > 0 ? `Total ${fmt(Number(venta.value.total ?? 0))}.` : 'Revisá subtotal e impuestos.',
-    done: Number(venta.value.total ?? 0) > 0,
-    current: detalles.value.length > 0 && Number(venta.value.total ?? 0) === 0,
-  },
-  {
-    number: '04',
-    title: 'Pagos',
-    copy: Number(venta.value.totalPagado ?? 0) > 0 ? `${pagos.value.length} pago(s) cargado(s).` : 'Registrá pagos para continuar.',
-    done: Number(venta.value.saldo ?? 0) === 0 && detalles.value.length > 0,
-    current: detalles.value.length > 0,
-  },
-]);
 
 onMounted(async () => {
   const [monedasRes, metodosRes, tiposRes, reservaConfigRes, entidadesRes] = await Promise.all([
@@ -350,28 +383,22 @@ onMounted(async () => {
   ]);
 
   monedas.value = monedasRes.data;
-  const normalizarMoneda = (value?: string | null) =>
-    (value ?? '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toUpperCase()
-      .replace(/[^A-Z]/g, '');
-  const esMonedaBase = (codigo?: string | null, descripcion?: string | null) => {
-    const c = normalizarMoneda(codigo);
-    const d = normalizarMoneda(descripcion);
-    return c.includes('ARS') || c.includes('ARG') || c.includes('PESO') || d.includes('ARS') || d.includes('ARG') || d.includes('PESO');
-  };
-  const monedaBase = monedas.value.find(m => esMonedaBase(m.codigo, m.descripcion)) ?? null;
-  if (monedaBase) venta.value.moneda = monedaBase;
-
   metodoPagos.value = metodosRes.data;
   tipoComprobantes.value = tiposRes.data;
   entidadesFinancieras.value = entidadesRes.data ?? [];
   setPorcentajeMinimoReserva(Number(reservaConfigRes.data?.porcentajeMinimo ?? 0.1));
 
+  const monedaBase = (monedas.value ?? []).find(m => (m.codigo ?? '').toUpperCase().includes('ARS')) ?? null;
+  if (monedaBase) venta.value.moneda = monedaBase;
+
   if (route.params?.ventaId) {
     await cargarVenta(Number(route.params.ventaId));
-    if (monedaBase) venta.value.moneda = monedaBase;
+    stepConfirmed.value = {
+      cliente: Boolean(venta.value.cliente?.id),
+      vehiculo: detalles.value.length > 0,
+      pagos: pagosActivos.value > 0,
+    };
+    currentStep.value = stepConfirmed.value.pagos ? 4 : stepConfirmed.value.vehiculo ? 3 : stepConfirmed.value.cliente ? 2 : 1;
     return;
   }
 
@@ -380,23 +407,16 @@ onMounted(async () => {
     try {
       const reservaRes = await axios.get<IReserva>(`api/reservas/${reservaId}`);
       const reserva = reservaRes.data;
-      if (reserva.estado !== 'ACTIVA') throw new Error(`La reserva #${reservaId} no está activa`);
-
+      if (reserva.estado !== 'ACTIVA') throw new Error(`La reserva #${reservaId} no esta activa`);
       venta.value.reserva = { id: reserva.id } as IReserva;
       if (!venta.value.cliente?.id && reserva.cliente?.id) venta.value.cliente = reserva.cliente;
-      if (!venta.value.observaciones && reserva.observaciones) venta.value.observaciones = `Convertida desde reserva #${reserva.id}. ${reserva.observaciones}`;
-      else if (!venta.value.observaciones) venta.value.observaciones = `Convertida desde reserva #${reserva.id}`;
-
       const vehiculoReservaId = reserva.inventario?.vehiculo?.id;
-      if (Number.isFinite(vehiculoReservaId) && vehiculoReservaId > 0 && detalles.value.length === 0) {
+      if (vehiculoReservaId && detalles.value.length === 0) {
         const vehiculo = await vehiculoService.find(Number(vehiculoReservaId));
         agregarVehiculo(vehiculo);
       }
-    } catch (e: any) {
-      const msg = e?.message ?? `No se pudo preparar la venta desde la reserva #${reservaId}`;
-      alertService.showError(msg);
-      await router.replace({ name: 'ReservaView', params: { reservaId } });
-      return;
+    } catch {
+      // noop
     }
   }
 
@@ -405,31 +425,19 @@ onMounted(async () => {
     try {
       const vehiculo = await vehiculoService.find(vehiculoId);
       agregarVehiculo(vehiculo);
-
       const inventarioRes = await axios.get<IInventario>(`api/inventarios/vehiculo/${vehiculoId}`);
       if (inventarioRes.data?.id && inventarioRes.data?.estadoInventario === 'RESERVADO' && !venta.value.cliente?.id) {
-        try {
-          const reservaRes = await axios.get<IReserva>(`api/reservas/inventario/${inventarioRes.data.id}/activa`);
-          if (reservaRes.data?.cliente?.id) venta.value.cliente = reservaRes.data.cliente;
-        } catch (reservaError: any) {
-          if (reservaError?.response?.status !== 404) alertService.showHttpError(reservaError.response);
-        }
+        const reservaRes = await axios.get<IReserva>(`api/reservas/inventario/${inventarioRes.data.id}/activa`);
+        if (reservaRes.data?.cliente?.id) venta.value.cliente = reservaRes.data.cliente;
       }
-    } catch (e: any) {
-      if (e?.response?.status !== 404) alertService.showHttpError(e.response);
-    }
-  }
-
-  const clienteId = Number(route.query.clienteId);
-  if (Number.isFinite(clienteId) && clienteId > 0 && !venta.value.cliente?.id) {
-    try {
-      const clienteRes = await axios.get<ICliente>(`api/clientes/${clienteId}`);
-      venta.value.cliente = clienteRes.data;
-      await cargarTasacionesUsadoCliente();
     } catch {
       // noop
     }
   }
+
+  stepConfirmed.value.cliente = Boolean(venta.value.cliente?.id);
+  stepConfirmed.value.vehiculo = detalles.value.length > 0;
+  currentStep.value = stepConfirmed.value.vehiculo ? 3 : stepConfirmed.value.cliente ? 2 : 1;
 });
 
 watch(
@@ -439,28 +447,16 @@ watch(
   },
 );
 
-watch(
-  () => route.query.refreshTasaciones,
-  async value => {
-    if (!value) return;
-    await cargarTasacionesUsadoCliente();
-    const query = { ...route.query };
-    delete query.refreshTasaciones;
-    await router.replace({ query });
-  },
-  { immediate: true },
-);
-
 async function confirmarVenta() {
   try {
     validarVentaAntesDeGuardar();
-    if (Number(venta.value.saldo ?? 0) > 0) throw new Error('Para vender la unidad se requiere pago total (100%).');
+    if (Number(venta.value.saldo ?? 0) > 0) throw new Error('Para vender la unidad se requiere pago total.');
     const { venta: ventaGuardada, comprobante } = await confirmar(tipoComprobanteSeleccionado.value ?? undefined);
     const message = comprobante
       ? `Venta #${ventaGuardada.id} confirmada. Comprobante ${comprobante.numeroComprobante} generado.`
-      : `Venta #${ventaGuardada.id} confirmada correctamente`;
+      : `Venta #${ventaGuardada.id} confirmada correctamente.`;
     alertService.showSuccess(message);
-    router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
+    await router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la venta');
   }
@@ -469,10 +465,10 @@ async function confirmarVenta() {
 async function confirmarReserva() {
   try {
     validarVentaAntesDeGuardar();
-    if (!cumpleMinimoReserva.value) throw new Error('La reserva requiere una seña mínima.');
+    if (!cumpleMinimoReserva.value) throw new Error('La reserva requiere una seña minima.');
     const { venta: ventaGuardada } = await confirmar();
     alertService.showSuccess(`Reserva confirmada para la venta #${ventaGuardada.id}`);
-    if (!route.params?.ventaId) router.replace({ name: 'VentaEditorEdit', params: { ventaId: ventaGuardada.id } });
+    await router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la reserva');
   }
@@ -480,7 +476,7 @@ async function confirmarReserva() {
 
 async function crearTasacionDesdeVenta() {
   if (!venta.value.cliente?.id) {
-    alertService.showError('Primero debes seleccionar un cliente para crear una tasación.');
+    alertService.showError('Primero debes seleccionar un cliente.');
     return;
   }
   await router.push({
@@ -491,125 +487,119 @@ async function crearTasacionDesdeVenta() {
     },
   });
 }
-
-function labelEstado(estado: string) {
-  return (
-    {
-      PENDIENTE: 'Pendiente',
-      PAGADA: 'Pagada',
-      CANCELADA: 'Cancelada',
-      RESERVADA: 'Reservada',
-      FINALIZADA: 'Finalizada',
-    }[estado] ?? estado
-  );
-}
-
-function badgeEstado(estado: string) {
-  return (
-    {
-      PENDIENTE: 'bg-warning text-dark',
-      PAGADA: 'bg-success',
-      CANCELADA: 'bg-danger',
-      RESERVADA: 'bg-info text-dark',
-      FINALIZADA: 'bg-primary',
-    }[estado] ?? 'bg-light text-dark border'
-  );
-}
 </script>
 
 <style scoped>
-.process-strip {
+.venta-wizard {
+  max-width: 1240px;
+}
+
+.wizard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.wizard-title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.55rem;
+  font-weight: 700;
+}
+
+.wizard-subtitle {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+}
+
+.wizard-steps {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
-.process-step {
-  display: flex;
-  gap: 0.8rem;
-  align-items: flex-start;
-  padding: 0.9rem 1rem;
-  border-radius: 18px;
+.wizard-step {
   border: 1px solid #e2e8f0;
+  border-radius: 14px;
   background: #fff;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
 }
 
-.process-step.current {
+.wizard-step:disabled {
+  opacity: 0.55;
+}
+
+.wizard-step.active {
   border-color: #93c5fd;
-  background: #f8fbff;
+  background: #eff6ff;
 }
 
-.process-step.done {
+.wizard-step.done {
   border-color: #bbf7d0;
   background: #f0fdf4;
 }
 
-.process-number {
-  width: 2rem;
-  height: 2rem;
+.wizard-step-number {
+  width: 1.8rem;
+  height: 1.8rem;
   display: grid;
   place-items: center;
   border-radius: 999px;
   background: #e2e8f0;
-  color: #334155;
   font-size: 0.78rem;
   font-weight: 700;
-  flex-shrink: 0;
 }
 
-.process-step.current .process-number {
+.wizard-step.active .wizard-step-number {
   background: #2563eb;
   color: #fff;
 }
 
-.process-step.done .process-number {
+.wizard-step.done .wizard-step-number {
   background: #16a34a;
   color: #fff;
 }
 
-.process-title,
+.wizard-step-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.wizard-step-text small {
+  color: #64748b;
+}
+
 .section-title {
   font-weight: 700;
   color: #0f172a;
 }
 
-.process-copy,
 .section-copy {
-  font-size: 0.84rem;
+  font-size: 0.86rem;
   color: #64748b;
 }
 
-.summary-flow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.summary-flow-item {
-  padding: 0.45rem 0.55rem;
-  border-radius: 999px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 0.76rem;
-  text-align: center;
-  font-weight: 600;
-}
-
-.summary-flow-item.ready {
-  background: #dcfce7;
-  color: #166534;
+.wizard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
 }
 
 @media (max-width: 991px) {
-  .process-strip,
-  .summary-flow {
-    grid-template-columns: 1fr 1fr;
+  .wizard-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 575px) {
-  .process-strip,
-  .summary-flow {
+  .wizard-steps {
     grid-template-columns: 1fr;
   }
 }

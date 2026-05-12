@@ -314,7 +314,7 @@ export default {
       path: 'comprobante',
       name: 'Comprobante',
       component: Comprobante,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'comprobante/new',
@@ -332,7 +332,7 @@ export default {
       path: 'comprobante/:comprobanteId/view',
       name: 'ComprobanteView',
       component: ComprobanteDetails,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'tipo-comprobante',
@@ -362,7 +362,7 @@ export default {
       path: 'pago',
       name: 'Pago',
       component: Pago,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'pago/new',
@@ -380,7 +380,7 @@ export default {
       path: 'pago/:pagoId/view',
       name: 'PagoView',
       component: PagoDetails,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'movimiento-caja',
@@ -560,7 +560,7 @@ export default {
       path: 'vehiculo',
       name: 'Vehiculo',
       component: Vehiculo,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'vehiculo/new',
@@ -578,13 +578,13 @@ export default {
       path: 'vehiculo/:vehiculoId/view',
       name: 'VehiculoView',
       component: VehiculoDetails,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'inventario',
       name: 'Inventario',
       component: Inventario,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'inventario/new',
@@ -602,7 +602,7 @@ export default {
       path: 'inventario/:inventarioId/view',
       name: 'InventarioView',
       component: InventarioDetails,
-      meta: { authorities: ADMIN_ONLY },
+      meta: { authorities: OPERATIONAL },
     },
     {
       path: 'tipo-documento',
@@ -653,31 +653,31 @@ export default {
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: '/vehiculo/buscar',
+      path: 'vehiculo/buscar',
       name: 'VehiculoSearch',
       component: () => import('@/entities/vehiculo/vehiculo-search.vue'),
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: '/ventas',
+      path: 'ventas',
       name: 'VentaList',
       component: Venta,
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: '/venta/nueva',
+      path: 'venta/nueva',
       name: 'VentaWizard',
       redirect: { name: 'VentaEditor' },
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: '/venta/editor',
+      path: 'venta/editor',
       name: 'VentaEditor',
       component: VentaEditor,
       meta: { authorities: OPERATIONAL },
     },
     {
-      path: '/venta/editor/:ventaId',
+      path: 'venta/editor/:ventaId',
       name: 'VentaEditorEdit',
       component: VentaEditor,
       meta: { authorities: OPERATIONAL },
