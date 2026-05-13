@@ -50,7 +50,8 @@ class PdfComprobanteServiceImplTest {
             "Av. Siempre Viva 1234 - CABA",
             "+54 11 4000-1234",
             "ventas@concesionariamb.com",
-            "30-12345678-9"
+            "30-12345678-9",
+            "src/main/webapp/content/images/branding/logo.png"
         );
     }
 

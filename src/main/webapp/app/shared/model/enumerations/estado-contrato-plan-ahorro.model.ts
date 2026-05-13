@@ -1,0 +1,9 @@
+export enum EstadoContratoPlanAhorro {
+  ACTIVO = 'ACTIVO',
+  EN_MORA = 'EN_MORA',
+  ADJUDICADO = 'ADJUDICADO',
+  ENTREGADO = 'ENTREGADO',
+  CANCELADO = 'CANCELADO',
+  FINALIZADO = 'FINALIZADO',
+}
+

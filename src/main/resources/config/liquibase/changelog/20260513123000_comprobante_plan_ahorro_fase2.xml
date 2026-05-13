@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260513123000-1" author="codex">
+    <createTable tableName="comprobante_plan_ahorro">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="contrato_plan_ahorro_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="cuota_plan_ahorro_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="pago_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="numero_comprobante" type="varchar(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_emision" type="datetime(6)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="importe" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="moneda_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="usuario_emision" type="varchar(50)"/>
+      <column name="motivo_anulacion" type="varchar(500)"/>
+      <column name="fecha_anulacion" type="datetime(6)"/>
+      <column name="usuario_anulacion" type="varchar(50)"/>
+    </createTable>
+
+    <addUniqueConstraint tableName="comprobante_plan_ahorro" columnNames="numero_comprobante" constraintName="uk_cpa_numero"/>
+    <addUniqueConstraint tableName="comprobante_plan_ahorro" columnNames="cuota_plan_ahorro_id,estado" constraintName="uk_cpa_cuota_estado"/>
+
+    <addForeignKeyConstraint
+      baseTableName="comprobante_plan_ahorro"
+      baseColumnNames="contrato_plan_ahorro_id"
+      constraintName="fk_cpa_contrato"
+      referencedTableName="contrato_plan_ahorro"
+      referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="comprobante_plan_ahorro" baseColumnNames="cuota_plan_ahorro_id" constraintName="fk_cpa_cuota" referencedTableName="cuota_plan_ahorro" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="comprobante_plan_ahorro" baseColumnNames="pago_id" constraintName="fk_cpa_pago" referencedTableName="pago" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="comprobante_plan_ahorro" baseColumnNames="moneda_id" constraintName="fk_cpa_moneda" referencedTableName="moneda" referencedColumnNames="id"/>
+  </changeSet>
+
+</databaseChangeLog>
+

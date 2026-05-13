@@ -23,14 +23,21 @@ import com.concesionaria.app.repository.TasacionUsadoRepository;
 import com.concesionaria.app.repository.TipoComprobanteRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.repository.ComprobanteRepository;
+import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
+import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.domain.Comprobante;
 import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
+import com.concesionaria.app.domain.CuotaPlanAhorro;
+import com.concesionaria.app.domain.ContratoPlanAhorro;
+import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
+import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.ComprobanteService;
 import com.concesionaria.app.service.MovimientoCajaService;
+import com.concesionaria.app.service.ComprobantePlanAhorroService;
 import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.PagoDTO;
@@ -40,6 +47,7 @@ import com.concesionaria.app.security.SecurityUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Locale;
@@ -47,6 +55,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -89,6 +98,9 @@ public class PagoServiceImpl implements PagoService {
     private final TipoComprobanteRepository tipoComprobanteRepository;
     private final ComprobanteRepository comprobanteRepository;
     private final MovimientoCajaService movimientoCajaService;
+    private final ComprobantePlanAhorroService comprobantePlanAhorroService;
+    private final CuotaPlanAhorroRepository cuotaPlanAhorroRepository;
+    private final ContratoPlanAhorroRepository contratoPlanAhorroRepository;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -96,6 +108,46 @@ public class PagoServiceImpl implements PagoService {
     @Value("${app.negocio.moneda-base-codigo:ARS}")
     private String monedaBaseCodigo;
 
+    @Autowired
+    public PagoServiceImpl(
+        PagoRepository pagoRepository,
+        PagoMapper pagoMapper,
+        VentaRepository ventaRepository,
+        ReservaRepository reservaRepository,
+        VentaService ventaService,
+        MetodoPagoRepository metodoPagoRepository,
+        MonedaRepository monedaRepository,
+        EntidadFinancieraRepository entidadFinancieraRepository,
+        TasacionUsadoRepository tasacionUsadoRepository,
+        CurrencyConversionService currencyConversionService,
+        ComprobanteService comprobanteService,
+        TipoComprobanteRepository tipoComprobanteRepository,
+        ComprobanteRepository comprobanteRepository,
+        MovimientoCajaService movimientoCajaService,
+        ComprobantePlanAhorroService comprobantePlanAhorroService,
+        CuotaPlanAhorroRepository cuotaPlanAhorroRepository,
+        ContratoPlanAhorroRepository contratoPlanAhorroRepository
+    ) {
+        this.pagoRepository = pagoRepository;
+        this.pagoMapper = pagoMapper;
+        this.ventaRepository = ventaRepository;
+        this.reservaRepository = reservaRepository;
+        this.ventaService = ventaService;
+        this.metodoPagoRepository = metodoPagoRepository;
+        this.monedaRepository = monedaRepository;
+        this.entidadFinancieraRepository = entidadFinancieraRepository;
+        this.tasacionUsadoRepository = tasacionUsadoRepository;
+        this.currencyConversionService = currencyConversionService;
+        this.comprobanteService = comprobanteService;
+        this.tipoComprobanteRepository = tipoComprobanteRepository;
+        this.comprobanteRepository = comprobanteRepository;
+        this.movimientoCajaService = movimientoCajaService;
+        this.comprobantePlanAhorroService = comprobantePlanAhorroService;
+        this.cuotaPlanAhorroRepository = cuotaPlanAhorroRepository;
+        this.contratoPlanAhorroRepository = contratoPlanAhorroRepository;
+    }
+
+    // Constructor legacy para compatibilidad con tests que instancian manualmente el servicio.
     public PagoServiceImpl(
         PagoRepository pagoRepository,
         PagoMapper pagoMapper,
@@ -112,20 +164,59 @@ public class PagoServiceImpl implements PagoService {
         ComprobanteRepository comprobanteRepository,
         MovimientoCajaService movimientoCajaService
     ) {
-        this.pagoRepository = pagoRepository;
-        this.pagoMapper = pagoMapper;
-        this.ventaRepository = ventaRepository;
-        this.reservaRepository = reservaRepository;
-        this.ventaService = ventaService;
-        this.metodoPagoRepository = metodoPagoRepository;
-        this.monedaRepository = monedaRepository;
-        this.entidadFinancieraRepository = entidadFinancieraRepository;
-        this.tasacionUsadoRepository = tasacionUsadoRepository;
-        this.currencyConversionService = currencyConversionService;
-        this.comprobanteService = comprobanteService;
-        this.tipoComprobanteRepository = tipoComprobanteRepository;
-        this.comprobanteRepository = comprobanteRepository;
-        this.movimientoCajaService = movimientoCajaService;
+        this(
+            pagoRepository,
+            pagoMapper,
+            ventaRepository,
+            reservaRepository,
+            ventaService,
+            metodoPagoRepository,
+            monedaRepository,
+            entidadFinancieraRepository,
+            tasacionUsadoRepository,
+            currencyConversionService,
+            comprobanteService,
+            tipoComprobanteRepository,
+            comprobanteRepository,
+            movimientoCajaService,
+            new ComprobantePlanAhorroService() {
+                @Override
+                public com.concesionaria.app.service.dto.ComprobantePlanAhorroDTO emitirParaCuota(
+                    com.concesionaria.app.domain.CuotaPlanAhorro cuota,
+                    Pago pago
+                ) {
+                    return null;
+                }
+
+                @Override
+                public Optional<com.concesionaria.app.service.dto.ComprobantePlanAhorroDTO> findOne(Long id) {
+                    return Optional.empty();
+                }
+
+                @Override
+                public List<com.concesionaria.app.service.dto.ComprobantePlanAhorroDTO> findByCuota(Long cuotaId) {
+                    return List.of();
+                }
+
+                @Override
+                public Optional<com.concesionaria.app.service.dto.ComprobantePdfResult> generarPdf(Long id) {
+                    return Optional.empty();
+                }
+
+                @Override
+                public com.concesionaria.app.service.dto.ComprobantePlanAhorroDTO anular(Long id, String motivo) {
+                    return null;
+                }
+
+                @Override
+                public void anularPorPago(Long pagoId, String motivo, String usuario, Instant fecha) {}
+
+                @Override
+                public void delete(Long id) {}
+            },
+            null,
+            null
+        );
     }
 
     @Override
@@ -409,8 +500,11 @@ public class PagoServiceImpl implements PagoService {
         }
         Venta venta = pago.getVenta();
         Reserva reservaAsociada = pago.getReserva();
+        CuotaPlanAhorro cuotaPlan = cuotaPlanAhorroRepository == null ? null : cuotaPlanAhorroRepository.findFirstByPagoId(pagoId).orElse(null);
         if ((venta == null || venta.getId() == null) && (reservaAsociada == null || reservaAsociada.getId() == null)) {
-            throw new BadRequestException("El pago no tiene una operacion asociada");
+            if (cuotaPlan == null) {
+                throw new BadRequestException("El pago no tiene una operacion asociada");
+            }
         }
         pago.setEstado(EstadoPago.ANULADO);
         if (pago.getTipoMovimiento() == TipoMovimientoPago.PAGO_RECIBIDO || pago.getTipoMovimiento() == TipoMovimientoPago.ANTICIPO) {
@@ -438,6 +532,15 @@ public class PagoServiceImpl implements PagoService {
             monetario
         );
         anularComprobantesAsociadosAPago(pagoActualizado, motivo, usuarioAnulacion, fechaAnulacion);
+        comprobantePlanAhorroService.anularPorPago(pagoActualizado.getId(), motivo, usuarioAnulacion, fechaAnulacion);
+
+        if (cuotaPlan != null && cuotaPlanAhorroRepository != null) {
+            cuotaPlan.setEstado(EstadoCuotaPlanAhorro.PENDIENTE);
+            cuotaPlan.setFechaPago(null);
+            cuotaPlan.setPago(null);
+            cuotaPlanAhorroRepository.save(cuotaPlan);
+            recalcContratoPlan(cuotaPlan.getContrato());
+        }
 
         if (venta != null && venta.getId() != null) {
             recalcularVentaEInventario(venta);
@@ -448,6 +551,28 @@ public class PagoServiceImpl implements PagoService {
             }
         }
         return pagoMapper.toDto(pagoActualizado);
+    }
+
+    private void recalcContratoPlan(ContratoPlanAhorro contrato) {
+        if (contrato == null || contrato.getId() == null || cuotaPlanAhorroRepository == null || contratoPlanAhorroRepository == null) {
+            return;
+        }
+        List<CuotaPlanAhorro> cuotas = cuotaPlanAhorroRepository.findAllByContratoIdOrderByNumeroCuotaAsc(contrato.getId());
+        long pagadas = cuotas.stream().filter(c -> c.getEstado() == EstadoCuotaPlanAhorro.PAGADA).count();
+        BigDecimal saldo = cuotas
+            .stream()
+            .filter(c -> c.getEstado() == EstadoCuotaPlanAhorro.PENDIENTE || c.getEstado() == EstadoCuotaPlanAhorro.VENCIDA)
+            .map(CuotaPlanAhorro::getImporte)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .setScale(2, REDONDEO);
+        contrato.setCuotasPagadas((int) pagadas);
+        contrato.setSaldoPendiente(saldo);
+        if (saldo.compareTo(BigDecimal.ZERO) == 0) {
+            contrato.setEstado(EstadoContratoPlanAhorro.FINALIZADO);
+        } else if (contrato.getEstado() == EstadoContratoPlanAhorro.FINALIZADO) {
+            contrato.setEstado(EstadoContratoPlanAhorro.ACTIVO);
+        }
+        contratoPlanAhorroRepository.save(contrato);
     }
 
     private void recalcularVentaEInventario(Venta venta) {

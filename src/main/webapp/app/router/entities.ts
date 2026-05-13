@@ -93,6 +93,9 @@ const TipoDocumentoDetails = () => import('@/entities/tipo-documento/tipo-docume
 const TasacionUsado = () => import('@/entities/tasacion-usado/tasacion-usado.vue');
 const TasacionUsadoUpdate = () => import('@/entities/tasacion-usado/tasacion-usado-update.vue');
 const TasacionUsadoDetails = () => import('@/entities/tasacion-usado/tasacion-usado-details.vue');
+const PlanAhorro = () => import('@/entities/plan-ahorro/plan-ahorro.vue');
+const ContratoPlanAhorro = () => import('@/entities/plan-ahorro/contrato-plan-ahorro.vue');
+const ContratoPlanAhorroDetails = () => import('@/entities/plan-ahorro/contrato-plan-ahorro-details.vue');
 
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
@@ -650,6 +653,24 @@ export default {
       path: 'tasacion-usados/:tasacionUsadoId/view',
       name: 'TasacionUsadoView',
       component: TasacionUsadoDetails,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'plan-ahorro',
+      name: 'PlanAhorro',
+      component: PlanAhorro,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'plan-ahorro/contratos',
+      name: 'ContratoPlanAhorro',
+      component: ContratoPlanAhorro,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'plan-ahorro/contratos/:contratoId/view',
+      name: 'ContratoPlanAhorroView',
+      component: ContratoPlanAhorroDetails,
       meta: { authorities: OPERATIONAL },
     },
     {

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260513110000-1" author="codex">
+    <createTable tableName="plan_ahorro">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="nombre" type="varchar(120)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="descripcion" type="varchar(500)"/>
+      <column name="version_id" type="bigint"/>
+      <column name="cantidad_cuotas" type="int">
+        <constraints nullable="false"/>
+      </column>
+      <column name="valor_movil" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="moneda_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+    <addForeignKeyConstraint baseTableName="plan_ahorro" baseColumnNames="version_id" constraintName="fk_plan_ahorro_version" referencedTableName="version" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="plan_ahorro" baseColumnNames="moneda_id" constraintName="fk_plan_ahorro_moneda" referencedTableName="moneda" referencedColumnNames="id"/>
+    <createIndex tableName="plan_ahorro" indexName="idx_plan_ahorro_estado">
+      <column name="estado"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="20260513110000-2" author="codex">
+    <createTable tableName="contrato_plan_ahorro">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="cliente_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="plan_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_inicio" type="datetime(6)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="numero_contrato" type="varchar(40)">
+        <constraints nullable="false" unique="true" uniqueConstraintName="uk_contrato_plan_numero"/>
+      </column>
+      <column name="cuotas_totales" type="int">
+        <constraints nullable="false"/>
+      </column>
+      <column name="cuotas_pagadas" type="int">
+        <constraints nullable="false"/>
+      </column>
+      <column name="saldo_pendiente" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="observaciones" type="varchar(500)"/>
+      <column name="usuario_registro" type="varchar(50)"/>
+      <column name="user_id" type="bigint"/>
+    </createTable>
+    <addForeignKeyConstraint baseTableName="contrato_plan_ahorro" baseColumnNames="cliente_id" constraintName="fk_contrato_plan_cliente" referencedTableName="cliente" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="contrato_plan_ahorro" baseColumnNames="plan_id" constraintName="fk_contrato_plan_plan" referencedTableName="plan_ahorro" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="contrato_plan_ahorro" baseColumnNames="user_id" constraintName="fk_contrato_plan_user" referencedTableName="jhi_user" referencedColumnNames="id"/>
+    <createIndex tableName="contrato_plan_ahorro" indexName="idx_contrato_plan_estado">
+      <column name="estado"/>
+    </createIndex>
+    <createIndex tableName="contrato_plan_ahorro" indexName="idx_contrato_plan_user">
+      <column name="user_id"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="20260513110000-3" author="codex">
+    <createTable tableName="cuota_plan_ahorro">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="contrato_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="numero_cuota" type="int">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_vencimiento" type="datetime(6)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="importe" type="decimal(21,2)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_pago" type="datetime(6)"/>
+      <column name="pago_id" type="bigint"/>
+      <column name="comprobante_id" type="bigint"/>
+    </createTable>
+    <addForeignKeyConstraint baseTableName="cuota_plan_ahorro" baseColumnNames="contrato_id" constraintName="fk_cuota_plan_contrato" referencedTableName="contrato_plan_ahorro" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="cuota_plan_ahorro" baseColumnNames="pago_id" constraintName="fk_cuota_plan_pago" referencedTableName="pago" referencedColumnNames="id"/>
+    <addForeignKeyConstraint baseTableName="cuota_plan_ahorro" baseColumnNames="comprobante_id" constraintName="fk_cuota_plan_comprobante" referencedTableName="comprobante" referencedColumnNames="id"/>
+    <addUniqueConstraint tableName="cuota_plan_ahorro" columnNames="contrato_id,numero_cuota" constraintName="ux_cuota_plan_contrato_numero"/>
+    <createIndex tableName="cuota_plan_ahorro" indexName="idx_cuota_plan_estado">
+      <column name="estado"/>
+    </createIndex>
+  </changeSet>
+
+</databaseChangeLog>
+
