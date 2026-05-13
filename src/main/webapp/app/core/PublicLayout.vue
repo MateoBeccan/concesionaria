@@ -67,8 +67,8 @@ const currentYear = computed(() => new Date().getFullYear());
 }
 
 .public-brand-logo {
-  width: clamp(210px, 25vw, 310px);
-  height: clamp(44px, 5.8vw, 60px);
+  width: clamp(250px, 29vw, 360px);
+  height: clamp(54px, 6.8vw, 74px);
   object-fit: contain;
   object-position: left center;
   display: block;
@@ -118,8 +118,8 @@ const currentYear = computed(() => new Date().getFullYear());
   }
 
   .public-brand-logo {
-    width: clamp(178px, 52vw, 238px);
-    height: clamp(38px, 10vw, 52px);
+    width: clamp(210px, 60vw, 285px);
+    height: clamp(46px, 12vw, 64px);
   }
 
   .public-badge {

@@ -42,11 +42,25 @@ export default defineComponent({
       retrieveComprobante(route.params.comprobanteId);
     }
 
+    const formatMoney = (value?: number | null) =>
+      Number(value ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    const estadoLabel = (estado?: string | null) => {
+      if (estado === 'EMITIDO') return 'Emitido';
+      if (estado === 'ANULADO') return 'Anulado';
+      return estado ?? '-';
+    };
+
+    const estadoClass = (estado?: string | null) => (estado === 'ANULADO' ? 'bg-secondary' : 'bg-success');
+
     return {
       ...dateFormat,
       alertService,
       comprobante,
       descargarPdf,
+      formatMoney,
+      estadoLabel,
+      estadoClass,
 
       previousState,
     };

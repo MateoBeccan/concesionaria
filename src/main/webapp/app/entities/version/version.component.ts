@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { type IVersion } from '@/shared/model/version.model';
@@ -108,6 +108,36 @@ export default defineComponent({
       await retrieveVersions();
     });
 
+    const filters = ref({
+      q: '',
+      modelo: '',
+      anioInicio: '',
+      anioFin: '',
+    });
+
+    const filteredVersions = computed(() => {
+      const q = filters.value.q.trim().toLowerCase();
+      const modelo = filters.value.modelo.trim().toLowerCase();
+      const anioInicio = filters.value.anioInicio.trim();
+      const anioFin = filters.value.anioFin.trim();
+      return versions.value.filter(version => {
+        const qOk =
+          !q ||
+          String(version.id ?? '').includes(q) ||
+          (version.nombre ?? '').toLowerCase().includes(q) ||
+          (version.descripcion ?? '').toLowerCase().includes(q) ||
+          (version.modelo?.nombre ?? '').toLowerCase().includes(q);
+        const modeloOk = !modelo || (version.modelo?.nombre ?? '').toLowerCase().includes(modelo);
+        const anioInicioOk = !anioInicio || String(version.anioInicio ?? '') === anioInicio;
+        const anioFinOk = !anioFin || String(version.anioFin ?? '') === anioFin;
+        return qOk && modeloOk && anioInicioOk && anioFinOk;
+      });
+    });
+
+    const resetFilters = () => {
+      filters.value = { q: '', modelo: '', anioInicio: '', anioFin: '' };
+    };
+
     return {
       versions,
       handleSyncList,
@@ -126,6 +156,9 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      filters,
+      filteredVersions,
+      resetFilters,
     };
   },
 });

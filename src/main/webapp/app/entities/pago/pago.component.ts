@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
@@ -112,6 +112,73 @@ export default defineComponent({
       await retrievePagos();
     });
 
+    const formatMoney = (value?: number | null, currency = 'ARS') =>
+      new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(value ?? 0));
+
+    const estadoLabel = (estado?: string) => (estado === 'ANULADO' ? 'Anulado' : 'Registrado');
+    const estadoClass = (estado?: string) => (estado === 'ANULADO' ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-success-subtle text-success-emphasis');
+
+    const filters = ref({
+      estado: '',
+      metodo: '',
+      moneda: '',
+      usuario: '',
+      ventaId: '',
+      fechaDesde: '',
+      fechaHasta: '',
+      q: '',
+    });
+
+    const filteredPagos = computed(() =>
+      pagos.value.filter(pago => {
+        const estadoOk = !filters.value.estado || (pago.estado ?? '') === filters.value.estado;
+        const metodoOk = !filters.value.metodo || (pago.metodoPago?.codigo ?? '') === filters.value.metodo;
+        const monedaOk = !filters.value.moneda || (pago.moneda?.codigo ?? '') === filters.value.moneda;
+        const usuarioOk = !filters.value.usuario || (pago.usuarioRegistro ?? '').toLowerCase().includes(filters.value.usuario.toLowerCase());
+        const ventaOk = !filters.value.ventaId || String(pago.venta?.id ?? '') === filters.value.ventaId.trim();
+        const texto = filters.value.q.trim().toLowerCase();
+        const textOk =
+          !texto ||
+          String(pago.id ?? '').includes(texto) ||
+          (pago.referencia ?? '').toLowerCase().includes(texto) ||
+          (pago.numeroOperacion ?? '').toLowerCase().includes(texto) ||
+          (pago.comprobanteExterno ?? '').toLowerCase().includes(texto) ||
+          (pago.entidadFinanciera?.nombre ?? '').toLowerCase().includes(texto) ||
+          (pago.metodoPago?.descripcion ?? '').toLowerCase().includes(texto);
+
+        const fechaPago = pago.fecha ? new Date(pago.fecha).getTime() : undefined;
+        const desdeOk = !filters.value.fechaDesde || (fechaPago !== undefined && fechaPago >= new Date(`${filters.value.fechaDesde}T00:00:00`).getTime());
+        const hastaOk = !filters.value.fechaHasta || (fechaPago !== undefined && fechaPago <= new Date(`${filters.value.fechaHasta}T23:59:59`).getTime());
+
+        return estadoOk && metodoOk && monedaOk && usuarioOk && ventaOk && textOk && desdeOk && hastaOk;
+      }),
+    );
+
+    const resetFilters = () => {
+      filters.value = {
+        estado: '',
+        metodo: '',
+        moneda: '',
+        usuario: '',
+        ventaId: '',
+        fechaDesde: '',
+        fechaHasta: '',
+        q: '',
+      };
+    };
+
+    const metodoOptions = computed(() =>
+      [...new Set(pagos.value.map(p => p.metodoPago?.codigo).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    );
+    const monedaOptions = computed(() =>
+      [...new Set(pagos.value.map(p => p.moneda?.codigo).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    );
+
     return {
       pagos,
       handleSyncList,
@@ -132,6 +199,14 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      formatMoney,
+      estadoLabel,
+      estadoClass,
+      filters,
+      filteredPagos,
+      resetFilters,
+      metodoOptions,
+      monedaOptions,
     };
   },
 });

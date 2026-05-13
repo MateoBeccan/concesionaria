@@ -1,14 +1,17 @@
 <template>
-  <div>
-    <h2 id="page-heading">
-      <span>Caja</span>
-      <div class="d-flex justify-content-end gap-2">
-        <button class="btn btn-info" @click="retrieveMovimientos" :disabled="isFetching">
-          <font-awesome-icon icon="sync" :spin="isFetching" />
-          <span>Actualizar</span>
+  <div class="container-fluid px-0">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h2 class="h4 mb-1">Caja</h2>
+          <p class="text-muted mb-0">Control operativo de ingresos, reversos y movimientos financieros.</p>
+        </div>
+        <button class="btn btn-outline-primary" @click="retrieveMovimientos" :disabled="isFetching">
+          <font-awesome-icon icon="sync" :spin="isFetching" class="me-2" />
+          Actualizar
         </button>
       </div>
-    </h2>
+    </div>
 
     <div class="card mb-3">
       <div class="card-body">

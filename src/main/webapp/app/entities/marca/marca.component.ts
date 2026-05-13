@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
@@ -110,6 +110,29 @@ export default defineComponent({
       await retrieveMarcas();
     });
 
+    const filters = ref({
+      q: '',
+      pais: '',
+    });
+
+    const filteredMarcas = computed(() => {
+      const q = filters.value.q.trim().toLowerCase();
+      const pais = filters.value.pais.trim().toLowerCase();
+      return marcas.value.filter(marca => {
+        const qOk =
+          !q ||
+          String(marca.id ?? '').includes(q) ||
+          (marca.nombre ?? '').toLowerCase().includes(q) ||
+          (marca.paisOrigen ?? '').toLowerCase().includes(q);
+        const paisOk = !pais || (marca.paisOrigen ?? '').toLowerCase().includes(pais);
+        return qOk && paisOk;
+      });
+    });
+
+    const resetFilters = () => {
+      filters.value = { q: '', pais: '' };
+    };
+
     return {
       marcas,
       handleSyncList,
@@ -129,6 +152,9 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      filters,
+      filteredMarcas,
+      resetFilters,
     };
   },
 });

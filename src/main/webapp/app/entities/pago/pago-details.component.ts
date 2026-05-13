@@ -33,10 +33,24 @@ export default defineComponent({
       retrievePago(route.params.pagoId);
     }
 
+    const formatMoney = (value?: number | null, currency = 'ARS') =>
+      new Intl.NumberFormat('es-AR', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(value ?? 0));
+
+    const estadoLabel = (estado?: string) => (estado === 'ANULADO' ? 'Anulado' : 'Registrado');
+    const estadoClass = (estado?: string) => (estado === 'ANULADO' ? 'bg-secondary-subtle text-secondary-emphasis' : 'bg-success-subtle text-success-emphasis');
+
     return {
       ...dateFormat,
       alertService,
       pago,
+      formatMoney,
+      estadoLabel,
+      estadoClass,
 
       previousState,
     };

@@ -1,4 +1,4 @@
-import { type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
+import { computed, type Ref, defineComponent, inject, onMounted, ref, watch } from 'vue';
 
 import { useAlertService } from '@/shared/alert/alert.service';
 import { useDateFormat } from '@/shared/composables';
@@ -110,6 +110,32 @@ export default defineComponent({
       await retrieveModelos();
     });
 
+    const filters = ref({
+      q: '',
+      marca: '',
+      anio: '',
+    });
+
+    const filteredModelos = computed(() => {
+      const q = filters.value.q.trim().toLowerCase();
+      const marca = filters.value.marca.trim().toLowerCase();
+      const anio = filters.value.anio.trim();
+      return modelos.value.filter(modelo => {
+        const qOk =
+          !q ||
+          String(modelo.id ?? '').includes(q) ||
+          (modelo.nombre ?? '').toLowerCase().includes(q) ||
+          (modelo.marca?.nombre ?? '').toLowerCase().includes(q);
+        const marcaOk = !marca || (modelo.marca?.nombre ?? '').toLowerCase().includes(marca);
+        const anioOk = !anio || String(modelo.anioLanzamiento ?? '') === anio;
+        return qOk && marcaOk && anioOk;
+      });
+    });
+
+    const resetFilters = () => {
+      filters.value = { q: '', marca: '', anio: '' };
+    };
+
     return {
       modelos,
       handleSyncList,
@@ -129,6 +155,9 @@ export default defineComponent({
       reverse,
       totalItems,
       changeOrder,
+      filters,
+      filteredModelos,
+      resetFilters,
     };
   },
 });

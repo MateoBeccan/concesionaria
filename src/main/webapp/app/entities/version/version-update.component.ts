@@ -41,6 +41,11 @@ export default defineComponent({
 
     if (route.params?.versionId) {
       retrieveVersion(route.params.versionId);
+    } else if (route.query?.modeloId) {
+      const modeloId = Number(route.query.modeloId);
+      if (Number.isFinite(modeloId) && modeloId > 0) {
+        version.value.modelo = { id: modeloId } as IModelo;
+      }
     }
 
     const initRelationships = () => {
@@ -48,6 +53,10 @@ export default defineComponent({
         .retrieve()
         .then(res => {
           modelos.value = res.data;
+          if (version.value?.modelo?.id) {
+            const selected = modelos.value.find(m => m.id === version.value.modelo.id);
+            if (selected) version.value.modelo = selected;
+          }
         });
     };
 

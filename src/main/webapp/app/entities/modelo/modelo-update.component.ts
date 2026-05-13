@@ -49,6 +49,11 @@ export default defineComponent({
 
     if (route.params?.modeloId) {
       retrieveModelo(route.params.modeloId);
+    } else if (route.query?.marcaId) {
+      const marcaId = Number(route.query.marcaId);
+      if (Number.isFinite(marcaId) && marcaId > 0) {
+        modelo.value.marca = { id: marcaId } as IMarca;
+      }
     }
 
     const initRelationships = () => {
@@ -56,6 +61,10 @@ export default defineComponent({
         .retrieve()
         .then(res => {
           marcas.value = res.data;
+          if (modelo.value?.marca?.id) {
+            const selected = marcas.value.find(m => m.id === modelo.value.marca.id);
+            if (selected) modelo.value.marca = selected;
+          }
         });
       carroceriaService()
         .retrieve()

@@ -167,12 +167,12 @@ async function logout() {
 
 .brand-link {
   display: block;
-  width: min(100%, 206px);
+  width: min(100%, 228px);
 }
 
 .brand-logo {
   width: 100%;
-  height: clamp(48px, 5.2vw, 62px);
+  height: clamp(58px, 6vw, 74px);
   object-fit: contain;
   object-position: center;
   display: block;

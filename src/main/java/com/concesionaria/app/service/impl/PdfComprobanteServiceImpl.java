@@ -15,6 +15,7 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
+import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
@@ -26,15 +27,21 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.BaseFont;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.awt.Color;
+import org.springframework.core.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,6 +72,7 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
     private final String companyPhone;
     private final String companyEmail;
     private final String companyCuit;
+    private final String companyLogoPath;
 
     public PdfComprobanteServiceImpl(
         ComprobanteRepository comprobanteRepository,
@@ -73,7 +81,8 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         @Value("${app.comprobante.pdf.company.address:Av. Siempre Viva 1234 - CABA}") String companyAddress,
         @Value("${app.comprobante.pdf.company.phone:+54 11 4000-1234}") String companyPhone,
         @Value("${app.comprobante.pdf.company.email:ventas@concesionariamb.com}") String companyEmail,
-        @Value("${app.comprobante.pdf.company.cuit:30-12345678-9}") String companyCuit
+        @Value("${app.comprobante.pdf.company.cuit:30-12345678-9}") String companyCuit,
+        @Value("${app.comprobante.pdf.company.logo-path:static/content/images/branding/logo.png}") String companyLogoPath
     ) {
         this.comprobanteRepository = comprobanteRepository;
         this.pagoRepository = pagoRepository;
@@ -82,6 +91,7 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         this.companyPhone = companyPhone;
         this.companyEmail = companyEmail;
         this.companyCuit = companyCuit;
+        this.companyLogoPath = companyLogoPath;
     }
 
     @Override
@@ -139,10 +149,17 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
 
         PdfPCell logoCell = new PdfPCell();
         logoCell.setFixedHeight(56f);
-        logoCell.setBorder(Rectangle.BOX);
+        logoCell.setBorder(Rectangle.NO_BORDER);
         logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         logoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
-        logoCell.addElement(new Paragraph("LOGO", FONT_LABEL));
+        Image logo = loadLogoImage();
+        if (logo != null) {
+            logo.scaleToFit(120f, 46f);
+            logo.setAlignment(Element.ALIGN_CENTER);
+            logoCell.addElement(logo);
+        } else {
+            logoCell.addElement(new Paragraph(companyName, FONT_LABEL));
+        }
         table.addCell(logoCell);
 
         PdfPCell infoCell = new PdfPCell();
@@ -154,6 +171,51 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
         table.addCell(infoCell);
 
         document.add(table);
+    }
+
+    private Image loadLogoImage() {
+        Image fromFs = loadLogoFromFileSystem();
+        if (fromFs != null) {
+            return fromFs;
+        }
+
+        try {
+            ClassPathResource resource = new ClassPathResource(companyLogoPath);
+            if (!resource.exists()) {
+                LOG.warn("No se encontro logo para PDF en classpath: {}", companyLogoPath);
+                return null;
+            }
+            try (InputStream inputStream = resource.getInputStream()) {
+                return Image.getInstance(inputStream.readAllBytes());
+            }
+        } catch (Exception e) {
+            LOG.warn("No se pudo cargar logo para PDF desde '{}'", companyLogoPath, e);
+            return null;
+        }
+    }
+
+    private Image loadLogoFromFileSystem() {
+        Path configuredPath = Paths.get(companyLogoPath);
+        Path[] candidates = new Path[] {
+            configuredPath,
+            Paths.get("src/main/webapp/content/images/branding/logo.png"),
+            Paths.get("src/main/webapp/content/images/branding/Logo.png"),
+            Paths.get("content/images/branding/logo.png"),
+        };
+
+        for (Path candidate : candidates) {
+            try {
+                if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                    try (InputStream inputStream = new FileInputStream(candidate.toFile())) {
+                        LOG.debug("Cargando logo PDF desde archivo: {}", candidate.toAbsolutePath());
+                        return Image.getInstance(inputStream.readAllBytes());
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warn("No se pudo cargar logo PDF desde archivo '{}'", candidate.toAbsolutePath(), e);
+            }
+        }
+        return null;
     }
 
     private void addComprobanteSection(Document document, Comprobante comprobante) throws DocumentException {

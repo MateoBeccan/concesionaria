@@ -5,7 +5,7 @@
         <h1 class="wizard-title">{{ venta.id ? `Editar venta #${venta.id}` : 'Nueva venta' }}</h1>
         <p class="wizard-subtitle">Flujo secuencial: cliente, vehiculo, pagos y cierre.</p>
       </div>
-      <button class="btn btn-sm btn-outline-secondary" @click="router.push({ name: 'Venta' })">Volver</button>
+      <button class="btn btn-sm btn-outline-secondary" @click="requestExitToVentas">Volver</button>
     </div>
 
     <div v-if="error" class="alert alert-danger d-flex justify-content-between align-items-center mb-3">
@@ -19,7 +19,7 @@
         :key="step.number"
         type="button"
         class="wizard-step"
-        :class="{ active: currentStep === step.number, done: step.done }"
+        :class="wizardStepClass(step.number)"
         :disabled="!canJumpTo(step.number)"
         @click="goToStep(step.number)"
       >
@@ -47,7 +47,7 @@
                     <span class="fw-semibold">{{ venta.cliente.nombre }} {{ venta.cliente.apellido }}</span>
                     <span class="text-muted ms-2 small">{{ venta.cliente.nroDocumento }}</span>
                   </div>
-                  <button class="btn btn-sm btn-outline-secondary" @click="venta.cliente = null">Cambiar</button>
+                  <button class="btn btn-sm btn-outline-secondary" @click="iniciarCambioCliente">Cambiar</button>
                 </div>
                 <div v-else>
                   <input v-model="busquedaCliente" class="form-control" placeholder="Buscar por nombre, DNI o email..." @input="buscarClientes" />
@@ -90,7 +90,7 @@
               :detalles="detalles"
               :suma-subtotales="sumaSubtotales"
               :moneda-venta="venta.moneda ?? null"
-              @agregar="agregarVehiculo"
+              @agregar="onAgregarVehiculo"
               @quitar="quitarDetalle"
               @actualizar-precio="actualizarPrecioDetalle"
             />
@@ -189,12 +189,48 @@
         />
       </div>
     </div>
+
+    <b-modal id="wizard-warning-modal" ref="warningModalRef" title="Confirmar cambios">
+      <p class="mb-0">{{ warningMessage }}</p>
+      <template #footer>
+        <button class="btn btn-secondary btn-sm" @click="cancelWarningAction">Cancelar</button>
+        <button class="btn btn-danger btn-sm" @click="acceptWarningAction">Continuar</button>
+      </template>
+    </b-modal>
+
+    <b-modal id="wizard-final-confirm-modal" ref="finalConfirmModalRef" title="Confirmacion final">
+      <div class="small text-muted mb-2">Revisa el resumen antes de confirmar.</div>
+      <div class="final-summary">
+        <div><strong>Accion:</strong> {{ pendingFinalActionLabel }}</div>
+        <div><strong>Cliente:</strong> {{ venta.cliente?.nombre }} {{ venta.cliente?.apellido }}</div>
+        <div><strong>Vehiculo:</strong> {{ detalles[0]?.vehiculo?.patente ?? '-' }}</div>
+        <div><strong>Total:</strong> {{ venta.moneda?.simbolo ?? '$' }} {{ fmt(venta.total) }}</div>
+        <div><strong>Pagado:</strong> {{ venta.moneda?.simbolo ?? '$' }} {{ fmt(venta.totalPagado) }}</div>
+        <div><strong>Saldo:</strong> {{ venta.moneda?.simbolo ?? '$' }} {{ fmt(venta.saldo) }}</div>
+        <div><strong>Comprobante:</strong> {{ tipoComprobanteSeleccionado ? `${tipoComprobanteSeleccionado.codigo} - ${tipoComprobanteSeleccionado.descripcion}` : 'No generar' }}</div>
+      </div>
+      <template #footer>
+        <button class="btn btn-secondary btn-sm" @click="closeFinalConfirmModal">Cancelar</button>
+        <button class="btn btn-success btn-sm" :disabled="guardando" @click="executeFinalAction">
+          <span v-if="guardando" class="spinner-border spinner-border-sm me-1" />
+          Confirmar
+        </button>
+      </template>
+    </b-modal>
+
+    <b-modal id="wizard-exit-confirm-modal" ref="exitConfirmModalRef" title="Confirmar salida">
+      <p class="mb-0">Hay datos cargados que todavía no fueron confirmados. ¿Querés salir y perder los cambios?</p>
+      <template #footer>
+        <button class="btn btn-secondary btn-sm" @click="cancelExit">Cancelar</button>
+        <button class="btn btn-danger btn-sm" @click="confirmExit">Salir</button>
+      </template>
+    </b-modal>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter, type RouteLocationRaw } from 'vue-router';
 import axios from 'axios';
 
 import { useAlertService } from '@/shared/alert/alert.service';
@@ -202,6 +238,7 @@ import type { ICliente } from '@/shared/model/cliente.model';
 import type { IInventario } from '@/shared/model/inventario.model';
 import type { IReserva } from '@/shared/model/reserva.model';
 import type { ITipoComprobante } from '@/shared/model/tipo-comprobante.model';
+import type { IVehiculo } from '@/shared/model/vehiculo.model';
 import VehiculoService from '@/entities/vehiculo/vehiculo.service';
 
 import DetalleVentaInline from './DetalleVentaInline.vue';
@@ -249,6 +286,14 @@ const busquedaCliente = ref('');
 const resultadosCliente = ref<ICliente[]>([]);
 const currentStep = ref(1);
 const stepConfirmed = ref({ cliente: false, vehiculo: false, pagos: false });
+const warningModalRef = ref<any>(null);
+const warningMessage = ref('');
+const warningAction = ref<null | (() => void)>(null);
+const finalConfirmModalRef = ref<any>(null);
+const pendingFinalAction = ref<'venta' | 'reserva' | null>(null);
+const exitConfirmModalRef = ref<any>(null);
+const pendingExitTarget = ref<RouteLocationRaw | null>(null);
+const allowNavigationWithoutPrompt = ref(false);
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 const canConfirmPagoStep = computed(() => pagosActivos.value > 0);
@@ -261,6 +306,16 @@ const puedeConfirmarReserva = computed(
     Number(venta.value.totalPagado ?? 0) > 0 &&
     cumpleMinimoReserva.value,
 );
+const pendingFinalActionLabel = computed(() => (pendingFinalAction.value === 'reserva' ? 'Confirmar reserva' : 'Confirmar venta'));
+const hasUnsavedData = computed(() => {
+  const hasCliente = Boolean(venta.value.cliente?.id);
+  const hasVehiculo = detalles.value.length > 0 || Boolean(venta.value.vehiculo?.id);
+  const hasPagos = pagos.value.length > 0;
+  const hasComprobanteSeleccionado = Boolean(tipoComprobanteSeleccionado.value?.id);
+  const hasObservaciones = Boolean(String(venta.value.observaciones ?? '').trim());
+  const hasStepConfirmations = stepConfirmed.value.cliente || stepConfirmed.value.vehiculo || stepConfirmed.value.pagos;
+  return hasCliente || hasVehiculo || hasPagos || hasComprobanteSeleccionado || hasObservaciones || hasStepConfirmations;
+});
 
 const stepsUi = computed(() => [
   {
@@ -296,6 +351,15 @@ function canJumpTo(step: number) {
   return stepConfirmed.value.cliente && stepConfirmed.value.vehiculo && stepConfirmed.value.pagos;
 }
 
+function wizardStepClass(step: number) {
+  return {
+    active: currentStep.value === step,
+    done: step < currentStep.value || stepsUi.value.find(item => item.number === step)?.done,
+    blocked: !canJumpTo(step),
+    pending: step > currentStep.value && canJumpTo(step),
+  };
+}
+
 function goToStep(step: number) {
   if (!canJumpTo(step)) return;
   currentStep.value = step;
@@ -317,6 +381,61 @@ function confirmarPasoPagos() {
   if (!canConfirmPagoStep.value) return;
   stepConfirmed.value.pagos = true;
   goToStep(4);
+}
+
+function clearPagosAndStepState() {
+  pagos.value = [];
+  stepConfirmed.value.pagos = false;
+  if (currentStep.value > 3) currentStep.value = 3;
+}
+
+function iniciarCambioCliente() {
+  if (!venta.value.cliente?.id) {
+    venta.value.cliente = null;
+    return;
+  }
+  if (detalles.value.length === 0 && pagosActivos.value === 0) {
+    venta.value.cliente = null;
+    return;
+  }
+  warningMessage.value =
+    'Al cambiar el cliente se limpiaran pagos/tasaciones asociados y deberas reconfirmar los pasos posteriores. ¿Deseas continuar?';
+  warningAction.value = () => {
+    venta.value.cliente = null;
+    clearPagosAndStepState();
+    stepConfirmed.value.vehiculo = detalles.value.length > 0;
+    if (currentStep.value > 1) currentStep.value = 1;
+  };
+  warningModalRef.value?.show();
+}
+
+function onAgregarVehiculo(vehiculo: IVehiculo) {
+  const currentVehiculoId = detalles.value[0]?.vehiculo?.id;
+  const sameVehiculo = currentVehiculoId && vehiculo.id && currentVehiculoId === vehiculo.id;
+  if (!sameVehiculo && currentVehiculoId && pagosActivos.value > 0) {
+    warningMessage.value = 'Cambiar el vehiculo puede invalidar pagos registrados. Se limpiaran los pagos para recalcular la venta. ¿Continuar?';
+    warningAction.value = () => {
+      clearPagosAndStepState();
+      agregarVehiculo(vehiculo);
+      stepConfirmed.value.vehiculo = true;
+      if (currentStep.value > 2) currentStep.value = 2;
+    };
+    warningModalRef.value?.show();
+    return;
+  }
+  agregarVehiculo(vehiculo);
+}
+
+function cancelWarningAction() {
+  warningAction.value = null;
+  warningMessage.value = '';
+  warningModalRef.value?.hide();
+}
+
+function acceptWarningAction() {
+  const action = warningAction.value;
+  cancelWarningAction();
+  action?.();
 }
 
 function buscarClientes() {
@@ -448,26 +567,53 @@ watch(
 );
 
 async function confirmarVenta() {
+  pendingFinalAction.value = 'venta';
+  finalConfirmModalRef.value?.show();
+}
+
+async function confirmarReserva() {
+  pendingFinalAction.value = 'reserva';
+  finalConfirmModalRef.value?.show();
+}
+
+function closeFinalConfirmModal() {
+  finalConfirmModalRef.value?.hide();
+  pendingFinalAction.value = null;
+}
+
+async function executeFinalAction() {
+  if (pendingFinalAction.value === 'reserva') {
+    await doConfirmarReserva();
+    return;
+  }
+  await doConfirmarVenta();
+}
+
+async function doConfirmarVenta() {
   try {
     validarVentaAntesDeGuardar();
     if (Number(venta.value.saldo ?? 0) > 0) throw new Error('Para vender la unidad se requiere pago total.');
     const { venta: ventaGuardada, comprobante } = await confirmar(tipoComprobanteSeleccionado.value ?? undefined);
     const message = comprobante
-      ? `Venta #${ventaGuardada.id} confirmada. Comprobante ${comprobante.numeroComprobante} generado.`
-      : `Venta #${ventaGuardada.id} confirmada correctamente.`;
+      ? `Venta #${ventaGuardada.id} confirmada con exito. Comprobante ${comprobante.numeroComprobante} emitido.`
+      : `Venta #${ventaGuardada.id} confirmada con exito.`;
     alertService.showSuccess(message);
+    allowNavigationWithoutPrompt.value = true;
+    closeFinalConfirmModal();
     await router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la venta');
   }
 }
 
-async function confirmarReserva() {
+async function doConfirmarReserva() {
   try {
     validarVentaAntesDeGuardar();
     if (!cumpleMinimoReserva.value) throw new Error('La reserva requiere una seña minima.');
     const { venta: ventaGuardada } = await confirmar();
-    alertService.showSuccess(`Reserva confirmada para la venta #${ventaGuardada.id}`);
+    alertService.showSuccess(`Reserva confirmada con exito para la venta #${ventaGuardada.id}.`);
+    allowNavigationWithoutPrompt.value = true;
+    closeFinalConfirmModal();
     await router.push({ name: 'VentaView', params: { ventaId: ventaGuardada.id } });
   } catch (e: any) {
     alertService.showError(e.message ?? 'Error al confirmar la reserva');
@@ -487,6 +633,53 @@ async function crearTasacionDesdeVenta() {
     },
   });
 }
+
+function requestExitToVentas() {
+  if (!hasUnsavedData.value || allowNavigationWithoutPrompt.value) {
+    void router.push({ name: 'Venta' });
+    return;
+  }
+  pendingExitTarget.value = { name: 'Venta' };
+  exitConfirmModalRef.value?.show();
+}
+
+function cancelExit() {
+  pendingExitTarget.value = null;
+  exitConfirmModalRef.value?.hide();
+}
+
+function confirmExit() {
+  const target = pendingExitTarget.value;
+  allowNavigationWithoutPrompt.value = true;
+  pendingExitTarget.value = null;
+  exitConfirmModalRef.value?.hide();
+  if (target) {
+    void router.push(target);
+  }
+}
+
+function handleBeforeUnload(event: BeforeUnloadEvent) {
+  if (allowNavigationWithoutPrompt.value || !hasUnsavedData.value) return;
+  event.preventDefault();
+  event.returnValue = '';
+}
+
+onBeforeRouteLeave(to => {
+  if (allowNavigationWithoutPrompt.value || !hasUnsavedData.value) {
+    return true;
+  }
+  pendingExitTarget.value = to.fullPath;
+  exitConfirmModalRef.value?.show();
+  return false;
+});
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+});
 </script>
 
 <style scoped>
@@ -545,6 +738,14 @@ async function crearTasacionDesdeVenta() {
   background: #f0fdf4;
 }
 
+.wizard-step.pending {
+  border-color: #cbd5e1;
+}
+
+.wizard-step.blocked {
+  border-style: dashed;
+}
+
 .wizard-step-number {
   width: 1.8rem;
   height: 1.8rem;
@@ -590,6 +791,11 @@ async function crearTasacionDesdeVenta() {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
+}
+
+.final-summary {
+  display: grid;
+  gap: 0.35rem;
 }
 
 @media (max-width: 991px) {
