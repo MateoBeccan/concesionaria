@@ -23,6 +23,7 @@ import TipoDocumentoService from './tipo-documento/tipo-documento.service';
 import TraccionService from './traccion/traccion.service';
 import VentaService from './venta/venta.service';
 import VersionService from './version/version.service';
+import EntregaUnidadService from './entrega-unidad/entrega-unidad.service';
 // jhipster-needle-add-entity-service-to-entities-component-import - JHipster will import entities services here
 
 export default defineComponent({
@@ -50,6 +51,7 @@ export default defineComponent({
     provide('vehiculoService', () => new VehiculoService());
     provide('inventarioService', () => new InventarioService());
     provide('tipoDocumentoService', () => new TipoDocumentoService());
+    provide('entregaUnidadService', () => new EntregaUnidadService());
     // jhipster-needle-add-entity-service-to-entities-component - JHipster will import entities services here
   },
 });

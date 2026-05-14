@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260513170000-1" author="codex">
+        <createTable tableName="adjudicacion_plan_ahorro">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="contrato_plan_ahorro_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cliente_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fecha_adjudicacion" type="${datetimeType}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="estado" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="inventario_id" type="bigint"/>
+            <column name="vehiculo_id" type="bigint"/>
+            <column name="venta_id" type="bigint"/>
+            <column name="monto_reconocido_cuotas" type="decimal(21,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="diferencia_a_pagar" type="decimal(21,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="observaciones" type="varchar(500)"/>
+            <column name="usuario_adjudicacion" type="varchar(50)"/>
+        </createTable>
+
+        <addForeignKeyConstraint
+            baseTableName="adjudicacion_plan_ahorro"
+            baseColumnNames="contrato_plan_ahorro_id"
+            constraintName="fk_adjudicacion_contrato_plan_ahorro"
+            referencedTableName="contrato_plan_ahorro"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="adjudicacion_plan_ahorro"
+            baseColumnNames="cliente_id"
+            constraintName="fk_adjudicacion_cliente"
+            referencedTableName="cliente"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="adjudicacion_plan_ahorro"
+            baseColumnNames="inventario_id"
+            constraintName="fk_adjudicacion_inventario"
+            referencedTableName="inventario"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="adjudicacion_plan_ahorro"
+            baseColumnNames="vehiculo_id"
+            constraintName="fk_adjudicacion_vehiculo"
+            referencedTableName="vehiculo"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="adjudicacion_plan_ahorro"
+            baseColumnNames="venta_id"
+            constraintName="fk_adjudicacion_venta"
+            referencedTableName="venta"
+            referencedColumnNames="id"/>
+
+        <addUniqueConstraint tableName="adjudicacion_plan_ahorro" columnNames="venta_id" constraintName="ux_adjudicacion_venta_id"/>
+        <createIndex tableName="adjudicacion_plan_ahorro" indexName="idx_adjudicacion_contrato">
+            <column name="contrato_plan_ahorro_id"/>
+        </createIndex>
+        <createIndex tableName="adjudicacion_plan_ahorro" indexName="idx_adjudicacion_estado">
+            <column name="estado"/>
+        </createIndex>
+        <createIndex tableName="adjudicacion_plan_ahorro" indexName="idx_adjudicacion_cliente">
+            <column name="cliente_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -8,8 +8,22 @@ export default class ComprobantePlanAhorroService {
     return res.data;
   }
 
-  public descargarPdf(id: number): void {
-    window.open(`/api/comprobantes-plan-ahorro/${id}/pdf`, '_blank');
+  public async descargarPdf(id: number): Promise<void> {
+    const response = await axios.get(`${baseApiUrl}/${id}/pdf`, {
+      responseType: 'blob',
+    });
+
+    const disposition = response.headers['content-disposition'] as string | undefined;
+    const match = disposition?.match(/filename="?([^"]+)"?/i);
+    const fileName = match?.[1] ?? `comprobante-plan-ahorro-${id}.pdf`;
+
+    const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
   }
 }
-

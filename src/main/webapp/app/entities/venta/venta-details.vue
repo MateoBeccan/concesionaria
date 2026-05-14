@@ -70,6 +70,20 @@
         </div>
       </div>
 
+      <div v-if="creditoPlanAhorro > 0" class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Credito aplicado desde plan de ahorro</span>
+          <span class="badge bg-primary">PLAN_AHORRO</span>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4"><strong>Monto reconocido:</strong> {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(creditoPlanAhorro) }}</div>
+            <div class="col-md-4"><strong>Diferencia restante:</strong> {{ ventaMonedaDisplay?.simbolo ?? '$' }} {{ formatPrecio(diferenciaRestantePlan) }}</div>
+            <div class="col-md-4"><strong>Contrato asociado:</strong> {{ contratoPlanAsociado ? `#${contratoPlanAsociado}` : '-' }}</div>
+          </div>
+        </div>
+      </div>
+
       <div class="row g-3 mb-3">
         <div class="col-12 col-xl-6">
           <div class="card h-100 border-0 shadow-sm">
@@ -183,9 +197,10 @@
                 <td>{{ pago.referencia ?? pago.numeroOperacion ?? '-' }}</td>
                 <td>{{ pago.usuarioRegistro ?? '-' }}</td>
                 <td>
-                  <span class="badge" :class="pago.estado === 'ANULADO' ? 'bg-secondary' : 'bg-success'">
+                  <span class="badge me-1" :class="pago.estado === 'ANULADO' ? 'bg-secondary' : 'bg-success'">
                     {{ pago.estado === 'ANULADO' ? 'ANULADO' : 'REGISTRADO' }}
                   </span>
+                  <span v-if="esPagoPlanAhorro(pago)" class="badge bg-primary">PLAN_AHORRO</span>
                 </td>
                 <td class="text-end">
                   <button v-if="pago.estado !== 'ANULADO' && pago.id" class="btn btn-outline-danger btn-sm" @click="abrirModalAnulacionPago(pago.id)">Anular</button>
@@ -258,6 +273,54 @@
       </div>
 
       <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+          <span>Entrega de unidad</span>
+          <span v-if="entregaUnidad" class="badge bg-light text-dark border">{{ entregaUnidad.estado }}</span>
+        </div>
+        <div v-if="loadingEntrega" class="card-body text-muted">Cargando entrega...</div>
+        <div v-else-if="!entregaUnidad" class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="text-muted">Aun no hay entrega programada para esta venta.</span>
+          <button class="btn btn-outline-primary btn-sm" @click="showProgramarEntrega = true">Programar entrega</button>
+        </div>
+        <div v-else class="card-body">
+          <div class="row g-3 mb-3">
+            <div class="col-md-4"><strong>Fecha programada:</strong> {{ formatFecha(entregaUnidad.fechaProgramada) }}</div>
+            <div class="col-md-4"><strong>Fecha entrega:</strong> {{ formatFecha(entregaUnidad.fechaEntrega) }}</div>
+            <div class="col-md-4"><strong>Usuario:</strong> {{ entregaUnidad.usuarioProgramacion ?? '-' }}</div>
+          </div>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Obligatorio</th>
+                  <th>Completado</th>
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="item in entregaUnidad.checklist" :key="item.id">
+                  <td>{{ item.descripcion }}</td>
+                  <td><span class="badge bg-light text-dark border">{{ item.obligatorio ? 'SI' : 'NO' }}</span></td>
+                  <td><input v-model="item.completado" type="checkbox" class="form-check-input" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" /></td>
+                  <td><input v-model="item.observaciones" class="form-control form-control-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" /></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary btn-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="guardarChecklist">Guardar checklist</button>
+            <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto || entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="showConfirmarEntrega = true">
+              Confirmar entrega
+            </button>
+            <button class="btn btn-outline-danger btn-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="cancelarEntrega">
+              Cancelar entrega
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-3">
         <div class="card-header bg-white fw-semibold">Historial de operacion</div>
         <div v-if="timeline.length === 0" class="card-body text-muted">No hay eventos para mostrar.</div>
         <div v-else class="card-body">
@@ -307,6 +370,40 @@
           <button type="button" class="btn btn-danger btn-sm" :disabled="!motivoAnulacionComprobante?.trim()" @click="confirmarAnulacionComprobante">
             Confirmar anulacion
           </button>
+        </template>
+      </b-modal>
+
+      <b-modal v-model="showProgramarEntrega" title="Programar entrega">
+        <div class="mb-2">
+          <label class="form-label">Fecha programada</label>
+          <input v-model="fechaProgramada" type="date" class="form-control" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Observaciones</label>
+          <textarea v-model="observacionesEntrega" class="form-control" rows="2" />
+        </div>
+        <template #footer>
+          <button class="btn btn-outline-secondary btn-sm" @click="showProgramarEntrega = false">Cancelar</button>
+          <button class="btn btn-primary btn-sm" :disabled="!fechaProgramada" @click="programarEntrega">Programar</button>
+        </template>
+      </b-modal>
+
+      <b-modal v-model="showConfirmarEntrega" title="Confirmar entrega">
+        <div class="mb-2">
+          <label class="form-label">Kilometraje de entrega</label>
+          <input v-model.number="kilometrajeEntrega" class="form-control" type="number" min="0" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Nivel de combustible</label>
+          <input v-model="nivelCombustible" class="form-control" maxlength="30" />
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Observaciones</label>
+          <textarea v-model="observacionesConfirmacion" class="form-control" rows="2" />
+        </div>
+        <template #footer>
+          <button class="btn btn-outline-secondary btn-sm" @click="showConfirmarEntrega = false">Cancelar</button>
+          <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto" @click="confirmarEntrega">Confirmar</button>
         </template>
       </b-modal>
     </template>

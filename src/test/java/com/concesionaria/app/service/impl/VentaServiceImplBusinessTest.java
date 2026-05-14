@@ -12,11 +12,13 @@ import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.Pago;
+import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
+import com.concesionaria.app.domain.enumeration.EstadoReserva;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ClienteRepository;
@@ -31,6 +33,11 @@ import com.concesionaria.app.repository.VehiculoRepository;
 import com.concesionaria.app.repository.VentaHistorialRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.CurrencyConversionService;
+import com.concesionaria.app.service.dto.ClienteDTO;
+import com.concesionaria.app.service.dto.CotizacionConversionDTO;
+import com.concesionaria.app.service.dto.ReservaDTO;
+import com.concesionaria.app.service.dto.VehiculoDTO;
+import com.concesionaria.app.service.dto.VentaDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 import java.math.BigDecimal;
@@ -336,6 +343,48 @@ class VentaServiceImplBusinessTest {
         verify(tasacionUsadoRepository, times(1)).save(any(TasacionUsado.class));
         assertThat(tasacion.getInventarioGenerado()).isNotNull();
         assertThat(tasacion.getInventarioGenerado().getId()).isEqualTo(705L);
+    }
+
+    @Test
+    void validarVentaDtoBloqueaVehiculoReservadoPorOtraOperacion() {
+        Vehiculo vehiculo = new Vehiculo();
+        vehiculo.setId(999L);
+        vehiculo.setMoneda(moneda(1L, "ARS"));
+        vehiculo.setPrecio(new BigDecimal("24500000.00"));
+
+        Inventario inventario = new Inventario();
+        inventario.setId(300L);
+        inventario.setVehiculo(vehiculo);
+        inventario.setEstadoInventario(EstadoInventario.RESERVADO);
+
+        Cliente clienteReserva = new Cliente().id(77L);
+        Reserva reservaActiva = new Reserva();
+        reservaActiva.setId(901L);
+        reservaActiva.setCliente(clienteReserva);
+        reservaActiva.setEstado(EstadoReserva.ACTIVA);
+        reservaActiva.setFechaVencimiento(Instant.now().plusSeconds(3600));
+
+        when(vehiculoRepository.findById(999L)).thenReturn(java.util.Optional.of(vehiculo));
+        when(inventarioRepository.findByVehiculoId(999L)).thenReturn(java.util.Optional.of(inventario));
+        when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(300L, EstadoReserva.ACTIVA))
+            .thenReturn(java.util.Optional.of(reservaActiva));
+
+        VentaDTO dto = new VentaDTO();
+        ClienteDTO clienteDTO = new ClienteDTO();
+        clienteDTO.setId(10L);
+        dto.setCliente(clienteDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(999L);
+        dto.setVehiculo(vehiculoDTO);
+        dto.setEstado(EstadoVenta.PENDIENTE);
+        dto.setFecha(Instant.now());
+        dto.setTotalPagado(new BigDecimal("3000000.00"));
+        ReservaDTO reservaDTO = new ReservaDTO();
+        reservaDTO.setId(9999L);
+        dto.setReserva(reservaDTO);
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto));
+        assertThat(ex.getMessage()).contains("reservado por otra operacion activa");
     }
 
     private Moneda moneda(Long id, String codigo) {

@@ -33,6 +33,8 @@ export interface IPago {
   moneda?: IMoneda | null;
   tasacionUsadoId?: number | null;
   tasacionUsado?: ITasacionUsado | null;
+  adjudicacionPlanAhorroId?: number | null;
+  contratoPlanAhorroId?: number | null;
   estado?: EstadoPago;
 }
 
@@ -63,6 +65,8 @@ export class Pago implements IPago {
     public moneda?: IMoneda | null,
     public tasacionUsadoId?: number | null,
     public tasacionUsado?: ITasacionUsado | null,
+    public adjudicacionPlanAhorroId?: number | null,
+    public contratoPlanAhorroId?: number | null,
     public estado?: EstadoPago,
   ) {}
 }

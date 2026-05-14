@@ -54,6 +54,9 @@ const USER_SECTIONS: SidebarSection[] = [
       { name: 'Venta', label: 'Ventas', icon: 'VT' },
       { name: 'Reserva', label: 'Reservas', icon: 'RS' },
       { name: 'TasacionUsado', label: 'Tasaciones', icon: 'TS' },
+      { name: 'PlanAhorro', label: 'Planes de ahorro', icon: 'PA' },
+      { name: 'ContratoPlanAhorro', label: 'Contratos de plan', icon: 'CP' },
+      { name: 'AdjudicacionPlanAhorro', label: 'Adjudicaciones', icon: 'AJ' },
     ],
   },
   {
@@ -82,6 +85,9 @@ const ADMIN_SECTIONS: SidebarSection[] = [
       { name: 'Venta', label: 'Ventas', icon: 'VT' },
       { name: 'Reserva', label: 'Reservas', icon: 'RS' },
       { name: 'TasacionUsado', label: 'Tasaciones', icon: 'TS' },
+      { name: 'PlanAhorro', label: 'Planes de ahorro', icon: 'PA' },
+      { name: 'ContratoPlanAhorro', label: 'Contratos de plan', icon: 'CP' },
+      { name: 'AdjudicacionPlanAhorro', label: 'Adjudicaciones', icon: 'AJ' },
     ],
   },
   {

@@ -1,0 +1,7 @@
+export enum EstadoEntregaUnidad {
+  PENDIENTE = 'PENDIENTE',
+  PROGRAMADA = 'PROGRAMADA',
+  ENTREGADA = 'ENTREGADA',
+  CANCELADA = 'CANCELADA',
+}
+

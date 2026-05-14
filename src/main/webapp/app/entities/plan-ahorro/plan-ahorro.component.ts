@@ -1,4 +1,4 @@
-import { defineComponent, inject, onMounted, ref, type Ref } from 'vue';
+import { computed, defineComponent, inject, onMounted, ref, type Ref } from 'vue';
 import axios from 'axios';
 import { useAlertService } from '@/shared/alert/alert.service';
 import PlanAhorroService from './plan-ahorro.service';
@@ -20,6 +20,24 @@ export default defineComponent({
       valorMovil: 0,
       monedaId: null as number | null,
     });
+    const searchTerm = ref('');
+    const estadoFiltro = ref('');
+
+    const planesFiltrados = computed(() => {
+      const term = searchTerm.value.trim().toLowerCase();
+      return planes.value.filter(plan => {
+        const byEstado = !estadoFiltro.value || plan.estado === estadoFiltro.value;
+        if (!byEstado) return false;
+        if (!term) return true;
+        return [plan.nombre, plan.descripcion, plan.moneda?.codigo, plan.versionObjetivo?.nombre].some(value =>
+          String(value ?? '')
+            .toLowerCase()
+            .includes(term),
+        );
+      });
+    });
+
+    const totalActivos = computed(() => planes.value.filter(plan => plan.estado === 'ACTIVO').length);
 
     const retrieve = async () => {
       try {
@@ -67,7 +85,17 @@ export default defineComponent({
       await retrieve();
     });
 
-    return { planes, monedas, showCreate, draft, openCreate, save };
+    return {
+      planes,
+      monedas,
+      showCreate,
+      draft,
+      searchTerm,
+      estadoFiltro,
+      planesFiltrados,
+      totalActivos,
+      openCreate,
+      save,
+    };
   },
 });
-

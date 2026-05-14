@@ -236,6 +236,7 @@ public class VentaServiceImpl implements VentaService {
         if (vehiculo.getPrecio() == null || vehiculo.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("El vehiculo seleccionado no tiene un precio de lista valido");
         }
+        validarDisponibilidadInventarioParaVenta(dto, vehiculo);
         Moneda monedaBaseVenta = resolverMonedaBaseVenta();
         dto.setMoneda(toMonedaDto(monedaBaseVenta));
         CotizacionConversionDTO conversion = resolverConversionVehiculoAVenta(dto, vehiculo, monedaBaseVenta);
@@ -1096,6 +1097,40 @@ public class VentaServiceImpl implements VentaService {
             );
         if (existeVentaActiva) {
             throw new BadRequestException("La unidad reservada ya tiene una venta activa incompatible");
+        }
+    }
+
+    private void validarDisponibilidadInventarioParaVenta(VentaDTO dto, Vehiculo vehiculo) {
+        Inventario inventario = inventarioRepository
+            .findByVehiculoId(vehiculo.getId())
+            .orElseThrow(() -> new BadRequestException("Inventario no encontrado para el vehiculo seleccionado"));
+        normalizarReservaVencida(inventario);
+
+        if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
+            throw new BadRequestException("El vehiculo seleccionado ya fue vendido");
+        }
+        if (inventario.getEstadoInventario() != EstadoInventario.RESERVADO) {
+            return;
+        }
+
+        Optional<Reserva> reservaActivaOpt = reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(
+            inventario.getId(),
+            EstadoReserva.ACTIVA
+        );
+        if (reservaActivaOpt.isEmpty()) {
+            throw new BadRequestException("El vehiculo seleccionado se encuentra reservado y no esta disponible");
+        }
+
+        Reserva reservaActiva = reservaActivaOpt.get();
+        Long reservaDtoId = dto.getReserva() != null ? dto.getReserva().getId() : null;
+        if (reservaDtoId == null || !reservaDtoId.equals(reservaActiva.getId())) {
+            throw new BadRequestException("El vehiculo seleccionado se encuentra reservado por otra operacion activa");
+        }
+
+        Long clienteVentaId = dto.getCliente() != null ? dto.getCliente().getId() : null;
+        Long clienteReservaId = reservaActiva.getCliente() != null ? reservaActiva.getCliente().getId() : null;
+        if (clienteVentaId == null || clienteReservaId == null || !clienteVentaId.equals(clienteReservaId)) {
+            throw new BadRequestException("La venta debe mantener el mismo cliente de la reserva activa");
         }
     }
 

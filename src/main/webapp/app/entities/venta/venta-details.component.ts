@@ -11,8 +11,12 @@ import { type ITasacionUsado } from '@/shared/model/tasacion-usado.model';
 import { type IVenta } from '@/shared/model/venta.model';
 import { EstadoVenta } from '@/shared/model/estado-venta.model';
 import type { IVentaHistorial } from '@/shared/model/venta-historial.model';
+import type { IEntregaChecklistItem } from '@/shared/model/entrega-checklist-item.model';
+import type { IEntregaUnidad } from '@/shared/model/entrega-unidad.model';
+import { EstadoEntregaUnidad } from '@/shared/model/enumerations/estado-entrega-unidad.model';
 
 import ComprobanteService from '@/entities/comprobante/comprobante.service';
+import EntregaUnidadService from '@/entities/entrega-unidad/entrega-unidad.service';
 import PagoService from '@/entities/pago/pago.service';
 import TasacionUsadoService from '@/entities/tasacion-usado/tasacion-usado.service';
 import OperationalTraceCard from '@/shared/components/OperationalTraceCard.vue';
@@ -30,6 +34,7 @@ export default defineComponent({
     const pagoService = inject('pagoService', () => new PagoService());
     const comprobanteService = inject('comprobanteService', () => new ComprobanteService());
     const tasacionUsadoService = inject('tasacionUsadoService', () => new TasacionUsadoService());
+    const entregaUnidadService = inject('entregaUnidadService', () => new EntregaUnidadService());
     const alertService = inject('alertService', () => useAlertService(), true);
 
     const route = useRoute();
@@ -42,6 +47,15 @@ export default defineComponent({
     const comprobantes: Ref<IComprobante[]> = ref([]);
     const historial: Ref<IVentaHistorial[]> = ref([]);
     const tasacionUsadaCargada: Ref<ITasacionUsado | null> = ref(null);
+    const entregaUnidad: Ref<IEntregaUnidad | null> = ref(null);
+    const loadingEntrega = ref(false);
+    const showProgramarEntrega = ref(false);
+    const fechaProgramada = ref('');
+    const observacionesEntrega = ref('');
+    const showConfirmarEntrega = ref(false);
+    const kilometrajeEntrega = ref<number | null>(null);
+    const nivelCombustible = ref('');
+    const observacionesConfirmacion = ref('');
 
     const loadingPagos = ref(false);
     const loadingComprobantes = ref(false);
@@ -70,6 +84,18 @@ export default defineComponent({
     );
     const pagosAnulables = computed(() => pagos.value.filter(p => p.estado === EstadoPago.REGISTRADO && p.id));
     const puedeAnularPago = computed(() => pagosAnulables.value.length > 0 && venta.value.estado !== EstadoVenta.CANCELADA);
+
+    const pagosPlanAhorro = computed(() =>
+      pagos.value.filter(p => p.metodoPago?.codigo?.toUpperCase() === 'PLAN_AHORRO' && p.estado !== EstadoPago.ANULADO),
+    );
+
+    const creditoPlanAhorro = computed(() =>
+      pagosPlanAhorro.value.reduce((sum, p) => sum + Number(p.montoAplicadoVenta ?? p.monto ?? 0), 0),
+    );
+
+    const diferenciaRestantePlan = computed(() => Math.max(Number(venta.value.total ?? 0) - creditoPlanAhorro.value, 0));
+
+    const contratoPlanAsociado = computed(() => pagosPlanAhorro.value.find(p => p.contratoPlanAhorroId)?.contratoPlanAhorroId ?? null);
 
     const tasacionUsada = computed<ITasacionUsado | null>(() => {
       if (tasacionUsadaCargada.value) return tasacionUsadaCargada.value;
@@ -153,10 +179,21 @@ export default defineComponent({
               },
             ]
           : [];
-        await Promise.all([cargarPagos(ventaId), cargarComprobantes(ventaId), cargarHistorial(ventaId)]);
+        await Promise.all([cargarPagos(ventaId), cargarComprobantes(ventaId), cargarHistorial(ventaId), cargarEntrega(ventaId)]);
         await cargarTasacionUsadaSiFalta();
       } catch (error: any) {
         alertService.showHttpError(error.response);
+      }
+    };
+
+    const cargarEntrega = async (ventaId: any) => {
+      loadingEntrega.value = true;
+      try {
+        entregaUnidad.value = await entregaUnidadService().findByVenta(Number(ventaId));
+      } catch {
+        entregaUnidad.value = null;
+      } finally {
+        loadingEntrega.value = false;
       }
     };
 
@@ -262,6 +299,60 @@ export default defineComponent({
       }
     };
 
+    const programarEntrega = async () => {
+      if (!venta.value.id || !fechaProgramada.value) return;
+      try {
+        await entregaUnidadService().programarEntrega(venta.value.id, new Date(`${fechaProgramada.value}T12:00:00`).toISOString(), observacionesEntrega.value);
+        showProgramarEntrega.value = false;
+        fechaProgramada.value = '';
+        observacionesEntrega.value = '';
+        await cargarEntrega(venta.value.id);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
+    const guardarChecklist = async () => {
+      if (!entregaUnidad.value?.id || !entregaUnidad.value.checklist) return;
+      try {
+        entregaUnidad.value = await entregaUnidadService().actualizarChecklist(entregaUnidad.value.id, entregaUnidad.value.checklist as IEntregaChecklistItem[]);
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
+    const confirmarEntrega = async () => {
+      if (!entregaUnidad.value?.id) return;
+      try {
+        entregaUnidad.value = await entregaUnidadService().confirmarEntrega(
+          entregaUnidad.value.id,
+          kilometrajeEntrega.value,
+          nivelCombustible.value || null,
+          observacionesConfirmacion.value || null,
+        );
+        showConfirmarEntrega.value = false;
+        if (venta.value.id) {
+          await retrieveVenta(venta.value.id);
+        }
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
+    const cancelarEntrega = async () => {
+      if (!entregaUnidad.value?.id) return;
+      try {
+        entregaUnidad.value = await entregaUnidadService().cancelarEntrega(entregaUnidad.value.id, 'Cancelada desde detalle de venta');
+      } catch (error: any) {
+        alertService.showHttpError(error.response);
+      }
+    };
+
+    const checklistObligatorioCompleto = computed(() => {
+      const items = entregaUnidad.value?.checklist ?? [];
+      return items.filter(i => i.obligatorio).every(i => i.completado);
+    });
+
     if (route.params?.ventaId) retrieveVenta(route.params.ventaId);
 
     function parseDateSafe(value?: Date | string | null): number {
@@ -311,6 +402,10 @@ export default defineComponent({
       return map[estado as string] ?? estado ?? '-';
     }
 
+    function esPagoPlanAhorro(pago?: IPago | null): boolean {
+      return pago?.metodoPago?.codigo?.toUpperCase() === 'PLAN_AHORRO';
+    }
+
     function labelEstadoComprobante(estado?: string | null): string {
       const map: Record<string, string> = {
         [EstadoComprobante.EMITIDO]: 'Emitido',
@@ -351,6 +446,9 @@ export default defineComponent({
       puedeRegistrarPago,
       puedeEmitirComprobante,
       puedeAnularPago,
+      creditoPlanAhorro,
+      diferenciaRestantePlan,
+      contratoPlanAsociado,
       previousState,
       formatPrecio,
       formatCotizacion,
@@ -358,7 +456,23 @@ export default defineComponent({
       badgeEstado,
       labelEstado,
       labelEstadoComprobante,
+      esPagoPlanAhorro,
       timelineToneClass,
+      entregaUnidad,
+      loadingEntrega,
+      showProgramarEntrega,
+      fechaProgramada,
+      observacionesEntrega,
+      showConfirmarEntrega,
+      kilometrajeEntrega,
+      nivelCombustible,
+      observacionesConfirmacion,
+      checklistObligatorioCompleto,
+      EstadoEntregaUnidad,
+      programarEntrega,
+      guardarChecklist,
+      confirmarEntrega,
+      cancelarEntrega,
       descargarPdfComprobante,
       abrirModalAnulacionComprobante,
       cerrarModalAnulacionComprobante,

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260513213000-1" author="codex">
+        <addColumn tableName="pago">
+            <column name="adjudicacion_plan_ahorro_id" type="bigint"/>
+            <column name="contrato_plan_ahorro_id" type="bigint"/>
+        </addColumn>
+
+        <addForeignKeyConstraint
+            baseTableName="pago"
+            baseColumnNames="adjudicacion_plan_ahorro_id"
+            constraintName="fk_pago_adjudicacion_plan_ahorro"
+            referencedTableName="adjudicacion_plan_ahorro"
+            referencedColumnNames="id"/>
+
+        <addForeignKeyConstraint
+            baseTableName="pago"
+            baseColumnNames="contrato_plan_ahorro_id"
+            constraintName="fk_pago_contrato_plan_ahorro"
+            referencedTableName="contrato_plan_ahorro"
+            referencedColumnNames="id"/>
+
+        <createIndex tableName="pago" indexName="idx_pago_adjudicacion_plan_ahorro">
+            <column name="adjudicacion_plan_ahorro_id"/>
+        </createIndex>
+        <createIndex tableName="pago" indexName="idx_pago_contrato_plan_ahorro">
+            <column name="contrato_plan_ahorro_id"/>
+        </createIndex>
+
+        <addUniqueConstraint tableName="pago" columnNames="adjudicacion_plan_ahorro_id,metodo_pago_id,estado" constraintName="ux_pago_plan_ahorro_unico_activo"/>
+    </changeSet>
+
+    <changeSet id="20260513213000-2" author="codex" dbms="mysql">
+        <sql>
+            INSERT INTO metodo_pago (activo, codigo, descripcion, requiere_referencia)
+            SELECT b'1', 'PLAN_AHORRO', 'Aplicación de cuotas de plan de ahorro', b'0'
+            WHERE NOT EXISTS (
+                SELECT 1 FROM metodo_pago WHERE UPPER(codigo) = 'PLAN_AHORRO'
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

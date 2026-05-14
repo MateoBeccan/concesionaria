@@ -96,6 +96,8 @@ const TasacionUsadoDetails = () => import('@/entities/tasacion-usado/tasacion-us
 const PlanAhorro = () => import('@/entities/plan-ahorro/plan-ahorro.vue');
 const ContratoPlanAhorro = () => import('@/entities/plan-ahorro/contrato-plan-ahorro.vue');
 const ContratoPlanAhorroDetails = () => import('@/entities/plan-ahorro/contrato-plan-ahorro-details.vue');
+const AdjudicacionPlanAhorro = () => import('@/entities/plan-ahorro/adjudicacion-plan-ahorro.vue');
+const EntregaUnidad = () => import('@/entities/entrega-unidad/entrega-unidad.vue');
 
 // jhipster-needle-add-entity-to-router-import - JHipster will import entities to the router here
 
@@ -671,6 +673,18 @@ export default {
       path: 'plan-ahorro/contratos/:contratoId/view',
       name: 'ContratoPlanAhorroView',
       component: ContratoPlanAhorroDetails,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'plan-ahorro/adjudicaciones',
+      name: 'AdjudicacionPlanAhorro',
+      component: AdjudicacionPlanAhorro,
+      meta: { authorities: OPERATIONAL },
+    },
+    {
+      path: 'entregas-unidad',
+      name: 'EntregaUnidad',
+      component: EntregaUnidad,
       meta: { authorities: OPERATIONAL },
     },
     {

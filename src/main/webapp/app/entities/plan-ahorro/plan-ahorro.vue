@@ -1,37 +1,70 @@
 <template>
-  <div class="container-fluid px-0">
+  <div class="container-fluid px-0 planes-page">
     <div class="card border-0 shadow-sm mb-3">
-      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-          <h2 class="h4 mb-1">Planes de Ahorro</h2>
-          <p class="text-muted mb-0">Gestión comercial de planes vigentes y configuración base.</p>
+          <p class="section-kicker mb-1">Planes de ahorro</p>
+          <h1 class="h4 mb-1">Catalogo de planes</h1>
+          <p class="text-muted mb-0">Gestion comercial de planes vigentes y configuracion base.</p>
         </div>
-        <button class="btn btn-primary" @click="openCreate">Nuevo plan</button>
+        <div class="d-flex align-items-center gap-2">
+          <div class="metric-chip">
+            <small>Activos</small>
+            <strong>{{ totalActivos }}</strong>
+          </div>
+          <div class="metric-chip">
+            <small>Total</small>
+            <strong>{{ planes.length }}</strong>
+          </div>
+          <button class="btn btn-primary" @click="openCreate">Nuevo plan</button>
+        </div>
       </div>
     </div>
 
-    <div class="table-responsive card">
-      <table class="table mb-0">
-        <thead>
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="row g-2">
+          <div class="col-12 col-md-8">
+            <label class="form-label mb-1">Buscar</label>
+            <input v-model="searchTerm" class="form-control" placeholder="Nombre, descripcion, version o moneda..." />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label mb-1">Estado</label>
+            <select v-model="estadoFiltro" class="form-select">
+              <option value="">Todos</option>
+              <option value="ACTIVO">ACTIVO</option>
+              <option value="INACTIVO">INACTIVO</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive card border-0 shadow-sm">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
           <tr>
             <th>Nombre</th>
-            <th>Versión objetivo</th>
+            <th>Version objetivo</th>
             <th>Cuotas</th>
-            <th>Valor móvil</th>
+            <th>Valor movil</th>
             <th>Moneda</th>
             <th>Estado</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="plan in planes" :key="plan.id">
+          <tr v-for="plan in planesFiltrados" :key="plan.id">
             <td>{{ plan.nombre }}</td>
             <td>{{ plan.versionObjetivo?.nombre ?? '-' }}</td>
             <td>{{ plan.cantidadCuotas }}</td>
-            <td>{{ plan.valorMovil }}</td>
+            <td>{{ Number(plan.valorMovil ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
             <td>{{ plan.moneda?.codigo }}</td>
             <td>
-              <span class="badge" :class="plan.estado === 'ACTIVO' ? 'bg-success' : 'bg-secondary'">{{ plan.estado }}</span>
+              <span class="badge rounded-pill" :class="plan.estado === 'ACTIVO' ? 'bg-success' : 'bg-secondary'">{{ plan.estado }}</span>
             </td>
+          </tr>
+          <tr v-if="planesFiltrados.length === 0">
+            <td colspan="6" class="text-center text-muted py-4">No hay planes que coincidan con los filtros.</td>
           </tr>
         </tbody>
       </table>
@@ -50,7 +83,7 @@
               <input v-model="draft.nombre" class="form-control" />
             </div>
             <div class="mb-2">
-              <label class="form-label">Descripción</label>
+              <label class="form-label">Descripcion</label>
               <textarea v-model="draft.descripcion" class="form-control" rows="2"></textarea>
             </div>
             <div class="row g-2">
@@ -59,7 +92,7 @@
                 <input v-model.number="draft.cantidadCuotas" type="number" min="1" class="form-control" />
               </div>
               <div class="col-6">
-                <label class="form-label">Valor móvil</label>
+                <label class="form-label">Valor movil</label>
                 <input v-model.number="draft.valorMovil" type="number" min="0.01" step="0.01" class="form-control" />
               </div>
             </div>
@@ -84,3 +117,49 @@
 
 <script lang="ts" src="./plan-ahorro.component.ts"></script>
 
+<style scoped>
+.planes-page {
+  width: 100%;
+  max-width: none;
+}
+
+.section-kicker {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.metric-chip {
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.35rem 0.65rem;
+  min-width: 88px;
+  background: #fff;
+}
+
+.metric-chip small {
+  font-size: 0.7rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.metric-chip strong {
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.card {
+  border-radius: 14px;
+}
+
+.table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+</style>

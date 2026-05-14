@@ -115,6 +115,14 @@ public class Pago implements Serializable {
     @JoinColumn(name = "tasacion_usado_id")
     private TasacionUsado tasacionUsado;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "adjudicacion_plan_ahorro_id")
+    private AdjudicacionPlanAhorro adjudicacionPlanAhorro;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contrato_plan_ahorro_id")
+    private ContratoPlanAhorro contratoPlanAhorro;
+
     @Column(name = "last_modified_date")
     private Instant lastModifiedDate;
 
@@ -380,6 +388,22 @@ public class Pago implements Serializable {
 
     public void setTasacionUsado(TasacionUsado tasacionUsado) {
         this.tasacionUsado = tasacionUsado;
+    }
+
+    public AdjudicacionPlanAhorro getAdjudicacionPlanAhorro() {
+        return adjudicacionPlanAhorro;
+    }
+
+    public void setAdjudicacionPlanAhorro(AdjudicacionPlanAhorro adjudicacionPlanAhorro) {
+        this.adjudicacionPlanAhorro = adjudicacionPlanAhorro;
+    }
+
+    public ContratoPlanAhorro getContratoPlanAhorro() {
+        return contratoPlanAhorro;
+    }
+
+    public void setContratoPlanAhorro(ContratoPlanAhorro contratoPlanAhorro) {
+        this.contratoPlanAhorro = contratoPlanAhorro;
     }
 
     // jhipster-needle-entity-add-getters-setters - JHipster will add getters and setters here

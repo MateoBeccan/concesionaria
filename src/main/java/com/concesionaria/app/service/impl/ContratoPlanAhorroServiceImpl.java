@@ -114,7 +114,7 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
         contrato.setEstado(EstadoContratoPlanAhorro.ACTIVO);
         contrato.setCuotasTotales(plan.getCantidadCuotas());
         contrato.setCuotasPagadas(0);
-        contrato.setSaldoPendiente(plan.getValorMovil().multiply(BigDecimal.valueOf(plan.getCantidadCuotas())).setScale(2, RoundingMode.HALF_UP));
+        contrato.setSaldoPendiente(plan.getValorMovil().setScale(2, RoundingMode.HALF_UP));
         contrato.setObservaciones(dto.getObservaciones());
         contrato.setUsuarioRegistro(login);
         contrato.setUser(userRepository.findOneByLogin(login).orElse(null));
@@ -196,6 +196,11 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
         pago.setCotizacionUsada(BigDecimal.ONE);
         pago.setMontoAplicadoVenta(monto.setScale(2, RoundingMode.HALF_UP));
         pago.setFechaCotizacionUsada(ahora);
+        pago.setVenta(null);
+        pago.setReserva(null);
+        pago.setTasacionUsado(null);
+        pago.setAdjudicacionPlanAhorro(null);
+        pago.setContratoPlanAhorro(contrato);
         pago.setUsuarioRegistro(currentUserLogin());
         pago.setObservaciones(observaciones);
         pago.setCreatedDate(ahora);
@@ -215,14 +220,21 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
     }
 
     private void generarCuotas(ContratoPlanAhorro contrato, PlanAhorro plan, Instant fechaInicio) {
-        for (int numero = 1; numero <= plan.getCantidadCuotas(); numero++) {
+        int cantidadCuotas = plan.getCantidadCuotas();
+        BigDecimal valorTotal = plan.getValorMovil().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal importeBaseCuota = valorTotal.divide(BigDecimal.valueOf(cantidadCuotas), 2, RoundingMode.HALF_UP);
+        BigDecimal acumulado = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+        for (int numero = 1; numero <= cantidadCuotas; numero++) {
             CuotaPlanAhorro cuota = new CuotaPlanAhorro();
             cuota.setContrato(contrato);
             cuota.setNumeroCuota(numero);
-            cuota.setImporte(plan.getValorMovil().setScale(2, RoundingMode.HALF_UP));
+            BigDecimal importeCuota = numero == cantidadCuotas ? valorTotal.subtract(acumulado).setScale(2, RoundingMode.HALF_UP) : importeBaseCuota;
+            cuota.setImporte(importeCuota);
             cuota.setEstado(EstadoCuotaPlanAhorro.PENDIENTE);
             cuota.setFechaVencimiento(fechaInicio.plus(30L * numero, ChronoUnit.DAYS));
             cuotaRepository.save(cuota);
+            acumulado = acumulado.add(importeCuota).setScale(2, RoundingMode.HALF_UP);
         }
     }
 

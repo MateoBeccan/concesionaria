@@ -30,6 +30,7 @@ import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.CuotaPlanAhorro;
 import com.concesionaria.app.domain.ContratoPlanAhorro;
+import com.concesionaria.app.domain.AdjudicacionPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
 import com.concesionaria.app.service.CurrencyConversionService;
@@ -79,6 +80,7 @@ public class PagoServiceImpl implements PagoService {
     private static final String CODIGO_AJUSTE = "AJUSTE";
     private static final String CODIGO_BONIFICACION = "BONIFICACION";
     private static final String CODIGO_ENTREGA_USADO = "ENTREGA_USADO";
+    private static final String CODIGO_PLAN_AHORRO = "PLAN_AHORRO";
     private static final String CODIGO_TARJETA = "TARJETA";
     private static final String CODIGO_SENIA = "SENIA";
     private static final String TIPO_COMPROBANTE_REC = "REC";
@@ -317,6 +319,7 @@ public class PagoServiceImpl implements PagoService {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
         validarMetodoPagoEspecial(metodoPago);
+        validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
         EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
@@ -384,6 +387,20 @@ public class PagoServiceImpl implements PagoService {
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
         pago.setTasacionUsado(null);
+        if (pagoDTO.getAdjudicacionPlanAhorroId() != null) {
+            AdjudicacionPlanAhorro adjudicacionRef = new AdjudicacionPlanAhorro();
+            adjudicacionRef.setId(pagoDTO.getAdjudicacionPlanAhorroId());
+            pago.setAdjudicacionPlanAhorro(adjudicacionRef);
+        } else {
+            pago.setAdjudicacionPlanAhorro(null);
+        }
+        if (pagoDTO.getContratoPlanAhorroId() != null) {
+            ContratoPlanAhorro contratoRef = new ContratoPlanAhorro();
+            contratoRef.setId(pagoDTO.getContratoPlanAhorroId());
+            pago.setContratoPlanAhorro(contratoRef);
+        } else {
+            pago.setContratoPlanAhorro(null);
+        }
         normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago ventaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoVenta={}",
@@ -394,7 +411,13 @@ public class PagoServiceImpl implements PagoService {
             montoAplicadoVenta
         );
         pago = pagoRepository.save(pago);
-        movimientoCajaService.registrarDesdePago(pago, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        boolean pagoMonetario = !esMetodoNoMonetarioInterno(metodoPago);
+        movimientoCajaService.registrarDesdePago(
+            pago,
+            pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
+            EstadoPago.REGISTRADO,
+            pagoMonetario
+        );
         emitirComprobanteDePagoSiCorresponde(pago, metodoPago);
 
         recalcularVentaEInventario(venta);
@@ -420,6 +443,7 @@ public class PagoServiceImpl implements PagoService {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
         validarMetodoPagoEspecial(metodoPago);
+        validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
         validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
         validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
         EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
@@ -468,6 +492,8 @@ public class PagoServiceImpl implements PagoService {
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
         pago.setTasacionUsado(null);
+        pago.setAdjudicacionPlanAhorro(null);
+        pago.setContratoPlanAhorro(null);
         normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago reservaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoReserva={}",
@@ -478,7 +504,13 @@ public class PagoServiceImpl implements PagoService {
             pago.getMontoAplicadoVenta()
         );
         Pago pagoGuardado = pagoRepository.save(pago);
-        movimientoCajaService.registrarDesdePago(pagoGuardado, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        boolean pagoMonetario = !esMetodoNoMonetarioInterno(metodoPago);
+        movimientoCajaService.registrarDesdePago(
+            pagoGuardado,
+            pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
+            EstadoPago.REGISTRADO,
+            pagoMonetario
+        );
         emitirComprobanteDePagoSiCorresponde(pagoGuardado, metodoPago);
 
         recalcularMontoSeniaReserva(reserva);
@@ -524,7 +556,8 @@ public class PagoServiceImpl implements PagoService {
         normalizarCamposTextoPago(pago);
         LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
         Pago pagoActualizado = pagoRepository.save(pago);
-        boolean monetario = pagoActualizado.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO;
+        boolean monetario = pagoActualizado.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO &&
+            !esMetodoNoMonetarioInterno(pagoActualizado.getMetodoPago());
         movimientoCajaService.registrarDesdePago(
             pagoActualizado,
             monetario ? TipoMovimientoCaja.REVERSO : TipoMovimientoCaja.INFORMATIVO,
@@ -690,6 +723,9 @@ public class PagoServiceImpl implements PagoService {
         if (codigoMetodo == null) {
             return;
         }
+        if (CODIGO_PLAN_AHORRO.equals(codigoMetodo)) {
+            return;
+        }
         boolean bancoVacio = pagoDTO.getBancoEntidad() == null || pagoDTO.getBancoEntidad().isBlank();
         boolean entidadVacia = pagoDTO.getEntidadFinanciera() == null || pagoDTO.getEntidadFinanciera().getId() == null;
         boolean sinIdentificacionEntidad = bancoVacio && entidadVacia;
@@ -762,6 +798,8 @@ public class PagoServiceImpl implements PagoService {
         pago.setFechaCotizacionUsada(pagoDTO.getFecha() != null ? pagoDTO.getFecha() : tasacion.getFechaTasacion());
         pago.setCotizacionRef(null);
         pago.setTasacionUsado(tasacion);
+        pago.setAdjudicacionPlanAhorro(null);
+        pago.setContratoPlanAhorro(null);
         if (pago.getUsuarioRegistro() == null || pago.getUsuarioRegistro().isBlank()) {
             pago.setUsuarioRegistro(currentUserLogin());
         }
@@ -885,6 +923,24 @@ public class PagoServiceImpl implements PagoService {
 
     private boolean esMetodoEntregaUsado(MetodoPago metodoPago) {
         return metodoPago != null && CODIGO_ENTREGA_USADO.equals(normalizarCodigoMetodo(metodoPago));
+    }
+
+    private boolean esMetodoNoMonetarioInterno(MetodoPago metodoPago) {
+        if (metodoPago == null) {
+            return false;
+        }
+        String codigo = normalizarCodigoMetodo(metodoPago);
+        return CODIGO_ENTREGA_USADO.equals(codigo) || CODIGO_PLAN_AHORRO.equals(codigo);
+    }
+
+    private void validarReglaMetodoPlanAhorro(PagoDTO pagoDTO, MetodoPago metodoPago) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        if (!CODIGO_PLAN_AHORRO.equals(codigoMetodo)) {
+            return;
+        }
+        if (pagoDTO.getAdjudicacionPlanAhorroId() == null || pagoDTO.getContratoPlanAhorroId() == null) {
+            throw new BadRequestException("El metodo PLAN_AHORRO solo puede usarse como aplicacion automatica desde una adjudicacion");
+        }
     }
 
     private void validarContextoEntradaPago(PagoDTO pagoDTO) {

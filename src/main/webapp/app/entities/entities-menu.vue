@@ -3,9 +3,11 @@
     <b-dropdown-item to="/cliente" active-class="active">Clientes</b-dropdown-item>
     <b-dropdown-item to="/venta" active-class="active">Ventas</b-dropdown-item>
     <b-dropdown-item to="/reserva" active-class="active">Reservas</b-dropdown-item>
+    <b-dropdown-item to="/entregas-unidad" active-class="active">Entregas</b-dropdown-item>
     <b-dropdown-item to="/tasacion-usados" active-class="active">Tasaciones</b-dropdown-item>
     <b-dropdown-item to="/plan-ahorro" active-class="active">Planes de ahorro</b-dropdown-item>
     <b-dropdown-item to="/plan-ahorro/contratos" active-class="active">Contratos de plan</b-dropdown-item>
+    <b-dropdown-item to="/plan-ahorro/adjudicaciones" active-class="active">Adjudicaciones</b-dropdown-item>
     <b-dropdown-item to="/inventario" active-class="active">Inventario</b-dropdown-item>
     <b-dropdown-item to="/vehiculo/buscar" active-class="active">Buscar vehiculo</b-dropdown-item>
     <b-dropdown-item to="/pago" active-class="active">Pagos</b-dropdown-item>

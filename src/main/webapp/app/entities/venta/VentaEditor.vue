@@ -409,7 +409,51 @@ function iniciarCambioCliente() {
   warningModalRef.value?.show();
 }
 
-function onAgregarVehiculo(vehiculo: IVehiculo) {
+async function validarVehiculoDisponibleParaWizard(vehiculo: IVehiculo): Promise<boolean> {
+  if (!vehiculo?.id) {
+    return false;
+  }
+  try {
+    const inventarioRes = await axios.get<IInventario>(`api/inventarios/vehiculo/${vehiculo.id}`);
+    const inventario = inventarioRes.data;
+    if (!inventario?.id) {
+      alertService.showError('No se encontro inventario para el vehiculo seleccionado.');
+      return false;
+    }
+    if (inventario.estadoInventario === 'VENDIDO') {
+      alertService.showError('El vehiculo seleccionado ya fue vendido y no puede asignarse.');
+      return false;
+    }
+    if (inventario.estadoInventario !== 'RESERVADO') {
+      return true;
+    }
+
+    const reservaRes = await axios.get<IReserva>(`api/reservas/inventario/${inventario.id}/activa`);
+    const reservaActiva = reservaRes.data;
+    const reservaWizardId = venta.value.reserva?.id;
+    const clienteWizardId = venta.value.cliente?.id;
+    const reservaActivaId = reservaActiva?.id;
+    const clienteReservaId = reservaActiva?.cliente?.id;
+    const mismaReserva = Boolean(reservaWizardId && reservaActivaId && reservaWizardId === reservaActivaId);
+    const mismoCliente = Boolean(clienteWizardId && clienteReservaId && clienteWizardId === clienteReservaId);
+
+    if (mismaReserva && mismoCliente) {
+      return true;
+    }
+
+    alertService.showError('El vehiculo seleccionado ya se encuentra reservado en otra operacion activa.');
+    return false;
+  } catch {
+    alertService.showError('No se pudo validar la disponibilidad del vehiculo. Intenta nuevamente.');
+    return false;
+  }
+}
+
+async function onAgregarVehiculo(vehiculo: IVehiculo) {
+  const disponible = await validarVehiculoDisponibleParaWizard(vehiculo);
+  if (!disponible) {
+    return;
+  }
   const currentVehiculoId = detalles.value[0]?.vehiculo?.id;
   const sameVehiculo = currentVehiculoId && vehiculo.id && currentVehiculoId === vehiculo.id;
   if (!sameVehiculo && currentVehiculoId && pagosActivos.value > 0) {
@@ -532,7 +576,10 @@ onMounted(async () => {
       const vehiculoReservaId = reserva.inventario?.vehiculo?.id;
       if (vehiculoReservaId && detalles.value.length === 0) {
         const vehiculo = await vehiculoService.find(Number(vehiculoReservaId));
-        agregarVehiculo(vehiculo);
+        const disponible = await validarVehiculoDisponibleParaWizard(vehiculo);
+        if (disponible) {
+          agregarVehiculo(vehiculo);
+        }
       }
     } catch {
       // noop
@@ -543,6 +590,10 @@ onMounted(async () => {
   if (Number.isFinite(vehiculoId) && vehiculoId > 0 && detalles.value.length === 0) {
     try {
       const vehiculo = await vehiculoService.find(vehiculoId);
+      const disponible = await validarVehiculoDisponibleParaWizard(vehiculo);
+      if (!disponible) {
+        return;
+      }
       agregarVehiculo(vehiculo);
       const inventarioRes = await axios.get<IInventario>(`api/inventarios/vehiculo/${vehiculoId}`);
       if (inventarioRes.data?.id && inventarioRes.data?.estadoInventario === 'RESERVADO' && !venta.value.cliente?.id) {

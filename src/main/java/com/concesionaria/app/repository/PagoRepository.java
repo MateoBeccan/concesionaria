@@ -125,4 +125,22 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
         EstadoPago estado,
         TipoMovimientoPago tipoMovimiento
     );
+
+    @Query(
+        """
+        select (count(p) > 0)
+        from Pago p
+        join p.metodoPago mp
+        where p.venta.id = :ventaId
+          and upper(mp.codigo) = upper(:codigoMetodo)
+          and p.estado = :estado
+        """
+    )
+    boolean existsByVentaIdAndMetodoPagoCodigoAndEstado(
+        @Param("ventaId") Long ventaId,
+        @Param("codigoMetodo") String codigoMetodo,
+        @Param("estado") EstadoPago estado
+    );
+
+    boolean existsByAdjudicacionPlanAhorroIdAndEstado(Long adjudicacionPlanAhorroId, EstadoPago estado);
 }

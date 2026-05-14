@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260514110000-1" author="codex">
+    <createTable tableName="entrega_unidad">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="venta_id" type="bigint">
+        <constraints nullable="false" unique="true" uniqueConstraintName="ux_entrega_venta"/>
+      </column>
+      <column name="cliente_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="vehiculo_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="inventario_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_programada" type="datetime(6)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="fecha_entrega" type="datetime(6)"/>
+      <column name="estado" type="varchar(20)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="usuario_programacion" type="varchar(50)"/>
+      <column name="usuario_entrega" type="varchar(50)"/>
+      <column name="kilometraje_entrega" type="int"/>
+      <column name="nivel_combustible" type="varchar(30)"/>
+      <column name="observaciones" type="varchar(500)"/>
+      <column name="created_date" type="datetime(6)"/>
+      <column name="last_modified_date" type="datetime(6)"/>
+    </createTable>
+
+    <createIndex tableName="entrega_unidad" indexName="idx_entrega_unidad_estado">
+      <column name="estado"/>
+    </createIndex>
+    <createIndex tableName="entrega_unidad" indexName="idx_entrega_unidad_fecha_programada">
+      <column name="fecha_programada"/>
+    </createIndex>
+    <createIndex tableName="entrega_unidad" indexName="idx_entrega_unidad_cliente">
+      <column name="cliente_id"/>
+    </createIndex>
+
+    <addForeignKeyConstraint baseTableName="entrega_unidad" baseColumnNames="venta_id" referencedTableName="venta" referencedColumnNames="id" constraintName="fk_entrega_unidad_venta"/>
+    <addForeignKeyConstraint baseTableName="entrega_unidad" baseColumnNames="cliente_id" referencedTableName="cliente" referencedColumnNames="id" constraintName="fk_entrega_unidad_cliente"/>
+    <addForeignKeyConstraint baseTableName="entrega_unidad" baseColumnNames="vehiculo_id" referencedTableName="vehiculo" referencedColumnNames="id" constraintName="fk_entrega_unidad_vehiculo"/>
+    <addForeignKeyConstraint baseTableName="entrega_unidad" baseColumnNames="inventario_id" referencedTableName="inventario" referencedColumnNames="id" constraintName="fk_entrega_unidad_inventario"/>
+  </changeSet>
+
+  <changeSet id="20260514110000-2" author="codex">
+    <createTable tableName="entrega_checklist_item">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="entrega_unidad_id" type="bigint">
+        <constraints nullable="false"/>
+      </column>
+      <column name="codigo" type="varchar(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="descripcion" type="varchar(200)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="obligatorio" type="bit(1)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="completado" type="bit(1)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="observaciones" type="varchar(255)"/>
+    </createTable>
+    <createIndex tableName="entrega_checklist_item" indexName="idx_checklist_entrega">
+      <column name="entrega_unidad_id"/>
+    </createIndex>
+    <addForeignKeyConstraint
+      baseTableName="entrega_checklist_item"
+      baseColumnNames="entrega_unidad_id"
+      referencedTableName="entrega_unidad"
+      referencedColumnNames="id"
+      constraintName="fk_checklist_entrega_unidad"/>
+  </changeSet>
+</databaseChangeLog>
+

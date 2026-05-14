@@ -1,4 +1,4 @@
-import { defineComponent, inject, onMounted, ref, type Ref } from 'vue';
+import { computed, defineComponent, inject, onMounted, ref, type Ref } from 'vue';
 import axios from 'axios';
 import { useAlertService } from '@/shared/alert/alert.service';
 import type { IContratoPlanAhorro } from '@/shared/model/contrato-plan-ahorro.model';
@@ -17,6 +17,24 @@ export default defineComponent({
     const clientes: Ref<ICliente[]> = ref([]);
     const showCreate = ref(false);
     const draft = ref({ clienteId: null as number | null, planId: null as number | null, observaciones: '' });
+    const searchTerm = ref('');
+    const estadoFiltro = ref('');
+
+    const contratosFiltrados = computed(() => {
+      const term = searchTerm.value.trim().toLowerCase();
+      return contratos.value.filter(contrato => {
+        const byEstado = !estadoFiltro.value || contrato.estado === estadoFiltro.value;
+        if (!byEstado) return false;
+        if (!term) return true;
+        const cliente = `${contrato.cliente?.apellido ?? ''} ${contrato.cliente?.nombre ?? ''}`.trim();
+        return [contrato.numeroContrato, contrato.plan?.nombre, cliente, contrato.estado].some(value =>
+          String(value ?? '')
+            .toLowerCase()
+            .includes(term),
+        );
+      });
+    });
+    const contratosActivos = computed(() => contratos.value.filter(item => item.estado === 'ACTIVO').length);
 
     const retrieve = async () => {
       const res = await contratoService().retrieve({ size: 200, sort: ['id,desc'] });
@@ -67,7 +85,18 @@ export default defineComponent({
       }
     });
 
-    return { contratos, planes, clientes, showCreate, draft, openCreate, save };
+    return {
+      contratos,
+      planes,
+      clientes,
+      showCreate,
+      draft,
+      searchTerm,
+      estadoFiltro,
+      contratosFiltrados,
+      contratosActivos,
+      openCreate,
+      save,
+    };
   },
 });
-

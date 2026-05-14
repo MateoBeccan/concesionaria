@@ -28,6 +28,8 @@ public interface PagoMapper extends EntityMapper<PagoDTO, Pago> {
     @Mapping(target = "entidadFinanciera", source = "entidadFinanciera", qualifiedByName = "entidadFinancieraResumen")
     @Mapping(target = "cotizacionId", source = "cotizacionRef.id")
     @Mapping(target = "tasacionUsadoId", source = "tasacionUsado.id")
+    @Mapping(target = "adjudicacionPlanAhorroId", source = "adjudicacionPlanAhorro.id")
+    @Mapping(target = "contratoPlanAhorroId", source = "contratoPlanAhorro.id")
     @Mapping(target = "tasacionUsado", source = "tasacionUsado", qualifiedByName = "tasacionUsadoResumen")
     PagoDTO toDto(Pago s);
 

@@ -35,6 +35,8 @@ public class PagoDTO implements Serializable {
     private Instant fechaCotizacionUsada;
     private Long cotizacionId;
     private Long tasacionUsadoId;
+    private Long adjudicacionPlanAhorroId;
+    private Long contratoPlanAhorroId;
     private TasacionUsadoDTO tasacionUsado;
 
     @Size(max = 50)
@@ -159,6 +161,22 @@ public class PagoDTO implements Serializable {
 
     public void setTasacionUsado(TasacionUsadoDTO tasacionUsado) {
         this.tasacionUsado = tasacionUsado;
+    }
+
+    public Long getAdjudicacionPlanAhorroId() {
+        return adjudicacionPlanAhorroId;
+    }
+
+    public void setAdjudicacionPlanAhorroId(Long adjudicacionPlanAhorroId) {
+        this.adjudicacionPlanAhorroId = adjudicacionPlanAhorroId;
+    }
+
+    public Long getContratoPlanAhorroId() {
+        return contratoPlanAhorroId;
+    }
+
+    public void setContratoPlanAhorroId(Long contratoPlanAhorroId) {
+        this.contratoPlanAhorroId = contratoPlanAhorroId;
     }
 
     public String getUsuarioRegistro() {

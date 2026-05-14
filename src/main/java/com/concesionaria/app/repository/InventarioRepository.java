@@ -4,6 +4,7 @@ import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import java.util.List;
 import org.springframework.data.jpa.repository.*;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -18,5 +19,19 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     Optional<Inventario> findByVehiculoId(Long vehiculoId);
 
     List<Inventario> findAllByEstadoInventario(EstadoInventario estadoInventario);
+
+    @Query(
+        """
+        select i
+        from Inventario i
+        join i.vehiculo v
+        where i.estadoInventario = :estado
+          and (:versionId is null or v.version.id = :versionId)
+        """
+    )
+    List<Inventario> findDisponiblesByVersionObjetivo(
+        @Param("estado") EstadoInventario estado,
+        @Param("versionId") Long versionId
+    );
 
 }
