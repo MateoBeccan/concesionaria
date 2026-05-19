@@ -116,7 +116,37 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public VentaDTO save(VentaDTO dto) {
-        validarVentaDto(dto);
+        validarVentaDto(dto, true);
+        Instant now = Instant.now();
+        String currentUser = currentUserLogin();
+        Venta venta = ventaMapper.toEntity(dto);
+        venta.setCotizacion(dto.getCotizacion());
+        venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
+        venta.setImporteNeto(dto.getImporteNeto());
+        venta.setImpuesto(dto.getImpuesto());
+        venta.setTotal(dto.getTotal());
+        venta.setTotalPagado(dto.getTotalPagado());
+        venta.setSaldo(dto.getSaldo());
+        venta.setUser(resolveUsuarioOperador(dto));
+        if (dto.getCotizacionId() != null) {
+            venta.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dto.getCotizacionId()));
+        } else {
+            venta.setCotizacionRef(null);
+        }
+        venta.setCreatedDate(now);
+        venta.setCreatedBy(currentUser);
+        venta.setLastModifiedDate(now);
+        venta.setLastModifiedBy(currentUser);
+        Venta saved = ventaRepository.save(venta);
+        registrarHistorialVenta(saved, null, saved.getEstado(), "VENTA_CREADA", "Alta de venta");
+        sincronizarReservaDesdeVenta(saved);
+        sincronizarInventarioConVenta(saved.getId());
+        return ventaMapper.toDto(saved);
+    }
+
+    @Override
+    public VentaDTO saveDesdePlanAhorro(VentaDTO dto) {
+        validarVentaDto(dto, false);
         Instant now = Instant.now();
         String currentUser = currentUserLogin();
         Venta venta = ventaMapper.toEntity(dto);
@@ -147,7 +177,7 @@ public class VentaServiceImpl implements VentaService {
     @Override
     public VentaDTO update(VentaDTO dto) {
         Venta existing = ventaRepository.findById(dto.getId()).orElseThrow(() -> new BadRequestException("La venta no existe"));
-        validarVentaDto(dto);
+        validarVentaDto(dto, true);
         Venta venta = ventaMapper.toEntity(dto);
         venta.setCotizacion(dto.getCotizacion());
         venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
@@ -182,7 +212,7 @@ public class VentaServiceImpl implements VentaService {
                 EstadoVenta estadoAnterior = existing.getEstado();
                 ventaMapper.partialUpdate(existing, dto);
                 VentaDTO dtoActualizado = ventaMapper.toDto(existing);
-                validarVentaDto(dtoActualizado);
+                validarVentaDto(dtoActualizado, true);
                 existing.setCotizacion(dtoActualizado.getCotizacion());
                 existing.setFechaCotizacionUsada(dtoActualizado.getFechaCotizacionUsada());
                 existing.setImporteNeto(dtoActualizado.getImporteNeto());
@@ -214,7 +244,7 @@ public class VentaServiceImpl implements VentaService {
             });
     }
 
-    private void validarVentaDto(VentaDTO dto) {
+    private void validarVentaDto(VentaDTO dto, boolean exigirMinimoTradicional) {
         if (dto.getCliente() == null || dto.getCliente().getId() == null) {
             throw new BadRequestException("El cliente es obligatorio");
         }
@@ -283,7 +313,7 @@ public class VentaServiceImpl implements VentaService {
         if (totalPagado.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("El total pagado no puede ser negativo");
         }
-        if (totalPagado.compareTo(BigDecimal.ZERO) == 0) {
+        if (exigirMinimoTradicional && totalPagado.compareTo(BigDecimal.ZERO) == 0) {
             throw new BadRequestException(
                 "La venta requiere un pago minimo del " +
                 porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
@@ -303,7 +333,7 @@ public class VentaServiceImpl implements VentaService {
             throw new BadRequestException("No se puede marcar como CANCELADA una venta con pagos registrados");
         }
         BigDecimal montoMinimoReserva = calcularMontoMinimoReserva(dto.getImporteNeto());
-        if (totalPagado.compareTo(BigDecimal.ZERO) > 0 && totalPagado.compareTo(montoMinimoReserva) < 0) {
+        if (exigirMinimoTradicional && totalPagado.compareTo(BigDecimal.ZERO) > 0 && totalPagado.compareTo(montoMinimoReserva) < 0) {
             throw new BadRequestException(
                 "La venta requiere una sena minima del " +
                 porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
@@ -1123,7 +1153,7 @@ public class VentaServiceImpl implements VentaService {
 
         Reserva reservaActiva = reservaActivaOpt.get();
         Long reservaDtoId = dto.getReserva() != null ? dto.getReserva().getId() : null;
-        if (reservaDtoId == null || !reservaDtoId.equals(reservaActiva.getId())) {
+        if (!esReservaPropiaDeVenta(dto, reservaActiva, reservaDtoId)) {
             throw new BadRequestException("El vehiculo seleccionado se encuentra reservado por otra operacion activa");
         }
 
@@ -1132,6 +1162,33 @@ public class VentaServiceImpl implements VentaService {
         if (clienteVentaId == null || clienteReservaId == null || !clienteVentaId.equals(clienteReservaId)) {
             throw new BadRequestException("La venta debe mantener el mismo cliente de la reserva activa");
         }
+    }
+
+    private boolean esReservaPropiaDeVenta(VentaDTO dto, Reserva reservaActiva, Long reservaDtoId) {
+        if (reservaDtoId != null && reservaDtoId.equals(reservaActiva.getId())) {
+            return true;
+        }
+        if (dto.getId() == null) {
+            return false;
+        }
+        return ventaRepository
+            .findById(dto.getId())
+            .map(ventaExistente -> {
+                if (ventaExistente.getReserva() != null && reservaActiva.getId().equals(ventaExistente.getReserva().getId())) {
+                    return true;
+                }
+                Long vehiculoVentaExistenteId = ventaExistente.getVehiculo() != null ? ventaExistente.getVehiculo().getId() : null;
+                Long vehiculoDtoId = dto.getVehiculo() != null ? dto.getVehiculo().getId() : null;
+                Long vehiculoReservaActivaId = reservaActiva.getInventario() != null && reservaActiva.getInventario().getVehiculo() != null
+                    ? reservaActiva.getInventario().getVehiculo().getId()
+                    : null;
+                return (
+                    vehiculoVentaExistenteId != null &&
+                    vehiculoVentaExistenteId.equals(vehiculoDtoId) &&
+                    vehiculoVentaExistenteId.equals(vehiculoReservaActivaId)
+                );
+            })
+            .orElse(false);
     }
 
     private void registrarCambioEstadoVentaSiCorresponde(Venta venta, EstadoVenta estadoAnterior, String accion, String detalle) {

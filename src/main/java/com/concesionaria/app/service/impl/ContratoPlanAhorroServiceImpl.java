@@ -9,6 +9,7 @@ import com.concesionaria.app.domain.PlanAhorro;
 import com.concesionaria.app.domain.User;
 import com.concesionaria.app.domain.ComprobantePlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
+import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
@@ -34,6 +35,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -219,6 +221,86 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
         return cuotaMapper.toDto(cuota);
     }
 
+    @Override
+    public List<CuotaPlanAhorroDTO> pagarCuotas(
+        List<Long> cuotaIds,
+        BigDecimal montoTotal,
+        String observaciones,
+        Long metodoPagoId,
+        Long monedaId
+    ) {
+        if (cuotaIds == null || cuotaIds.isEmpty()) {
+            throw new BadRequestException("Debe seleccionar al menos una cuota");
+        }
+
+        List<CuotaPlanAhorro> cuotas = cuotaIds.stream().distinct().map(this::obtenerCuotaConPermisos).sorted(Comparator.comparing(CuotaPlanAhorro::getNumeroCuota)).toList();
+        ContratoPlanAhorro contrato = cuotas.getFirst().getContrato();
+        boolean distintoContrato = cuotas.stream().anyMatch(cuota -> !cuota.getContrato().getId().equals(contrato.getId()));
+        if (distintoContrato) {
+            throw new BadRequestException("Todas las cuotas deben pertenecer al mismo contrato");
+        }
+
+        cuotas.forEach(cuota -> {
+            if (cuota.getEstado() != EstadoCuotaPlanAhorro.PENDIENTE && cuota.getEstado() != EstadoCuotaPlanAhorro.VENCIDA) {
+                throw new BadRequestException("Solo se pueden pagar cuotas pendientes o vencidas");
+            }
+            if (cuota.getPago() != null) {
+                throw new BadRequestException("Una o más cuotas ya tienen un pago asociado");
+            }
+            if (comprobantePlanAhorroRepository.existsByCuotaPlanAhorroIdAndEstado(cuota.getId(), EstadoComprobante.EMITIDO)) {
+                throw new BadRequestException("Una o más cuotas ya tienen un comprobante activo");
+            }
+        });
+
+        BigDecimal totalEsperado = cuotas
+            .stream()
+            .map(CuotaPlanAhorro::getImporte)
+            .reduce(BigDecimal.ZERO, BigDecimal::add)
+            .setScale(2, RoundingMode.HALF_UP);
+        if (montoTotal != null && montoTotal.setScale(2, RoundingMode.HALF_UP).compareTo(totalEsperado) != 0) {
+            throw new BadRequestException("El monto total debe coincidir con la suma de cuotas seleccionadas");
+        }
+
+        MetodoPago metodoPago = resolverMetodoPago(metodoPagoId);
+        if (monedaId != null && (contrato.getPlan().getMoneda() == null || !monedaId.equals(contrato.getPlan().getMoneda().getId()))) {
+            throw new BadRequestException("La moneda del pago debe coincidir con la moneda del plan");
+        }
+
+        Instant ahora = Instant.now();
+        Pago pago = new Pago();
+        pago.setFecha(ahora);
+        pago.setMonto(totalEsperado);
+        pago.setMoneda(contrato.getPlan().getMoneda());
+        pago.setMetodoPago(metodoPago);
+        pago.setTipoMovimiento(TipoMovimientoPago.PAGO_RECIBIDO);
+        pago.setEstado(EstadoPago.REGISTRADO);
+        pago.setCotizacionUsada(BigDecimal.ONE);
+        pago.setMontoAplicadoVenta(totalEsperado);
+        pago.setFechaCotizacionUsada(ahora);
+        pago.setVenta(null);
+        pago.setReserva(null);
+        pago.setTasacionUsado(null);
+        pago.setAdjudicacionPlanAhorro(null);
+        pago.setContratoPlanAhorro(contrato);
+        pago.setUsuarioRegistro(currentUserLogin());
+        pago.setObservaciones(observaciones);
+        pago.setCreatedDate(ahora);
+        pago.setLastModifiedDate(ahora);
+        pago = pagoRepository.save(pago);
+
+        for (CuotaPlanAhorro cuota : cuotas) {
+            cuota.setPago(pago);
+            cuota.setEstado(EstadoCuotaPlanAhorro.PAGADA);
+            cuota.setFechaPago(ahora);
+            cuotaRepository.save(cuota);
+            comprobantePlanAhorroService.emitirParaCuota(cuota, pago);
+        }
+
+        recalcularContrato(contrato);
+        movimientoCajaService.registrarDesdePago(pago, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        return cuotas.stream().map(cuotaMapper::toDto).toList();
+    }
+
     private void generarCuotas(ContratoPlanAhorro contrato, PlanAhorro plan, Instant fechaInicio) {
         int cantidadCuotas = plan.getCantidadCuotas();
         BigDecimal valorTotal = plan.getValorMovil().setScale(2, RoundingMode.HALF_UP);
@@ -273,6 +355,15 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
             LOG.warn("Acceso denegado a contrato de plan {} para usuario {}", contratoId, currentUserLogin());
             throw new AccessDeniedException("No tienes permisos para acceder a este contrato");
         }
+    }
+
+    private MetodoPago resolverMetodoPago(Long metodoPagoId) {
+        if (metodoPagoId != null) {
+            return metodoPagoRepository.findById(metodoPagoId).orElseThrow(() -> new BadRequestException("El método de pago no existe"));
+        }
+        return metodoPagoRepository
+            .findByCodigoIgnoreCase(CODIGO_CONTADO)
+            .orElseThrow(() -> new BadRequestException("No existe el metodo de pago CONTADO configurado"));
     }
 
     private String generarNumeroContrato() {

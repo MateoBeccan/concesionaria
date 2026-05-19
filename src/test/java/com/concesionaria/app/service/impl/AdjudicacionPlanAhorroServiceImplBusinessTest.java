@@ -14,6 +14,8 @@ import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.PlanAhorro;
+import com.concesionaria.app.domain.ReglaAdjudicacionPlan;
+import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Version;
 import com.concesionaria.app.domain.enumeration.EstadoAdjudicacionPlanAhorro;
@@ -21,15 +23,18 @@ import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
+import com.concesionaria.app.domain.enumeration.TipoReglaAdjudicacionPlan;
 import com.concesionaria.app.repository.AdjudicacionPlanAhorroRepository;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.InventarioRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.PagoRepository;
+import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.AdjudicacionPlanAhorroDTO;
+import com.concesionaria.app.service.dto.ElegibilidadAdjudicacionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.VehiculoDTO;
 import com.concesionaria.app.service.dto.VentaDTO;
@@ -76,6 +81,8 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
 
     @Mock
     private MetodoPagoRepository metodoPagoRepository;
+    @Mock
+    private VentaRepository ventaRepository;
 
     private AdjudicacionPlanAhorroServiceImpl service;
 
@@ -93,7 +100,8 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
                 ventaService,
                 pagoService,
                 pagoRepository,
-                metodoPagoRepository
+                metodoPagoRepository,
+                ventaRepository
             );
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("admin", "n/a", "ROLE_ADMIN"));
     }
@@ -117,6 +125,14 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
     void noAdjudicarContratoCancelado() {
         when(contratoRepository.findById(1L)).thenReturn(Optional.of(contratoBase(EstadoContratoPlanAhorro.CANCELADO)));
         assertThrows(BadRequestException.class, () -> service.adjudicarContrato(1L, null));
+    }
+
+    @Test
+    void finalizadoPuedeSerAptoSiNoHayRestriccion() {
+        ContratoPlanAhorro contrato = contratoBase(EstadoContratoPlanAhorro.FINALIZADO);
+        when(contratoRepository.findById(1L)).thenReturn(Optional.of(contrato));
+        ElegibilidadAdjudicacionDTO elegibilidad = service.evaluarElegibilidad(1L);
+        assertThat(elegibilidad.isApto()).isTrue();
     }
 
     @Test
@@ -148,6 +164,7 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
         when(adjudicacionRepository.save(any(AdjudicacionPlanAhorro.class))).thenAnswer(inv -> inv.getArgument(0));
         when(pagoRepository.existsByVentaIdAndMetodoPagoCodigoAndEstado(500L, "PLAN_AHORRO", com.concesionaria.app.domain.enumeration.EstadoPago.REGISTRADO))
             .thenReturn(false);
+        when(pagoRepository.sumMontoByVentaId(500L)).thenReturn(new BigDecimal("250.00"));
         MetodoPago metodoPago = new MetodoPago();
         metodoPago.setId(999L);
         metodoPago.setCodigo("PLAN_AHORRO");
@@ -164,13 +181,107 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
         VehiculoDTO vehiculoDTO = new VehiculoDTO();
         vehiculoDTO.setId(30L);
         ventaDTO.setVehiculo(vehiculoDTO);
-        when(ventaService.save(any(VentaDTO.class))).thenReturn(ventaDTO);
+        when(ventaService.saveDesdePlanAhorro(any(VentaDTO.class))).thenReturn(ventaDTO);
+        Venta ventaPersistida = new Venta();
+        ventaPersistida.setId(500L);
+        ventaPersistida.setTotal(new BigDecimal("1000.00"));
+        when(ventaRepository.findById(500L)).thenReturn(Optional.of(ventaPersistida));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
         AdjudicacionPlanAhorroDTO primera = service.generarVenta(10L);
         AdjudicacionPlanAhorroDTO segunda = service.generarVenta(10L);
 
         assertThat(primera.getVenta().getId()).isEqualTo(500L);
         assertThat(segunda.getVenta().getId()).isEqualTo(500L);
+    }
+
+    @Test
+    void generarVentaConCreditoParcialQuedaPendienteConSaldo() {
+        AdjudicacionPlanAhorro adjudicacion = adjudicacionBase();
+        Inventario inventario = inventarioBase();
+        adjudicacion.setInventario(inventario);
+        adjudicacion.setVehiculo(inventario.getVehiculo());
+        adjudicacion.setMontoReconocidoCuotas(new BigDecimal("250.00"));
+        when(adjudicacionRepository.findById(10L)).thenReturn(Optional.of(adjudicacion));
+        when(inventarioRepository.findById(20L)).thenReturn(Optional.of(inventario));
+        when(adjudicacionRepository.save(any(AdjudicacionPlanAhorro.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.existsByVentaIdAndMetodoPagoCodigoAndEstado(500L, "PLAN_AHORRO", com.concesionaria.app.domain.enumeration.EstadoPago.REGISTRADO))
+            .thenReturn(false);
+        when(pagoRepository.sumMontoByVentaId(500L)).thenReturn(new BigDecimal("250.00"));
+        MetodoPago metodoPago = new MetodoPago();
+        metodoPago.setId(999L);
+        metodoPago.setCodigo("PLAN_AHORRO");
+        when(metodoPagoRepository.findByCodigoIgnoreCase("PLAN_AHORRO")).thenReturn(Optional.of(metodoPago));
+
+        VentaDTO ventaDTO = new VentaDTO();
+        ventaDTO.setId(500L);
+        ventaDTO.setEstado(EstadoVenta.PENDIENTE);
+        ventaDTO.setTotal(new BigDecimal("1000.00"));
+        MonedaDTO monedaDTO = new MonedaDTO();
+        monedaDTO.setId(1L);
+        monedaDTO.setCodigo("ARS");
+        ventaDTO.setMoneda(monedaDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(30L);
+        ventaDTO.setVehiculo(vehiculoDTO);
+        when(ventaService.saveDesdePlanAhorro(any(VentaDTO.class))).thenReturn(ventaDTO);
+
+        Venta ventaPersistida = new Venta();
+        ventaPersistida.setId(500L);
+        ventaPersistida.setTotal(new BigDecimal("1000.00"));
+        when(ventaRepository.findById(500L)).thenReturn(Optional.of(ventaPersistida));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.generarVenta(10L);
+
+        assertThat(ventaPersistida.getEstado()).isEqualTo(EstadoVenta.PENDIENTE);
+        assertThat(ventaPersistida.getSaldo()).isEqualByComparingTo("750.00");
+        assertThat(ventaPersistida.getTotalPagado()).isEqualByComparingTo("250.00");
+    }
+
+    @Test
+    void generarVentaConCreditoTotalQuedaPagadaConSaldoCero() {
+        AdjudicacionPlanAhorro adjudicacion = adjudicacionBase();
+        Inventario inventario = inventarioBase();
+        adjudicacion.setInventario(inventario);
+        adjudicacion.setVehiculo(inventario.getVehiculo());
+        adjudicacion.setMontoReconocidoCuotas(new BigDecimal("1000.00"));
+        when(adjudicacionRepository.findById(10L)).thenReturn(Optional.of(adjudicacion));
+        when(inventarioRepository.findById(20L)).thenReturn(Optional.of(inventario));
+        when(adjudicacionRepository.save(any(AdjudicacionPlanAhorro.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoRepository.existsByVentaIdAndMetodoPagoCodigoAndEstado(500L, "PLAN_AHORRO", com.concesionaria.app.domain.enumeration.EstadoPago.REGISTRADO))
+            .thenReturn(false);
+        when(pagoRepository.sumMontoByVentaId(500L)).thenReturn(new BigDecimal("1000.00"));
+        MetodoPago metodoPago = new MetodoPago();
+        metodoPago.setId(999L);
+        metodoPago.setCodigo("PLAN_AHORRO");
+        when(metodoPagoRepository.findByCodigoIgnoreCase("PLAN_AHORRO")).thenReturn(Optional.of(metodoPago));
+
+        VentaDTO ventaDTO = new VentaDTO();
+        ventaDTO.setId(500L);
+        ventaDTO.setEstado(EstadoVenta.PENDIENTE);
+        ventaDTO.setTotal(new BigDecimal("1000.00"));
+        MonedaDTO monedaDTO = new MonedaDTO();
+        monedaDTO.setId(1L);
+        monedaDTO.setCodigo("ARS");
+        ventaDTO.setMoneda(monedaDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(30L);
+        ventaDTO.setVehiculo(vehiculoDTO);
+        when(ventaService.saveDesdePlanAhorro(any(VentaDTO.class))).thenReturn(ventaDTO);
+
+        Venta ventaPersistida = new Venta();
+        ventaPersistida.setId(500L);
+        ventaPersistida.setTotal(new BigDecimal("1000.00"));
+        when(ventaRepository.findById(500L)).thenReturn(Optional.of(ventaPersistida));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.generarVenta(10L);
+
+        assertThat(ventaPersistida.getEstado()).isEqualTo(EstadoVenta.PAGADA);
+        assertThat(ventaPersistida.getSaldo()).isEqualByComparingTo("0.00");
+        assertThat(ventaPersistida.getTotalPagado()).isEqualByComparingTo("1000.00");
+        verify(ventaService).sincronizarInventarioConVenta(500L);
     }
 
     @Test
@@ -200,6 +311,37 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
         assertThat(result.getContent().get(0).getCliente().getNombre()).isEqualTo("Ana");
     }
 
+    @Test
+    void reglaPorCuotasNoAptaSiInsuficiente() {
+        ContratoPlanAhorro contrato = contratoBase(EstadoContratoPlanAhorro.ACTIVO);
+        contrato.setCuotasPagadas(10);
+        contrato.getPlan().setReglaAdjudicacion(regla(TipoReglaAdjudicacionPlan.POR_CUOTAS, 24, null, false));
+        when(contratoRepository.findById(1L)).thenReturn(Optional.of(contrato));
+        ElegibilidadAdjudicacionDTO result = service.evaluarElegibilidad(1L);
+        assertThat(result.isApto()).isFalse();
+    }
+
+    @Test
+    void reglaCuotasOPorcentajeAptaSiCumpleUna() {
+        ContratoPlanAhorro contrato = contratoBase(EstadoContratoPlanAhorro.ACTIVO);
+        contrato.setCuotasPagadas(10);
+        contrato.setSaldoPendiente(new BigDecimal("600.00"));
+        contrato.getPlan().setValorMovil(new BigDecimal("1000.00"));
+        contrato.getPlan().setReglaAdjudicacion(regla(TipoReglaAdjudicacionPlan.CUOTAS_O_PORCENTAJE, 24, new BigDecimal("30.00"), false));
+        when(contratoRepository.findById(1L)).thenReturn(Optional.of(contrato));
+        ElegibilidadAdjudicacionDTO result = service.evaluarElegibilidad(1L);
+        assertThat(result.isApto()).isTrue();
+    }
+
+    @Test
+    void reglaManualBloquea() {
+        ContratoPlanAhorro contrato = contratoBase(EstadoContratoPlanAhorro.ACTIVO);
+        contrato.getPlan().setReglaAdjudicacion(regla(TipoReglaAdjudicacionPlan.MANUAL, null, null, false));
+        when(contratoRepository.findById(1L)).thenReturn(Optional.of(contrato));
+        ElegibilidadAdjudicacionDTO result = service.evaluarElegibilidad(1L);
+        assertThat(result.isApto()).isFalse();
+    }
+
     private ContratoPlanAhorro contratoBase(EstadoContratoPlanAhorro estado) {
         Moneda moneda = new Moneda();
         moneda.setId(1L);
@@ -223,7 +365,21 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
         contrato.setCliente(cliente);
         contrato.setPlan(plan);
         contrato.setEstado(estado);
+        contrato.setSaldoPendiente(new BigDecimal("1000.00"));
+        contrato.setCuotasPagadas(0);
         return contrato;
+    }
+
+    private ReglaAdjudicacionPlan regla(TipoReglaAdjudicacionPlan tipo, Integer minimoCuotas, BigDecimal minimoPorcentaje, boolean permiteMora) {
+        ReglaAdjudicacionPlan regla = new ReglaAdjudicacionPlan();
+        regla.setNombre("R-" + tipo);
+        regla.setTipoRegla(tipo);
+        regla.setMinimoCuotas(minimoCuotas);
+        regla.setMinimoPorcentaje(minimoPorcentaje);
+        regla.setPermiteMora(permiteMora);
+        regla.setRequiereContratoActivo(true);
+        regla.setActivo(true);
+        return regla;
     }
 
     private CuotaPlanAhorro cuotaPagada(String importe) {

@@ -33,6 +33,8 @@ public class PlanAhorroDTO implements Serializable {
     @NotNull
     private EstadoPlanAhorro estado;
 
+    private ReglaAdjudicacionPlanDTO reglaAdjudicacion;
+
     public Long getId() {
         return id;
     }
@@ -95,6 +97,14 @@ public class PlanAhorroDTO implements Serializable {
 
     public void setEstado(EstadoPlanAhorro estado) {
         this.estado = estado;
+    }
+
+    public ReglaAdjudicacionPlanDTO getReglaAdjudicacion() {
+        return reglaAdjudicacion;
+    }
+
+    public void setReglaAdjudicacion(ReglaAdjudicacionPlanDTO reglaAdjudicacion) {
+        this.reglaAdjudicacion = reglaAdjudicacion;
     }
 }
 

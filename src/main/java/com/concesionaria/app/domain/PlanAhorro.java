@@ -55,6 +55,10 @@ public class PlanAhorro implements Serializable {
     @Column(name = "estado", length = 20, nullable = false)
     private EstadoPlanAhorro estado;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "regla_adjudicacion_id")
+    private ReglaAdjudicacionPlan reglaAdjudicacion;
+
     @OneToMany(mappedBy = "plan", fetch = FetchType.LAZY)
     private Set<ContratoPlanAhorro> contratos = new HashSet<>();
 
@@ -120,6 +124,14 @@ public class PlanAhorro implements Serializable {
 
     public void setEstado(EstadoPlanAhorro estado) {
         this.estado = estado;
+    }
+
+    public ReglaAdjudicacionPlan getReglaAdjudicacion() {
+        return reglaAdjudicacion;
+    }
+
+    public void setReglaAdjudicacion(ReglaAdjudicacionPlan reglaAdjudicacion) {
+        this.reglaAdjudicacion = reglaAdjudicacion;
     }
 
     public Set<ContratoPlanAhorro> getContratos() {

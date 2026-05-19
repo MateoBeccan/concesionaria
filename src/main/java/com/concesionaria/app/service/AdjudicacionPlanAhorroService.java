@@ -1,6 +1,7 @@
 package com.concesionaria.app.service;
 
 import com.concesionaria.app.service.dto.AdjudicacionPlanAhorroDTO;
+import com.concesionaria.app.service.dto.ElegibilidadAdjudicacionDTO;
 import com.concesionaria.app.service.dto.InventarioDTO;
 import java.util.List;
 import java.util.Optional;
@@ -25,4 +26,6 @@ public interface AdjudicacionPlanAhorroService {
     Page<AdjudicacionPlanAhorroDTO> findAll(Pageable pageable);
 
     Page<AdjudicacionPlanAhorroDTO> findAllCurrentUser(Pageable pageable);
+
+    ElegibilidadAdjudicacionDTO evaluarElegibilidad(Long contratoId);
 }

@@ -49,6 +49,7 @@
             <th>Cuotas</th>
             <th>Valor movil</th>
             <th>Moneda</th>
+            <th>Regla adjudicación</th>
             <th>Estado</th>
           </tr>
         </thead>
@@ -59,12 +60,13 @@
             <td>{{ plan.cantidadCuotas }}</td>
             <td>{{ Number(plan.valorMovil ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</td>
             <td>{{ plan.moneda?.codigo }}</td>
+            <td>{{ plan.reglaAdjudicacion?.nombre ?? 'SIN_REGLA_DEFAULT' }}</td>
             <td>
               <span class="badge rounded-pill" :class="plan.estado === 'ACTIVO' ? 'bg-success' : 'bg-secondary'">{{ plan.estado }}</span>
             </td>
           </tr>
           <tr v-if="planesFiltrados.length === 0">
-            <td colspan="6" class="text-center text-muted py-4">No hay planes que coincidan con los filtros.</td>
+            <td colspan="7" class="text-center text-muted py-4">No hay planes que coincidan con los filtros.</td>
           </tr>
         </tbody>
       </table>
@@ -102,6 +104,22 @@
                 <option :value="null">Seleccionar</option>
                 <option v-for="mon in monedas" :key="mon.id" :value="mon.id">{{ mon.codigo }} - {{ mon.descripcion }}</option>
               </select>
+            </div>
+            <div class="mt-2">
+              <label class="form-label">Regla de adjudicación</label>
+              <select v-model.number="draft.reglaAdjudicacionId" class="form-select">
+                <option :value="null">Usar regla por defecto</option>
+                <option v-for="regla in reglas" :key="regla.id" :value="regla.id">{{ regla.nombre }} · {{ regla.tipoRegla }}</option>
+              </select>
+            </div>
+            <div class="alert alert-light border mt-2 mb-0" v-if="draft.reglaAdjudicacionId">
+              <small class="d-block text-muted mb-1">Resumen de regla</small>
+              <strong>{{ reglas.find(r => r.id === draft.reglaAdjudicacionId)?.tipoRegla }}</strong>
+              <div class="small">
+                Mín cuotas: {{ reglas.find(r => r.id === draft.reglaAdjudicacionId)?.minimoCuotas ?? '-' }} · Mín %:
+                {{ reglas.find(r => r.id === draft.reglaAdjudicacionId)?.minimoPorcentaje ?? '-' }} · Mora:
+                {{ reglas.find(r => r.id === draft.reglaAdjudicacionId)?.permiteMora ? 'Sí' : 'No' }}
+              </div>
             </div>
           </div>
           <div class="modal-footer">

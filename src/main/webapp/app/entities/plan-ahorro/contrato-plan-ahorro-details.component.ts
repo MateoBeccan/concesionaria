@@ -6,6 +6,7 @@ import type { IContratoPlanAhorro } from '@/shared/model/contrato-plan-ahorro.mo
 import type { ICuotaPlanAhorro } from '@/shared/model/cuota-plan-ahorro.model';
 import type { IInventario } from '@/shared/model/inventario.model';
 import type { IAdjudicacionPlanAhorro } from '@/shared/model/adjudicacion-plan-ahorro.model';
+import type { IElegibilidadAdjudicacion } from '@/shared/model/elegibilidad-adjudicacion.model';
 import ContratoPlanAhorroService from './contrato-plan-ahorro.service';
 import ComprobantePlanAhorroService from './comprobante-plan-ahorro.service';
 import AdjudicacionPlanAhorroService from './adjudicacion-plan-ahorro.service';
@@ -24,21 +25,26 @@ export default defineComponent({
     const contrato: Ref<IContratoPlanAhorro | null> = ref(null);
     const cuotas: Ref<ICuotaPlanAhorro[]> = ref([]);
     const adjudicacion: Ref<IAdjudicacionPlanAhorro | null> = ref(null);
+    const elegibilidad: Ref<IElegibilidadAdjudicacion | null> = ref(null);
     const inventariosCompatibles: Ref<IInventario[]> = ref([]);
     const showPay = ref(false);
+    const showMultiPay = ref(false);
     const cuotaActiva: Ref<ICuotaPlanAhorro | null> = ref(null);
     const pagoMonto = ref(0);
     const pagoObservaciones = ref('');
+    const pagoMultipleObservaciones = ref('');
     const adjudicacionObservaciones = ref('');
     const inventarioSeleccionadoId = ref<number | null>(null);
     const loadingAdjudicacion = ref(false);
     const cuotaSeleccionadaId = ref<number | null>(null);
+    const cuotasSeleccionadas = ref<number[]>([]);
 
     const contratoId = () => Number(route.params.contratoId);
 
     const load = async () => {
       contrato.value = await contratoService().find(contratoId());
       cuotas.value = await contratoService().cuotas(contratoId());
+      elegibilidad.value = await contratoService().elegibilidadAdjudicacion(contratoId());
       adjudicacion.value = await adjudicacionService().findByContrato(contratoId());
       inventariosCompatibles.value = await adjudicacionService().inventariosCompatibles(contratoId());
       inventarioSeleccionadoId.value = adjudicacion.value?.inventario?.id ?? null;
@@ -47,11 +53,20 @@ export default defineComponent({
       } else if (cuotaSeleccionadaId.value && !cuotas.value.some(item => item.id === cuotaSeleccionadaId.value)) {
         cuotaSeleccionadaId.value = cuotas.value[0]?.id ?? null;
       }
+      const allowedIds = new Set(cuotas.value.filter(c => c.estado === 'PENDIENTE' || c.estado === 'VENCIDA').map(c => c.id));
+      cuotasSeleccionadas.value = cuotasSeleccionadas.value.filter(id => allowedIds.has(id));
     };
 
     const cuotasPagadasCount = computed(() => cuotas.value.filter(cuota => cuota.estado === 'PAGADA').length);
     const cuotasPendientesCount = computed(() => cuotas.value.filter(cuota => cuota.estado === 'PENDIENTE' || cuota.estado === 'VENCIDA').length);
     const cuotaSeleccionada = computed(() => cuotas.value.find(cuota => cuota.id === cuotaSeleccionadaId.value) ?? null);
+    const cuotasPagables = computed(() => cuotas.value.filter(cuota => cuota.estado === 'PENDIENTE' || cuota.estado === 'VENCIDA'));
+    const cuotasSeleccionadasItems = computed(() =>
+      cuotasPagables.value.filter(cuota => cuota.id != null && cuotasSeleccionadas.value.includes(cuota.id)),
+    );
+    const totalSeleccionado = computed(() =>
+      cuotasSeleccionadasItems.value.reduce((acc, cuota) => acc + Number(cuota.importe ?? 0), 0),
+    );
 
     const abrirPago = (cuota: ICuotaPlanAhorro) => {
       cuotaActiva.value = cuota;
@@ -67,6 +82,46 @@ export default defineComponent({
         showPay.value = false;
         await load();
         alertService.showInfo('Cuota pagada correctamente');
+      } catch (err: any) {
+        alertService.showHttpError(err.response);
+      }
+    };
+
+    const toggleCuotaSeleccion = (cuotaId: number, checked: boolean) => {
+      if (checked) {
+        if (!cuotasSeleccionadas.value.includes(cuotaId)) {
+          cuotasSeleccionadas.value = [...cuotasSeleccionadas.value, cuotaId];
+        }
+        return;
+      }
+      cuotasSeleccionadas.value = cuotasSeleccionadas.value.filter(id => id !== cuotaId);
+    };
+
+    const onCuotaCheckboxChange = (cuotaId: number, event: Event) => {
+      const checked = (event.target as HTMLInputElement | null)?.checked ?? false;
+      toggleCuotaSeleccion(cuotaId, checked);
+    };
+
+    const abrirPagoMultiple = () => {
+      if (!cuotasSeleccionadas.value.length) return;
+      pagoMultipleObservaciones.value = '';
+      showMultiPay.value = true;
+    };
+
+    const confirmarPagoMultiple = async () => {
+      if (!cuotasSeleccionadas.value.length) return;
+      try {
+        const cuotasImpactadas = await contratoService().pagarCuotasMultiples({
+          cuotaIds: cuotasSeleccionadas.value,
+          montoTotal: Number(totalSeleccionado.value.toFixed(2)),
+          observaciones: pagoMultipleObservaciones.value,
+        });
+        showMultiPay.value = false;
+        const cantidad = cuotasImpactadas.length;
+        const total = totalSeleccionado.value.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        cuotasSeleccionadas.value = [];
+        await load();
+        alertService.showInfo(`Se registró el pago de ${cantidad} cuotas por $${total}`);
       } catch (err: any) {
         alertService.showHttpError(err.response);
       }
@@ -94,9 +149,7 @@ export default defineComponent({
       }
     };
 
-    const puedeAdjudicar = computed(() =>
-      contrato.value?.estado === 'ACTIVO' || contrato.value?.estado === 'EN_MORA' || contrato.value?.estado === 'ADJUDICADO',
-    );
+    const puedeAdjudicar = computed(() => Boolean(elegibilidad.value?.apto));
 
     const adjudicarContrato = async () => {
       if (!contrato.value?.id) return;
@@ -161,14 +214,25 @@ export default defineComponent({
       cuotaSeleccionada,
       formatDateShort,
       showPay,
+      showMultiPay,
       cuotaActiva,
       pagoMonto,
       pagoObservaciones,
+      pagoMultipleObservaciones,
+      cuotasPagables,
+      cuotasSeleccionadas,
+      cuotasSeleccionadasItems,
+      totalSeleccionado,
       abrirPago,
       confirmarPago,
+      toggleCuotaSeleccion,
+      onCuotaCheckboxChange,
+      abrirPagoMultiple,
+      confirmarPagoMultiple,
       descargarComprobante,
       anularComprobante,
       adjudicacion,
+      elegibilidad,
       inventariosCompatibles,
       adjudicacionObservaciones,
       inventarioSeleccionadoId,

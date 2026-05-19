@@ -57,6 +57,7 @@ const USER_SECTIONS: SidebarSection[] = [
       { name: 'PlanAhorro', label: 'Planes de ahorro', icon: 'PA' },
       { name: 'ContratoPlanAhorro', label: 'Contratos de plan', icon: 'CP' },
       { name: 'AdjudicacionPlanAhorro', label: 'Adjudicaciones', icon: 'AJ' },
+      { name: 'ReglaAdjudicacionPlan', label: 'Reglas adjudicación', icon: 'RA' },
     ],
   },
   {

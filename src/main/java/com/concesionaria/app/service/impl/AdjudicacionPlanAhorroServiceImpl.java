@@ -4,24 +4,29 @@ import com.concesionaria.app.domain.AdjudicacionPlanAhorro;
 import com.concesionaria.app.domain.ContratoPlanAhorro;
 import com.concesionaria.app.domain.CuotaPlanAhorro;
 import com.concesionaria.app.domain.Inventario;
+import com.concesionaria.app.domain.ReglaAdjudicacionPlan;
+import com.concesionaria.app.domain.Version;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoAdjudicacionPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
+import com.concesionaria.app.domain.enumeration.TipoReglaAdjudicacionPlan;
 import com.concesionaria.app.repository.AdjudicacionPlanAhorroRepository;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.InventarioRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.PagoRepository;
+import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.AdjudicacionPlanAhorroService;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.AdjudicacionPlanAhorroDTO;
 import com.concesionaria.app.service.dto.ClienteDTO;
+import com.concesionaria.app.service.dto.ElegibilidadAdjudicacionDTO;
 import com.concesionaria.app.service.dto.InventarioDTO;
 import com.concesionaria.app.service.dto.MetodoPagoDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
@@ -65,6 +70,7 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
     private final PagoService pagoService;
     private final PagoRepository pagoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
+    private final VentaRepository ventaRepository;
 
     public AdjudicacionPlanAhorroServiceImpl(
         AdjudicacionPlanAhorroRepository adjudicacionRepository,
@@ -77,7 +83,8 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         VentaService ventaService,
         PagoService pagoService,
         PagoRepository pagoRepository,
-        MetodoPagoRepository metodoPagoRepository
+        MetodoPagoRepository metodoPagoRepository,
+        VentaRepository ventaRepository
     ) {
         this.adjudicacionRepository = adjudicacionRepository;
         this.contratoRepository = contratoRepository;
@@ -90,12 +97,17 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         this.pagoService = pagoService;
         this.pagoRepository = pagoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
+        this.ventaRepository = ventaRepository;
     }
 
     @Override
     public AdjudicacionPlanAhorroDTO adjudicarContrato(Long contratoId, String observaciones) {
         ContratoPlanAhorro contrato = obtenerContratoConPermisos(contratoId);
         validarContratoAdjudicable(contrato);
+        ElegibilidadAdjudicacionDTO elegibilidad = evaluarElegibilidadInterna(contrato);
+        if (!elegibilidad.isApto()) {
+            throw new BadRequestException(elegibilidad.getMensaje());
+        }
         if (
             adjudicacionRepository.existsByContratoIdAndEstadoIn(
                 contratoId,
@@ -133,14 +145,8 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         if (inventario.getEstadoInventario() != EstadoInventario.DISPONIBLE) {
             throw new BadRequestException("Solo se puede asignar inventario disponible");
         }
-        Long versionObjetivoId = adjudicacion.getContratoPlanAhorro().getPlan().getVersionObjetivo() != null
-            ? adjudicacion.getContratoPlanAhorro().getPlan().getVersionObjetivo().getId()
-            : null;
-        Long versionInventarioId = inventario.getVehiculo() != null && inventario.getVehiculo().getVersion() != null
-            ? inventario.getVehiculo().getVersion().getId()
-            : null;
-        if (versionObjetivoId != null && !versionObjetivoId.equals(versionInventarioId)) {
-            throw new BadRequestException("El inventario seleccionado no es compatible con la version objetivo del plan");
+        if (!esInventarioCompatibleConPlan(adjudicacion.getContratoPlanAhorro(), inventario)) {
+            throw new BadRequestException("El inventario seleccionado no es compatible con el plan");
         }
 
         adjudicacion.setInventario(inventario);
@@ -185,12 +191,36 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
             "Venta generada desde plan de ahorro contrato N° " + adjudicacion.getContratoPlanAhorro().getNumeroContrato()
         );
 
-        VentaDTO ventaCreada = ventaService.save(nuevaVenta);
+        VentaDTO ventaCreada = ventaService.saveDesdePlanAhorro(nuevaVenta);
         aplicarCreditoPlanAhorroSiCorresponde(adjudicacion, ventaCreada);
+        ajustarEstadoFinalVentaDesdePlan(ventaCreada.getId());
         Venta venta = ventaMapper.toEntity(ventaCreada);
         adjudicacion.setVenta(venta);
         adjudicacion.setEstado(EstadoAdjudicacionPlanAhorro.VENTA_GENERADA);
         return toDto(adjudicacionRepository.save(adjudicacion));
+    }
+
+    private void ajustarEstadoFinalVentaDesdePlan(Long ventaId) {
+        if (ventaId == null) {
+            return;
+        }
+        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta generada no existe"));
+        BigDecimal total = venta.getTotal() == null ? BigDecimal.ZERO : venta.getTotal().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalPagado = pagoRepository.sumMontoByVentaId(ventaId);
+        totalPagado = totalPagado == null ? BigDecimal.ZERO : totalPagado.setScale(2, RoundingMode.HALF_UP);
+        if (totalPagado.compareTo(total) > 0) {
+            totalPagado = total;
+        }
+        BigDecimal saldo = total.subtract(totalPagado).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        venta.setTotalPagado(totalPagado);
+        venta.setSaldo(saldo);
+        venta.setEstado(saldo.compareTo(BigDecimal.ZERO) == 0 ? EstadoVenta.PAGADA : EstadoVenta.PENDIENTE);
+        venta.setLastModifiedDate(Instant.now());
+        venta.setLastModifiedBy(currentUserLogin());
+        ventaRepository.save(venta);
+        if (venta.getEstado() == EstadoVenta.PAGADA) {
+            ventaService.sincronizarInventarioConVenta(venta.getId());
+        }
     }
 
     private void aplicarCreditoPlanAhorroSiCorresponde(AdjudicacionPlanAhorro adjudicacion, VentaDTO ventaCreada) {
@@ -273,12 +303,44 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
     @Transactional(readOnly = true)
     public List<InventarioDTO> findInventarioCompatibleDisponible(Long contratoId) {
         ContratoPlanAhorro contrato = obtenerContratoConPermisos(contratoId);
-        Long versionId = contrato.getPlan().getVersionObjetivo() != null ? contrato.getPlan().getVersionObjetivo().getId() : null;
-        return inventarioRepository
-            .findDisponiblesByVersionObjetivo(EstadoInventario.DISPONIBLE, versionId)
+        Version versionObjetivo = contrato.getPlan() != null ? contrato.getPlan().getVersionObjetivo() : null;
+        List<Inventario> compatibles = buscarInventarioCompatible(versionObjetivo);
+        return compatibles
             .stream()
             .map(inventarioMapper::toDto)
             .toList();
+    }
+
+    private List<Inventario> buscarInventarioCompatible(Version versionObjetivo) {
+        if (versionObjetivo == null || versionObjetivo.getId() == null) {
+            return inventarioRepository.findDisponiblesByVersionObjetivo(EstadoInventario.DISPONIBLE, null);
+        }
+        List<Inventario> exactos = inventarioRepository.findDisponiblesByVersionObjetivo(EstadoInventario.DISPONIBLE, versionObjetivo.getId());
+        if (!exactos.isEmpty()) {
+            return exactos;
+        }
+        Long modeloId = versionObjetivo.getModelo() != null ? versionObjetivo.getModelo().getId() : null;
+        if (modeloId == null) {
+            return List.of();
+        }
+        return inventarioRepository.findDisponiblesByModeloObjetivo(EstadoInventario.DISPONIBLE, modeloId);
+    }
+
+    private boolean esInventarioCompatibleConPlan(ContratoPlanAhorro contrato, Inventario inventario) {
+        Version versionObjetivo = contrato.getPlan() != null ? contrato.getPlan().getVersionObjetivo() : null;
+        if (versionObjetivo == null || versionObjetivo.getId() == null) {
+            return true;
+        }
+        Version versionInventario = inventario.getVehiculo() != null ? inventario.getVehiculo().getVersion() : null;
+        if (versionInventario == null) {
+            return false;
+        }
+        if (versionObjetivo.getId().equals(versionInventario.getId())) {
+            return true;
+        }
+        Long modeloObjetivoId = versionObjetivo.getModelo() != null ? versionObjetivo.getModelo().getId() : null;
+        Long modeloInventarioId = versionInventario.getModelo() != null ? versionInventario.getModelo().getId() : null;
+        return modeloObjetivoId != null && modeloObjetivoId.equals(modeloInventarioId);
     }
 
     @Override
@@ -293,10 +355,98 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         return adjudicacionRepository.findAllByUserLoginWithEagerRelationships(currentUserLogin(), pageable).map(this::toDto);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ElegibilidadAdjudicacionDTO evaluarElegibilidad(Long contratoId) {
+        ContratoPlanAhorro contrato = obtenerContratoConPermisos(contratoId);
+        return evaluarElegibilidadInterna(contrato);
+    }
+
     private void validarContratoAdjudicable(ContratoPlanAhorro contrato) {
-        if (contrato.getEstado() == EstadoContratoPlanAhorro.CANCELADO || contrato.getEstado() == EstadoContratoPlanAhorro.FINALIZADO) {
-            throw new BadRequestException("No se puede adjudicar un contrato cancelado o finalizado");
+        if (contrato.getEstado() == EstadoContratoPlanAhorro.CANCELADO) {
+            throw new BadRequestException("No se puede adjudicar un contrato cancelado");
         }
+    }
+
+    private ElegibilidadAdjudicacionDTO evaluarElegibilidadInterna(ContratoPlanAhorro contrato) {
+        ElegibilidadAdjudicacionDTO dto = new ElegibilidadAdjudicacionDTO();
+        ReglaAdjudicacionPlan regla = contrato.getPlan() != null ? contrato.getPlan().getReglaAdjudicacion() : null;
+        if (regla == null) {
+            regla = reglaSinReglaDefault();
+        }
+        TipoReglaAdjudicacionPlan tipo = regla.getTipoRegla() == null ? TipoReglaAdjudicacionPlan.SIN_REGLA : regla.getTipoRegla();
+
+        int cuotasPagadas = contrato.getCuotasPagadas() == null ? 0 : contrato.getCuotasPagadas();
+        BigDecimal valorMovil = contrato.getPlan() == null || contrato.getPlan().getValorMovil() == null
+            ? BigDecimal.ZERO
+            : contrato.getPlan().getValorMovil().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal saldoPendiente = contrato.getSaldoPendiente() == null ? BigDecimal.ZERO : contrato.getSaldoPendiente().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal montoPagado = valorMovil.subtract(saldoPendiente).max(BigDecimal.ZERO);
+        BigDecimal porcentajeIntegrado = valorMovil.compareTo(BigDecimal.ZERO) > 0
+            ? montoPagado.multiply(BigDecimal.valueOf(100)).divide(valorMovil, 2, RoundingMode.HALF_UP)
+            : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+
+        dto.setNombreRegla(regla.getNombre());
+        dto.setTipoRegla(tipo);
+        dto.setCuotasPagadas(cuotasPagadas);
+        dto.setMinimoCuotas(regla.getMinimoCuotas());
+        dto.setPorcentajeIntegrado(porcentajeIntegrado);
+        dto.setMinimoPorcentaje(regla.getMinimoPorcentaje());
+        dto.setPermiteMora(Boolean.TRUE.equals(regla.getPermiteMora()));
+
+        if (tipo == TipoReglaAdjudicacionPlan.MANUAL) {
+            dto.setApto(false);
+            dto.setMensaje("Este plan requiere adjudicación manual por administrador.");
+            return dto;
+        }
+
+        if (contrato.getEstado() == EstadoContratoPlanAhorro.EN_MORA && !Boolean.TRUE.equals(regla.getPermiteMora())) {
+            dto.setApto(false);
+            dto.setMensaje("El contrato está en mora y la regla no permite adjudicar en este estado.");
+            return dto;
+        }
+
+        if (Boolean.TRUE.equals(regla.getRequiereContratoActivo())) {
+            boolean estadoValido =
+                contrato.getEstado() == EstadoContratoPlanAhorro.ACTIVO ||
+                contrato.getEstado() == EstadoContratoPlanAhorro.EN_MORA ||
+                contrato.getEstado() == EstadoContratoPlanAhorro.FINALIZADO ||
+                contrato.getEstado() == EstadoContratoPlanAhorro.ADJUDICADO;
+            if (!estadoValido) {
+                dto.setApto(false);
+                dto.setMensaje("El estado del contrato no habilita adjudicación según la regla.");
+                return dto;
+            }
+        }
+
+        boolean cumpleCuotas = regla.getMinimoCuotas() == null || cuotasPagadas >= regla.getMinimoCuotas();
+        boolean cumplePorcentaje = regla.getMinimoPorcentaje() == null || porcentajeIntegrado.compareTo(regla.getMinimoPorcentaje()) >= 0;
+
+        boolean apto = switch (tipo) {
+            case SIN_REGLA -> true;
+            case POR_CUOTAS -> cumpleCuotas;
+            case POR_PORCENTAJE -> cumplePorcentaje;
+            case CUOTAS_O_PORCENTAJE -> cumpleCuotas || cumplePorcentaje;
+            case CUOTAS_Y_PORCENTAJE -> cumpleCuotas && cumplePorcentaje;
+            case MANUAL -> false;
+        };
+
+        dto.setApto(apto);
+        dto.setMensaje(
+            apto
+                ? "Contrato apto para adjudicación."
+                : "El contrato no cumple las condiciones mínimas de adjudicación para la regla configurada."
+        );
+        return dto;
+    }
+
+    private ReglaAdjudicacionPlan reglaSinReglaDefault() {
+        ReglaAdjudicacionPlan regla = new ReglaAdjudicacionPlan();
+        regla.setNombre("SIN_REGLA_DEFAULT");
+        regla.setTipoRegla(TipoReglaAdjudicacionPlan.SIN_REGLA);
+        regla.setPermiteMora(true);
+        regla.setRequiereContratoActivo(false);
+        return regla;
     }
 
     private BigDecimal calcularMontoReconocidoCuotas(Long contratoId) {

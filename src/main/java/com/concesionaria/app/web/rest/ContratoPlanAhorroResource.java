@@ -1,8 +1,11 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.service.ContratoPlanAhorroService;
+import com.concesionaria.app.service.AdjudicacionPlanAhorroService;
 import com.concesionaria.app.service.dto.ContratoPlanAhorroDTO;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
+import com.concesionaria.app.service.dto.ElegibilidadAdjudicacionDTO;
+import com.concesionaria.app.service.dto.PagoMultipleCuotasRequestDTO;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.net.URI;
@@ -32,9 +35,11 @@ public class ContratoPlanAhorroResource {
     private String applicationName;
 
     private final ContratoPlanAhorroService contratoService;
+    private final AdjudicacionPlanAhorroService adjudicacionService;
 
-    public ContratoPlanAhorroResource(ContratoPlanAhorroService contratoService) {
+    public ContratoPlanAhorroResource(ContratoPlanAhorroService contratoService, AdjudicacionPlanAhorroService adjudicacionService) {
         this.contratoService = contratoService;
+        this.adjudicacionService = adjudicacionService;
     }
 
     @PostMapping("")
@@ -73,6 +78,20 @@ public class ContratoPlanAhorroResource {
         BigDecimal monto = payload.get("monto") == null ? null : new BigDecimal(String.valueOf(payload.get("monto")));
         String observaciones = payload.get("observaciones") == null ? null : String.valueOf(payload.get("observaciones"));
         return ResponseEntity.ok(contratoService.pagarCuota(cuotaId, monto, observaciones));
+    }
+
+    @PostMapping("/cuotas/pagar-multiple")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
+    public ResponseEntity<List<CuotaPlanAhorroDTO>> pagarCuotasMultiples(@Valid @RequestBody PagoMultipleCuotasRequestDTO payload) {
+        return ResponseEntity.ok(
+            contratoService.pagarCuotas(payload.getCuotaIds(), payload.getMontoTotal(), payload.getObservaciones(), payload.getMetodoPagoId(), payload.getMonedaId())
+        );
+    }
+
+    @GetMapping("/{id}/elegibilidad-adjudicacion")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_USER')")
+    public ResponseEntity<ElegibilidadAdjudicacionDTO> getElegibilidadAdjudicacion(@PathVariable("id") Long contratoId) {
+        return ResponseEntity.ok(adjudicacionService.evaluarElegibilidad(contratoId));
     }
 }
 

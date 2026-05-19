@@ -64,6 +64,8 @@
   <include file="config/liquibase/changelog/20260513213000_plan_ahorro_financial_integration_fase4.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260514011500_fix_chk_pago_destino_for_plan_cuotas.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260514110000_entrega_unidad_fase5a.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260519103000_regla_adjudicacion_plan_normalization.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260519120000_fix_chk_pago_destino_plan_venta.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <include file="config/liquibase/changelog/20260325200007_added_entity_constraints_Modelo.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
   <include file="config/liquibase/changelog/20260325200008_added_entity_constraints_Version.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>

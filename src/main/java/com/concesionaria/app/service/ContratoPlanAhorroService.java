@@ -18,5 +18,7 @@ public interface ContratoPlanAhorroService {
     List<CuotaPlanAhorroDTO> findCuotas(Long contratoId);
 
     CuotaPlanAhorroDTO pagarCuota(Long cuotaId, BigDecimal monto, String observaciones);
+
+    List<CuotaPlanAhorroDTO> pagarCuotas(List<Long> cuotaIds, BigDecimal montoTotal, String observaciones, Long metodoPagoId, Long monedaId);
 }
 

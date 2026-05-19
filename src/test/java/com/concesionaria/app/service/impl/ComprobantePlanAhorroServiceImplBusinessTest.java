@@ -47,7 +47,17 @@ class ComprobantePlanAhorroServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
-        service = new ComprobantePlanAhorroServiceImpl(repository, cuotaRepository);
+        service =
+            new ComprobantePlanAhorroServiceImpl(
+                repository,
+                cuotaRepository,
+                "Concesionaria Test",
+                "Calle Test 123",
+                "+54 11 0000-0000",
+                "test@concesionaria.local",
+                "30-00000000-0",
+                "src/main/webapp/content/images/branding/logo.png"
+            );
     }
 
     @AfterEach

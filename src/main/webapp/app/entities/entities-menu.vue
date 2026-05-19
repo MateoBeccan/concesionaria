@@ -19,6 +19,7 @@
       <b-dropdown-item to="/metodo-pago" active-class="active">Metodos de pago</b-dropdown-item>
       <b-dropdown-item to="/moneda" active-class="active">Monedas</b-dropdown-item>
       <b-dropdown-item to="/cotizacion" active-class="active">Cotizaciones</b-dropdown-item>
+      <b-dropdown-item to="/plan-ahorro/reglas-adjudicacion" active-class="active">Reglas adjudicación</b-dropdown-item>
       <b-dropdown-item to="/admin/catalogo-tecnico" active-class="active">Catalogo tecnico</b-dropdown-item>
       <b-dropdown-item to="/admin/version-compatibilities" active-class="active">Compatibilidades</b-dropdown-item>
       <b-dropdown-item to="/tipo-documento" active-class="active">Tipos de documento</b-dropdown-item>

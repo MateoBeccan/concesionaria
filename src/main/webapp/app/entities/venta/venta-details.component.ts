@@ -56,6 +56,7 @@ export default defineComponent({
     const kilometrajeEntrega = ref<number | null>(null);
     const nivelCombustible = ref('');
     const observacionesConfirmacion = ref('');
+    const submittingConfirmacionEntrega = ref(false);
 
     const loadingPagos = ref(false);
     const loadingComprobantes = ref(false);
@@ -190,8 +191,14 @@ export default defineComponent({
       loadingEntrega.value = true;
       try {
         entregaUnidad.value = await entregaUnidadService().findByVenta(Number(ventaId));
-      } catch {
-        entregaUnidad.value = null;
+      } catch (error: any) {
+        const status = error?.response?.status;
+        if (status === 404) {
+          // Estado esperado cuando la venta aun no tiene entrega programada.
+          entregaUnidad.value = null;
+        } else {
+          alertService.showHttpError(error.response);
+        }
       } finally {
         loadingEntrega.value = false;
       }
@@ -312,18 +319,44 @@ export default defineComponent({
       }
     };
 
-    const guardarChecklist = async () => {
-      if (!entregaUnidad.value?.id || !entregaUnidad.value.checklist) return;
+    const persistirChecklist = async (mostrarErrores = true): Promise<boolean> => {
+      if (!entregaUnidad.value?.id || !entregaUnidad.value.checklist) return false;
       try {
         entregaUnidad.value = await entregaUnidadService().actualizarChecklist(entregaUnidad.value.id, entregaUnidad.value.checklist as IEntregaChecklistItem[]);
+        return true;
       } catch (error: any) {
-        alertService.showHttpError(error.response);
+        if (mostrarErrores) {
+          alertService.showHttpError(error.response);
+        }
+        return false;
       }
+    };
+
+    const guardarChecklist = async () => {
+      await persistirChecklist(true);
     };
 
     const confirmarEntrega = async () => {
       if (!entregaUnidad.value?.id) return;
+      if (!checklistObligatorioCompleto.value) {
+        alertService.showError('Completa todos los items obligatorios del checklist antes de confirmar la entrega.');
+        return;
+      }
+      if (kilometrajeEntrega.value === null || kilometrajeEntrega.value < 0) {
+        alertService.showError('Ingresa un kilometraje de entrega valido.');
+        return;
+      }
+      if (!nivelCombustible.value) {
+        alertService.showError('Selecciona el nivel de combustible al momento de la entrega.');
+        return;
+      }
       try {
+        submittingConfirmacionEntrega.value = true;
+        // Evita desfasajes entre UI y backend: persistimos checklist antes de confirmar.
+        const checklistPersistido = await persistirChecklist(true);
+        if (!checklistPersistido) {
+          return;
+        }
         entregaUnidad.value = await entregaUnidadService().confirmarEntrega(
           entregaUnidad.value.id,
           kilometrajeEntrega.value,
@@ -336,6 +369,8 @@ export default defineComponent({
         }
       } catch (error: any) {
         alertService.showHttpError(error.response);
+      } finally {
+        submittingConfirmacionEntrega.value = false;
       }
     };
 
@@ -352,6 +387,37 @@ export default defineComponent({
       const items = entregaUnidad.value?.checklist ?? [];
       return items.filter(i => i.obligatorio).every(i => i.completado);
     });
+
+    const checklistStats = computed(() => {
+      const items = entregaUnidad.value?.checklist ?? [];
+      const obligatorios = items.filter(i => i.obligatorio);
+      const obligatoriosCompletos = obligatorios.filter(i => i.completado).length;
+      const total = items.length;
+      const completos = items.filter(i => i.completado).length;
+      return {
+        total,
+        completos,
+        obligatorios: obligatorios.length,
+        obligatoriosCompletos,
+        progreso: total > 0 ? Math.round((completos / total) * 100) : 0,
+        obligatoriosPendientes: Math.max(obligatorios.length - obligatoriosCompletos, 0),
+      };
+    });
+
+    const puedeEditarEntrega = computed(
+      () =>
+        !!entregaUnidad.value &&
+        entregaUnidad.value.estado !== EstadoEntregaUnidad.ENTREGADA &&
+        entregaUnidad.value.estado !== EstadoEntregaUnidad.CANCELADA,
+    );
+
+    const nivelesCombustible = [
+      { value: 'RESERVA', label: 'Reserva' },
+      { value: '1/4', label: '1/4 tanque' },
+      { value: '1/2', label: '1/2 tanque' },
+      { value: '3/4', label: '3/4 tanque' },
+      { value: '100%', label: 'Tanque completo (100%)' },
+    ];
 
     if (route.params?.ventaId) retrieveVenta(route.params.ventaId);
 
@@ -467,7 +533,11 @@ export default defineComponent({
       kilometrajeEntrega,
       nivelCombustible,
       observacionesConfirmacion,
+      submittingConfirmacionEntrega,
       checklistObligatorioCompleto,
+      checklistStats,
+      puedeEditarEntrega,
+      nivelesCombustible,
       EstadoEntregaUnidad,
       programarEntrega,
       guardarChecklist,

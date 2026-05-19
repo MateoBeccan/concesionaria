@@ -279,7 +279,10 @@
         </div>
         <div v-if="loadingEntrega" class="card-body text-muted">Cargando entrega...</div>
         <div v-else-if="!entregaUnidad" class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span class="text-muted">Aun no hay entrega programada para esta venta.</span>
+          <div>
+            <div class="fw-semibold">Entrega aun no programada</div>
+            <div class="text-muted small">Programa la fecha de entrega para continuar con el ciclo operativo de la unidad.</div>
+          </div>
           <button class="btn btn-outline-primary btn-sm" @click="showProgramarEntrega = true">Programar entrega</button>
         </div>
         <div v-else class="card-body">
@@ -288,32 +291,58 @@
             <div class="col-md-4"><strong>Fecha entrega:</strong> {{ formatFecha(entregaUnidad.fechaEntrega) }}</div>
             <div class="col-md-4"><strong>Usuario:</strong> {{ entregaUnidad.usuarioProgramacion ?? '-' }}</div>
           </div>
-          <div class="table-responsive mb-3">
-            <table class="table table-sm align-middle mb-0">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Obligatorio</th>
-                  <th>Completado</th>
-                  <th>Observaciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in entregaUnidad.checklist" :key="item.id">
-                  <td>{{ item.descripcion }}</td>
-                  <td><span class="badge bg-light text-dark border">{{ item.obligatorio ? 'SI' : 'NO' }}</span></td>
-                  <td><input v-model="item.completado" type="checkbox" class="form-check-input" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" /></td>
-                  <td><input v-model="item.observaciones" class="form-control form-control-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" /></td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="delivery-progress card border-0 bg-light mb-3">
+            <div class="card-body py-2">
+              <div class="d-flex justify-content-between align-items-center small mb-1">
+                <strong>Checklist completado</strong>
+                <span>{{ checklistStats.completos }}/{{ checklistStats.total }} items ({{ checklistStats.progreso }}%)</span>
+              </div>
+              <div class="progress" role="progressbar" aria-label="Progreso checklist" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="checklistStats.progreso">
+                <div class="progress-bar" :class="checklistObligatorioCompleto ? 'bg-success' : 'bg-warning'" :style="{ width: `${checklistStats.progreso}%` }" />
+              </div>
+              <div v-if="checklistStats.obligatoriosPendientes > 0" class="text-danger small mt-2">
+                Faltan {{ checklistStats.obligatoriosPendientes }} item(s) obligatorios para confirmar la entrega.
+              </div>
+            </div>
+          </div>
+          <div class="checklist-grid mb-3">
+            <div
+              v-for="item in entregaUnidad.checklist"
+              :key="item.id"
+              class="checklist-item card border"
+              :class="{ obligatorio: item.obligatorio, cumplido: item.completado }"
+            >
+              <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                  <div class="fw-semibold">{{ item.descripcion }}</div>
+                  <span class="badge" :class="item.obligatorio ? 'bg-danger-subtle text-danger-emphasis border border-danger-subtle' : 'bg-light text-dark border'">
+                    {{ item.obligatorio ? 'Obligatorio' : 'Opcional' }}
+                  </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 mt-2">
+                  <input
+                    v-model="item.completado"
+                    type="checkbox"
+                    class="form-check-input mt-0"
+                    :disabled="!puedeEditarEntrega"
+                  />
+                  <label class="small text-muted mb-0">Marcar como completado</label>
+                </div>
+                <input
+                  v-model="item.observaciones"
+                  class="form-control form-control-sm mt-2"
+                  :disabled="!puedeEditarEntrega"
+                  placeholder="Observacion del item (opcional)"
+                />
+              </div>
+            </div>
           </div>
           <div class="d-flex gap-2 flex-wrap">
-            <button class="btn btn-outline-primary btn-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="guardarChecklist">Guardar checklist</button>
-            <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto || entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="showConfirmarEntrega = true">
+            <button class="btn btn-outline-primary btn-sm" :disabled="!puedeEditarEntrega" @click="guardarChecklist">Guardar checklist</button>
+            <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto || !puedeEditarEntrega" @click="showConfirmarEntrega = true">
               Confirmar entrega
             </button>
-            <button class="btn btn-outline-danger btn-sm" :disabled="entregaUnidad.estado === EstadoEntregaUnidad.ENTREGADA || entregaUnidad.estado === EstadoEntregaUnidad.CANCELADA" @click="cancelarEntrega">
+            <button class="btn btn-outline-danger btn-sm" :disabled="!puedeEditarEntrega" @click="cancelarEntrega">
               Cancelar entrega
             </button>
           </div>
@@ -389,21 +418,29 @@
       </b-modal>
 
       <b-modal v-model="showConfirmarEntrega" title="Confirmar entrega">
+        <div class="alert alert-light border small mb-3">
+          Antes de confirmar: verifica checklist obligatorio, kilometraje real y nivel de combustible al momento de la entrega.
+        </div>
         <div class="mb-2">
           <label class="form-label">Kilometraje de entrega</label>
-          <input v-model.number="kilometrajeEntrega" class="form-control" type="number" min="0" />
+          <input v-model.number="kilometrajeEntrega" class="form-control" type="number" min="0" step="1" placeholder="Ej: 12" />
         </div>
         <div class="mb-2">
           <label class="form-label">Nivel de combustible</label>
-          <input v-model="nivelCombustible" class="form-control" maxlength="30" />
+          <select v-model="nivelCombustible" class="form-select">
+            <option value="">Seleccionar nivel</option>
+            <option v-for="nivel in nivelesCombustible" :key="nivel.value" :value="nivel.value">{{ nivel.label }}</option>
+          </select>
         </div>
         <div class="mb-2">
           <label class="form-label">Observaciones</label>
-          <textarea v-model="observacionesConfirmacion" class="form-control" rows="2" />
+          <textarea v-model="observacionesConfirmacion" class="form-control" rows="3" maxlength="500" placeholder="Detalles de entrega, accesorios, estado final, etc." />
         </div>
         <template #footer>
           <button class="btn btn-outline-secondary btn-sm" @click="showConfirmarEntrega = false">Cancelar</button>
-          <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto" @click="confirmarEntrega">Confirmar</button>
+          <button class="btn btn-success btn-sm" :disabled="!checklistObligatorioCompleto || submittingConfirmacionEntrega" @click="confirmarEntrega">
+            {{ submittingConfirmacionEntrega ? 'Confirmando...' : 'Confirmar entrega' }}
+          </button>
         </template>
       </b-modal>
     </template>
@@ -486,6 +523,27 @@
   height: 12px;
   border-radius: 50%;
   background: currentColor;
+}
+
+.delivery-progress .progress {
+  height: 8px;
+}
+
+.checklist-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.checklist-item {
+  border-color: #dce3eb !important;
+}
+
+.checklist-item.obligatorio {
+  border-left: 4px solid #dc3545 !important;
+}
+
+.checklist-item.cumplido {
+  background: #f6fff9;
 }
 
 @media (max-width: 767px) {

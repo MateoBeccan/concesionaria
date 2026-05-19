@@ -14,6 +14,7 @@ import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.TasacionUsado;
+import com.concesionaria.app.domain.User;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoInventario;
@@ -42,6 +43,7 @@ import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -383,8 +385,198 @@ class VentaServiceImplBusinessTest {
         reservaDTO.setId(9999L);
         dto.setReserva(reservaDTO);
 
-        BadRequestException ex = assertThrows(BadRequestException.class, () -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto));
+        BadRequestException ex = assertThrows(
+            BadRequestException.class,
+            () -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto, true)
+        );
         assertThat(ex.getMessage()).contains("reservado por otra operacion activa");
+    }
+
+    @Test
+    void validarVentaDtoPermiteVehiculoReservadoCuandoEsLaMismaVenta() {
+        Vehiculo vehiculo = new Vehiculo();
+        vehiculo.setId(1001L);
+        vehiculo.setMoneda(moneda(1L, "ARS"));
+        vehiculo.setPrecio(new BigDecimal("24500000.00"));
+
+        Inventario inventario = new Inventario();
+        inventario.setId(301L);
+        inventario.setVehiculo(vehiculo);
+        inventario.setEstadoInventario(EstadoInventario.RESERVADO);
+
+        Cliente clienteReserva = new Cliente().id(77L);
+        Reserva reservaActiva = new Reserva();
+        reservaActiva.setId(902L);
+        reservaActiva.setCliente(clienteReserva);
+        reservaActiva.setEstado(EstadoReserva.ACTIVA);
+        reservaActiva.setFechaVencimiento(Instant.now().plusSeconds(3600));
+
+        Venta ventaExistente = new Venta();
+        ventaExistente.setId(20L);
+        ventaExistente.setReserva(reservaActiva);
+
+        when(vehiculoRepository.findById(1001L)).thenReturn(java.util.Optional.of(vehiculo));
+        when(inventarioRepository.findByVehiculoId(1001L)).thenReturn(java.util.Optional.of(inventario));
+        when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(301L, EstadoReserva.ACTIVA))
+            .thenReturn(java.util.Optional.of(reservaActiva));
+        when(ventaRepository.findById(20L)).thenReturn(java.util.Optional.of(ventaExistente));
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(moneda(1L, "ARS")));
+        when(ventaRepository.existsByVehiculoIdAndEstadoInAndIdNot(any(), any(), any())).thenReturn(false);
+        User user = new User();
+        user.setId(501L);
+        when(userRepository.findById(501L)).thenReturn(java.util.Optional.of(user));
+
+        CotizacionConversionDTO conversionDTO = new CotizacionConversionDTO();
+        conversionDTO.setMontoConvertido(new BigDecimal("24500000.00"));
+        conversionDTO.setCotizacionAplicada(BigDecimal.ONE);
+        conversionDTO.setFechaCotizacionUsada(Instant.now());
+        conversionDTO.setCotizacionOrigenId(null);
+        when(currencyConversionService.convertir(any(), any(), any(), any())).thenReturn(conversionDTO);
+
+        VentaDTO dto = new VentaDTO();
+        dto.setId(20L);
+        ClienteDTO clienteDTO = new ClienteDTO();
+        clienteDTO.setId(77L);
+        dto.setCliente(clienteDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(1001L);
+        dto.setVehiculo(vehiculoDTO);
+        dto.setEstado(EstadoVenta.RESERVADA);
+        dto.setFecha(Instant.now());
+        dto.setTotalPagado(new BigDecimal("3000000.00"));
+        dto.setPorcentajeImpuesto(new BigDecimal("21.00"));
+        dto.setUser(new com.concesionaria.app.service.dto.UserDTO());
+        dto.getUser().setId(501L);
+
+        Assertions.assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto, true));
+    }
+
+    @Test
+    void validarVentaDtoPermiteVehiculoReservadoSiLaVentaExistenteEsLaMismaAunqueNoTengaReservaAsociada() {
+        Vehiculo vehiculo = new Vehiculo();
+        vehiculo.setId(1002L);
+        vehiculo.setMoneda(moneda(1L, "ARS"));
+        vehiculo.setPrecio(new BigDecimal("24500000.00"));
+
+        Inventario inventario = new Inventario();
+        inventario.setId(302L);
+        inventario.setVehiculo(vehiculo);
+        inventario.setEstadoInventario(EstadoInventario.RESERVADO);
+
+        Cliente clienteReserva = new Cliente().id(88L);
+        Reserva reservaActiva = new Reserva();
+        reservaActiva.setId(903L);
+        reservaActiva.setCliente(clienteReserva);
+        reservaActiva.setInventario(inventario);
+        reservaActiva.setEstado(EstadoReserva.ACTIVA);
+        reservaActiva.setFechaVencimiento(Instant.now().plusSeconds(3600));
+
+        Venta ventaExistente = new Venta();
+        ventaExistente.setId(21L);
+        ventaExistente.setVehiculo(vehiculo);
+        ventaExistente.setReserva(null);
+
+        when(vehiculoRepository.findById(1002L)).thenReturn(java.util.Optional.of(vehiculo));
+        when(inventarioRepository.findByVehiculoId(1002L)).thenReturn(java.util.Optional.of(inventario));
+        when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(302L, EstadoReserva.ACTIVA))
+            .thenReturn(java.util.Optional.of(reservaActiva));
+        when(ventaRepository.findById(21L)).thenReturn(java.util.Optional.of(ventaExistente));
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(moneda(1L, "ARS")));
+        when(ventaRepository.existsByVehiculoIdAndEstadoInAndIdNot(any(), any(), any())).thenReturn(false);
+        User user = new User();
+        user.setId(502L);
+        when(userRepository.findById(502L)).thenReturn(java.util.Optional.of(user));
+
+        CotizacionConversionDTO conversionDTO = new CotizacionConversionDTO();
+        conversionDTO.setMontoConvertido(new BigDecimal("24500000.00"));
+        conversionDTO.setCotizacionAplicada(BigDecimal.ONE);
+        conversionDTO.setFechaCotizacionUsada(Instant.now());
+        conversionDTO.setCotizacionOrigenId(null);
+        when(currencyConversionService.convertir(any(), any(), any(), any())).thenReturn(conversionDTO);
+
+        VentaDTO dto = new VentaDTO();
+        dto.setId(21L);
+        ClienteDTO clienteDTO = new ClienteDTO();
+        clienteDTO.setId(88L);
+        dto.setCliente(clienteDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(1002L);
+        dto.setVehiculo(vehiculoDTO);
+        dto.setEstado(EstadoVenta.PAGADA);
+        dto.setFecha(Instant.now());
+        dto.setTotalPagado(new BigDecimal("29645000.00"));
+        dto.setSaldo(BigDecimal.ZERO);
+        dto.setPorcentajeImpuesto(new BigDecimal("21.00"));
+        dto.setUser(new com.concesionaria.app.service.dto.UserDTO());
+        dto.getUser().setId(502L);
+
+        Assertions.assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto, true));
+    }
+
+    @Test
+    void ventaTradicionalSinAnticipoMinimoSigueBloqueada() {
+        VentaDTO dto = construirVentaDtoParaValidacion(111L, 501L, BigDecimal.ZERO);
+        mockValidacionesBaseVenta(111L, 501L);
+
+        BadRequestException ex = assertThrows(
+            BadRequestException.class,
+            () -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto, true)
+        );
+        assertThat(ex.getMessage()).contains("pago minimo");
+    }
+
+    @Test
+    void ventaDesdePlanAhorroPermiteAltaSinAnticipoTradicional() {
+        VentaDTO dto = construirVentaDtoParaValidacion(112L, 502L, BigDecimal.ZERO);
+        mockValidacionesBaseVenta(112L, 502L);
+
+        Assertions.assertDoesNotThrow(() -> ReflectionTestUtils.invokeMethod(service, "validarVentaDto", dto, false));
+    }
+
+    private VentaDTO construirVentaDtoParaValidacion(Long vehiculoId, Long userId, BigDecimal totalPagado) {
+        VentaDTO dto = new VentaDTO();
+        ClienteDTO clienteDTO = new ClienteDTO();
+        clienteDTO.setId(10L);
+        dto.setCliente(clienteDTO);
+        VehiculoDTO vehiculoDTO = new VehiculoDTO();
+        vehiculoDTO.setId(vehiculoId);
+        dto.setVehiculo(vehiculoDTO);
+        dto.setEstado(EstadoVenta.PENDIENTE);
+        dto.setFecha(Instant.now());
+        dto.setTotalPagado(totalPagado);
+        dto.setPorcentajeImpuesto(new BigDecimal("21.00"));
+        dto.setUser(new com.concesionaria.app.service.dto.UserDTO());
+        dto.getUser().setId(userId);
+        return dto;
+    }
+
+    private void mockValidacionesBaseVenta(Long vehiculoId, Long userId) {
+        Moneda ars = moneda(1L, "ARS");
+        Vehiculo vehiculo = new Vehiculo();
+        vehiculo.setId(vehiculoId);
+        vehiculo.setMoneda(ars);
+        vehiculo.setPrecio(new BigDecimal("24500000.00"));
+
+        Inventario inventario = new Inventario();
+        inventario.setId(vehiculoId + 200L);
+        inventario.setVehiculo(vehiculo);
+        inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
+
+        User user = new User();
+        user.setId(userId);
+
+        when(vehiculoRepository.findById(vehiculoId)).thenReturn(java.util.Optional.of(vehiculo));
+        when(inventarioRepository.findByVehiculoId(vehiculoId)).thenReturn(java.util.Optional.of(inventario));
+        when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
+        when(ventaRepository.existsByVehiculoIdAndEstadoIn(any(), any())).thenReturn(false);
+        when(userRepository.findById(userId)).thenReturn(java.util.Optional.of(user));
+
+        CotizacionConversionDTO conversionDTO = new CotizacionConversionDTO();
+        conversionDTO.setMontoConvertido(new BigDecimal("24500000.00"));
+        conversionDTO.setCotizacionAplicada(BigDecimal.ONE);
+        conversionDTO.setFechaCotizacionUsada(Instant.now());
+        conversionDTO.setCotizacionOrigenId(null);
+        when(currencyConversionService.convertir(any(), any(), any(), any())).thenReturn(conversionDTO);
     }
 
     private Moneda moneda(Long id, String codigo) {

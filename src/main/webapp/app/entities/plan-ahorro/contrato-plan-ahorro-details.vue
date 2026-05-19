@@ -24,15 +24,42 @@
     <div class="card border-0 shadow-sm mb-3">
       <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
         <strong>Cuotas del contrato</strong>
-        <div class="cuota-selector">
-          <label class="form-label mb-1 small text-muted">Cuota a visualizar</label>
-          <select v-model.number="cuotaSeleccionadaId" class="form-select form-select-sm">
-            <option v-for="cuota in cuotas" :key="cuota.id" :value="cuota.id">
-              Cuota {{ cuota.numeroCuota }} · {{ cuota.estado }} · {{ formatDateShort(cuota.fechaVencimiento) }}
-            </option>
-          </select>
+        <div class="d-flex flex-wrap align-items-end gap-2">
+          <div class="cuota-selector">
+            <label class="form-label mb-1 small text-muted">Cuota a visualizar</label>
+            <select v-model.number="cuotaSeleccionadaId" class="form-select form-select-sm">
+              <option v-for="cuota in cuotas" :key="cuota.id" :value="cuota.id">
+                Cuota {{ cuota.numeroCuota }} · {{ cuota.estado }} · {{ formatDateShort(cuota.fechaVencimiento) }}
+              </option>
+            </select>
+          </div>
+          <button class="btn btn-success btn-sm" :disabled="!cuotasSeleccionadas.length" @click="abrirPagoMultiple">Pagar cuotas seleccionadas</button>
         </div>
       </div>
+
+      <div class="card-body border-bottom" v-if="cuotasPagables.length">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <strong class="small">Seleccion rapida de cuotas pendientes/vencidas</strong>
+          <span class="small text-muted">
+            Seleccionadas: {{ cuotasSeleccionadas.length }} · Total:
+            ${{ totalSeleccionado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+          </span>
+        </div>
+        <div class="cuotas-select-grid">
+          <label v-for="cuota in cuotasPagables" :key="`select-${cuota.id}`" class="cuota-check-item">
+            <input
+              type="checkbox"
+              :checked="cuota.id != null && cuotasSeleccionadas.includes(cuota.id)"
+              :disabled="cuota.id == null"
+              @change="cuota.id != null ? onCuotaCheckboxChange(cuota.id, $event) : null"
+            />
+            <span>Cuota {{ cuota.numeroCuota }}</span>
+            <small>{{ formatDateShort(cuota.fechaVencimiento) }}</small>
+            <strong>${{ Number(cuota.importe ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+          </label>
+        </div>
+      </div>
+
       <div class="card-body" v-if="cuotaSeleccionada">
         <div class="row g-3">
           <div class="col-12 col-lg-8">
@@ -98,6 +125,21 @@
         <span v-if="adjudicacion" class="badge bg-primary">{{ adjudicacion.estado }}</span>
       </div>
       <div class="card-body">
+        <div v-if="elegibilidad" class="alert mb-3" :class="elegibilidad.apto ? 'alert-success' : 'alert-warning'">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <strong>Condiciones de adjudicación: {{ elegibilidad.apto ? 'APTO' : 'NO APTO' }}</strong>
+              <div class="small mt-1">{{ elegibilidad.mensaje }}</div>
+              <div class="small mt-1">
+                Regla: {{ elegibilidad.nombreRegla ?? 'SIN_REGLA_DEFAULT' }} · Tipo: {{ elegibilidad.tipoRegla }} · Cuotas:
+                {{ elegibilidad.cuotasPagadas ?? 0 }}/{{ elegibilidad.minimoCuotas ?? '-' }} · Integrado:
+                {{ elegibilidad.porcentajeIntegrado ?? 0 }}%/{{ elegibilidad.minimoPorcentaje ?? '-' }}% · Permite mora:
+                {{ elegibilidad.permiteMora ? 'Sí' : 'No' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="!adjudicacion" class="d-flex flex-wrap align-items-end gap-2">
           <div class="flex-grow-1">
             <label class="form-label">Observaciones</label>
@@ -194,6 +236,52 @@
       </div>
     </div>
     <div v-if="showPay" class="modal-backdrop fade show"></div>
+
+    <div v-if="showMultiPay" class="modal fade show d-block" tabindex="-1">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Pagar cuotas seleccionadas</h5>
+            <button type="button" class="btn-close" @click="showMultiPay = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-light border mb-3">
+              Se pagaran {{ cuotasSeleccionadasItems.length }} cuotas por un total de
+              <strong>${{ totalSeleccionado.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</strong>
+            </div>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm align-middle">
+                <thead>
+                  <tr>
+                    <th>Cuota</th>
+                    <th>Vencimiento</th>
+                    <th class="text-end">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="cuota in cuotasSeleccionadasItems" :key="`confirm-${cuota.id}`">
+                    <td>#{{ cuota.numeroCuota }}</td>
+                    <td>{{ formatDateShort(cuota.fechaVencimiento) }}</td>
+                    <td class="text-end">
+                      ${{ Number(cuota.importe ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <label class="form-label">Observaciones</label>
+              <textarea v-model="pagoMultipleObservaciones" class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" @click="showMultiPay = false">Cancelar</button>
+            <button class="btn btn-success" @click="confirmarPagoMultiple">Confirmar pago multiple</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-if="showMultiPay" class="modal-backdrop fade show"></div>
   </div>
 </template>
 
@@ -245,6 +333,37 @@
 
 .cuota-selector {
   min-width: 320px;
+}
+
+.cuotas-select-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.6rem;
+}
+
+.cuota-check-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  align-items: center;
+  background: #f8fafc;
+}
+
+.cuota-check-item input {
+  margin-top: 0.1rem;
+}
+
+.cuota-check-item span,
+.cuota-check-item small,
+.cuota-check-item strong {
+  grid-column: 2;
+}
+
+.cuota-check-item small {
+  color: #64748b;
 }
 
 @media (max-width: 768px) {

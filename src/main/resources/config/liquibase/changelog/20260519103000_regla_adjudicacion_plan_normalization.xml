@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260519103000-1" author="codex">
+    <createTable tableName="regla_adjudicacion_plan">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
+      <column name="nombre" type="varchar(120)">
+        <constraints nullable="false" unique="true" uniqueConstraintName="uk_regla_adjudicacion_nombre"/>
+      </column>
+      <column name="descripcion" type="varchar(500)"/>
+      <column name="tipo_regla" type="varchar(40)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="minimo_cuotas" type="int"/>
+      <column name="minimo_porcentaje" type="decimal(5,2)"/>
+      <column name="permite_mora" type="bit(1)" defaultValueBoolean="false">
+        <constraints nullable="false"/>
+      </column>
+      <column name="requiere_contrato_activo" type="bit(1)" defaultValueBoolean="true">
+        <constraints nullable="false"/>
+      </column>
+      <column name="activo" type="bit(1)" defaultValueBoolean="true">
+        <constraints nullable="false"/>
+      </column>
+      <column name="created_date" type="datetime(6)"/>
+      <column name="last_modified_date" type="datetime(6)"/>
+    </createTable>
+    <createIndex tableName="regla_adjudicacion_plan" indexName="idx_regla_adjudicacion_activo">
+      <column name="activo"/>
+    </createIndex>
+    <createIndex tableName="regla_adjudicacion_plan" indexName="idx_regla_adjudicacion_tipo">
+      <column name="tipo_regla"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="20260519103000-2" author="codex">
+    <addColumn tableName="plan_ahorro">
+      <column name="regla_adjudicacion_id" type="bigint"/>
+    </addColumn>
+    <createIndex tableName="plan_ahorro" indexName="idx_plan_ahorro_regla_adjudicacion">
+      <column name="regla_adjudicacion_id"/>
+    </createIndex>
+    <addForeignKeyConstraint
+      baseTableName="plan_ahorro"
+      baseColumnNames="regla_adjudicacion_id"
+      constraintName="fk_plan_ahorro_regla_adjudicacion"
+      referencedTableName="regla_adjudicacion_plan"
+      referencedColumnNames="id"/>
+  </changeSet>
+
+  <changeSet id="20260519103000-3" author="codex">
+    <sql>
+      INSERT INTO regla_adjudicacion_plan
+      (nombre, descripcion, tipo_regla, minimo_cuotas, minimo_porcentaje, permite_mora, requiere_contrato_activo, activo, created_date, last_modified_date)
+      SELECT 'SIN_REGLA_DEFAULT', 'Regla sin mínimos de elegibilidad', 'SIN_REGLA', NULL, NULL, b'1', b'0', b'1', NOW(6), NOW(6)
+      WHERE NOT EXISTS (SELECT 1 FROM regla_adjudicacion_plan WHERE nombre = 'SIN_REGLA_DEFAULT');
+    </sql>
+    <sql>
+      INSERT INTO regla_adjudicacion_plan
+      (nombre, descripcion, tipo_regla, minimo_cuotas, minimo_porcentaje, permite_mora, requiere_contrato_activo, activo, created_date, last_modified_date)
+      SELECT 'AUTO_84_24_CUOTAS_O_30', 'Adjudicación automática para plan 84: 24 cuotas o 30%', 'CUOTAS_O_PORCENTAJE', 24, 30.00, b'0', b'1', b'1', NOW(6), NOW(6)
+      WHERE NOT EXISTS (SELECT 1 FROM regla_adjudicacion_plan WHERE nombre = 'AUTO_84_24_CUOTAS_O_30');
+    </sql>
+    <sql>
+      INSERT INTO regla_adjudicacion_plan
+      (nombre, descripcion, tipo_regla, minimo_cuotas, minimo_porcentaje, permite_mora, requiere_contrato_activo, activo, created_date, last_modified_date)
+      SELECT 'AUTO_120_36_CUOTAS_O_30', 'Adjudicación automática para plan 120: 36 cuotas o 30%', 'CUOTAS_O_PORCENTAJE', 36, 30.00, b'0', b'1', b'1', NOW(6), NOW(6)
+      WHERE NOT EXISTS (SELECT 1 FROM regla_adjudicacion_plan WHERE nombre = 'AUTO_120_36_CUOTAS_O_30');
+    </sql>
+    <sql>
+      INSERT INTO regla_adjudicacion_plan
+      (nombre, descripcion, tipo_regla, minimo_cuotas, minimo_porcentaje, permite_mora, requiere_contrato_activo, activo, created_date, last_modified_date)
+      SELECT 'MANUAL_ADMIN', 'Requiere adjudicación manual por administrador', 'MANUAL', NULL, NULL, b'0', b'1', b'1', NOW(6), NOW(6)
+      WHERE NOT EXISTS (SELECT 1 FROM regla_adjudicacion_plan WHERE nombre = 'MANUAL_ADMIN');
+    </sql>
+  </changeSet>
+
+  <changeSet id="20260519103000-4" author="codex">
+    <sql>
+      UPDATE plan_ahorro p
+      JOIN regla_adjudicacion_plan r ON r.nombre = 'AUTO_84_24_CUOTAS_O_30'
+      SET p.regla_adjudicacion_id = r.id
+      WHERE p.regla_adjudicacion_id IS NULL AND p.cantidad_cuotas = 84;
+    </sql>
+    <sql>
+      UPDATE plan_ahorro p
+      JOIN regla_adjudicacion_plan r ON r.nombre = 'AUTO_120_36_CUOTAS_O_30'
+      SET p.regla_adjudicacion_id = r.id
+      WHERE p.regla_adjudicacion_id IS NULL AND p.cantidad_cuotas = 120;
+    </sql>
+    <sql>
+      UPDATE plan_ahorro p
+      JOIN regla_adjudicacion_plan r ON r.nombre = 'SIN_REGLA_DEFAULT'
+      SET p.regla_adjudicacion_id = r.id
+      WHERE p.regla_adjudicacion_id IS NULL;
+    </sql>
+  </changeSet>
+
+</databaseChangeLog>

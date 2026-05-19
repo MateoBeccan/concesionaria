@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+    http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260519120000-1" author="codex" dbms="mysql">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM information_schema.table_constraints
+                    WHERE table_schema = DATABASE()
+                      AND table_name = 'pago'
+                      AND constraint_name = 'chk_pago_destino'
+                      AND constraint_type = 'CHECK'
+                ) THEN 1 ELSE 0 END
+            </sqlCheck>
+        </preConditions>
+
+        <sql>
+            ALTER TABLE pago DROP CHECK chk_pago_destino;
+        </sql>
+    </changeSet>
+
+    <changeSet id="20260519120000-2" author="codex" dbms="mysql">
+        <sql>
+            ALTER TABLE pago
+            ADD CONSTRAINT chk_pago_destino CHECK (
+                (
+                    venta_id IS NOT NULL
+                    AND reserva_id IS NULL
+                    AND contrato_plan_ahorro_id IS NULL
+                    AND adjudicacion_plan_ahorro_id IS NULL
+                )
+                OR (
+                    venta_id IS NOT NULL
+                    AND reserva_id IS NULL
+                    AND contrato_plan_ahorro_id IS NOT NULL
+                    AND adjudicacion_plan_ahorro_id IS NOT NULL
+                )
+                OR (
+                    venta_id IS NULL
+                    AND reserva_id IS NOT NULL
+                    AND contrato_plan_ahorro_id IS NULL
+                    AND adjudicacion_plan_ahorro_id IS NULL
+                )
+                OR (
+                    venta_id IS NULL
+                    AND reserva_id IS NULL
+                    AND contrato_plan_ahorro_id IS NOT NULL
+                )
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

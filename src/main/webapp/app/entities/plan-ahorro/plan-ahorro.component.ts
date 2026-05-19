@@ -4,6 +4,7 @@ import { useAlertService } from '@/shared/alert/alert.service';
 import PlanAhorroService from './plan-ahorro.service';
 import type { IPlanAhorro } from '@/shared/model/plan-ahorro.model';
 import type { IMoneda } from '@/shared/model/moneda.model';
+import type { IReglaAdjudicacionPlan } from '@/shared/model/regla-adjudicacion-plan.model';
 
 export default defineComponent({
   name: 'PlanAhorro',
@@ -12,6 +13,7 @@ export default defineComponent({
     const planAhorroService = inject('planAhorroService', () => new PlanAhorroService());
     const planes: Ref<IPlanAhorro[]> = ref([]);
     const monedas: Ref<IMoneda[]> = ref([]);
+    const reglas: Ref<IReglaAdjudicacionPlan[]> = ref([]);
     const showCreate = ref(false);
     const draft = ref({
       nombre: '',
@@ -19,6 +21,7 @@ export default defineComponent({
       cantidadCuotas: 84,
       valorMovil: 0,
       monedaId: null as number | null,
+      reglaAdjudicacionId: null as number | null,
     });
     const searchTerm = ref('');
     const estadoFiltro = ref('');
@@ -51,10 +54,12 @@ export default defineComponent({
     const loadReferenciales = async () => {
       const res = await axios.get('api/monedas', { params: { size: 200, sort: ['codigo,asc'] } });
       monedas.value = res.data ?? [];
+      const reglasRes = await axios.get('api/reglas-adjudicacion-plan', { params: { active: true } });
+      reglas.value = reglasRes.data ?? [];
     };
 
     const openCreate = () => {
-      draft.value = { nombre: '', descripcion: '', cantidadCuotas: 84, valorMovil: 0, monedaId: null };
+      draft.value = { nombre: '', descripcion: '', cantidadCuotas: 84, valorMovil: 0, monedaId: null, reglaAdjudicacionId: null };
       showCreate.value = true;
     };
 
@@ -71,6 +76,7 @@ export default defineComponent({
           valorMovil: draft.value.valorMovil,
           estado: 'ACTIVO' as any,
           moneda: { id: draft.value.monedaId } as any,
+          reglaAdjudicacion: draft.value.reglaAdjudicacionId ? ({ id: draft.value.reglaAdjudicacionId } as any) : null,
         });
         showCreate.value = false;
         await retrieve();
@@ -88,6 +94,7 @@ export default defineComponent({
     return {
       planes,
       monedas,
+      reglas,
       showCreate,
       draft,
       searchTerm,

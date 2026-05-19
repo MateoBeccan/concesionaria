@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 public interface VentaService {
 
     VentaDTO save(VentaDTO ventaDTO);
+    VentaDTO saveDesdePlanAhorro(VentaDTO ventaDTO);
 
     VentaDTO update(VentaDTO ventaDTO);
 

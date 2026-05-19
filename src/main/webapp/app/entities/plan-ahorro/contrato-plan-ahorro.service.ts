@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { type IContratoPlanAhorro } from '@/shared/model/contrato-plan-ahorro.model';
 import { type ICuotaPlanAhorro } from '@/shared/model/cuota-plan-ahorro.model';
+import { type IElegibilidadAdjudicacion } from '@/shared/model/elegibilidad-adjudicacion.model';
 
 const baseApiUrl = 'api/contrato-plan-ahorros';
 
@@ -49,5 +50,28 @@ export default class ContratoPlanAhorroService {
         .catch(err => reject(err));
     });
   }
-}
 
+  public pagarCuotasMultiples(payload: {
+    cuotaIds: number[];
+    montoTotal?: number | null;
+    observaciones?: string;
+    metodoPagoId?: number | null;
+    monedaId?: number | null;
+  }): Promise<ICuotaPlanAhorro[]> {
+    return new Promise<ICuotaPlanAhorro[]>((resolve, reject) => {
+      axios
+        .post(`${baseApiUrl}/cuotas/pagar-multiple`, payload)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+
+  public elegibilidadAdjudicacion(contratoId: number): Promise<IElegibilidadAdjudicacion> {
+    return new Promise<IElegibilidadAdjudicacion>((resolve, reject) => {
+      axios
+        .get(`${baseApiUrl}/${contratoId}/elegibilidad-adjudicacion`)
+        .then(res => resolve(res.data))
+        .catch(err => reject(err));
+    });
+  }
+}

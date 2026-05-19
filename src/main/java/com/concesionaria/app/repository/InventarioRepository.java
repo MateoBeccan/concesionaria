@@ -34,4 +34,17 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
         @Param("versionId") Long versionId
     );
 
+    @Query(
+        """
+        select i
+        from Inventario i
+        join i.vehiculo v
+        join v.version ver
+        join ver.modelo m
+        where i.estadoInventario = :estado
+          and m.id = :modeloId
+        """
+    )
+    List<Inventario> findDisponiblesByModeloObjetivo(@Param("estado") EstadoInventario estado, @Param("modeloId") Long modeloId);
+
 }
