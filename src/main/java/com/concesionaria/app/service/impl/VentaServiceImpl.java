@@ -34,21 +34,17 @@ import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.CotizacionConversionDTO;
-import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.VentaDTO;
 import com.concesionaria.app.service.dto.VentaHistorialDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.Normalizer;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +75,6 @@ public class VentaServiceImpl implements VentaService {
     private final CurrencyConversionService currencyConversionService;
     private final VentaValidator ventaValidator;
     private final VentaCalculator ventaCalculator;
-    private final VentaStateManager ventaStateManager;
     private final VentaHistorialService ventaHistorialService;
     private final VentaInventarioSyncService ventaInventarioSyncService;
 
@@ -105,7 +100,6 @@ public class VentaServiceImpl implements VentaService {
         CurrencyConversionService currencyConversionService,
         VentaValidator ventaValidator,
         VentaCalculator ventaCalculator,
-        VentaStateManager ventaStateManager,
         VentaHistorialService ventaHistorialService,
         VentaInventarioSyncService ventaInventarioSyncService
     ) {
@@ -124,7 +118,6 @@ public class VentaServiceImpl implements VentaService {
         this.currencyConversionService = currencyConversionService;
         this.ventaValidator = ventaValidator;
         this.ventaCalculator = ventaCalculator;
-        this.ventaStateManager = ventaStateManager;
         this.ventaHistorialService = ventaHistorialService;
         this.ventaInventarioSyncService = ventaInventarioSyncService;
     }
@@ -450,14 +443,6 @@ public class VentaServiceImpl implements VentaService {
         return ventaHistorialRepository.findAllByVentaIdOrderByFechaDesc(ventaId).stream().map(this::toHistorialDto).collect(Collectors.toList());
     }
 
-    private Set<Long> vehiculoIdsDesdeVenta(Long ventaId) {
-        Venta venta = ventaRepository.findById(ventaId).orElse(null);
-        if (venta == null || venta.getVehiculo() == null || venta.getVehiculo().getId() == null) {
-            return Set.of();
-        }
-        return Set.of(venta.getVehiculo().getId());
-    }
-
     private void reconciliarInventarioVentasActivas(List<Venta> ventas) {
         for (Venta venta : ventas) {
             if (venta == null || venta.getId() == null || venta.getEstado() == null) {
@@ -659,58 +644,8 @@ public class VentaServiceImpl implements VentaService {
         ventaCalculator.recalcularMontosDesdeVehiculo(dto, importeConvertido);
     }
 
-    private MonedaDTO toMonedaDto(Vehiculo vehiculo) {
-        return ventaCalculator.toMonedaDto(vehiculo);
-    }
-
-    private MonedaDTO toMonedaDto(Moneda moneda) {
-        return ventaCalculator.toMonedaDto(moneda);
-    }
-
     private Moneda resolverMonedaBaseVenta() {
         return ventaCalculator.resolverMonedaBaseVenta(monedaBaseCodigo);
-    }
-
-    private boolean esAliasMonedaBase(Moneda moneda) {
-        if (moneda == null) {
-            return false;
-        }
-        String codigo = normalizarTexto(moneda.getCodigo());
-        String descripcion = normalizarTexto(moneda.getDescripcion());
-        return (
-            codigo.contains("ARS") ||
-            codigo.contains("ARG") ||
-            codigo.contains("PESO") ||
-            descripcion.contains("ARS") ||
-            descripcion.contains("ARG") ||
-            descripcion.contains("PESO")
-        );
-    }
-
-    private String normalizarTexto(String value) {
-        if (value == null) {
-            return "";
-        }
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
-        return normalized.toUpperCase(Locale.ROOT).replaceAll("[^A-Z]", "");
-    }
-
-    private BigDecimal totalPagadoRegistrado(Long ventaId, Venta venta) {
-        return ventaCalculator.totalPagadoRegistrado(ventaId, venta);
-    }
-
-    private boolean cumpleMinimoReserva(Venta venta) {
-        if (venta == null || venta.getId() == null) {
-            return false;
-        }
-
-        BigDecimal totalPagado = totalPagadoRegistrado(venta.getId(), venta);
-        BigDecimal montoMinimo = calcularMontoMinimoReserva(calcularImporteBaseReserva(venta));
-        return totalPagado.compareTo(montoMinimo) >= 0 && montoMinimo.compareTo(BigDecimal.ZERO) > 0;
-    }
-
-    private EstadoVenta calcularEstadoSegunPagos(Venta venta) {
-        return ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva);
     }
 
     private BigDecimal calcularImporteBaseReserva(Venta venta) {
