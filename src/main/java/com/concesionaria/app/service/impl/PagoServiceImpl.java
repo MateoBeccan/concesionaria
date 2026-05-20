@@ -13,7 +13,6 @@ import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.EstadoReserva;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
-import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.MonedaRepository;
 import com.concesionaria.app.repository.EntidadFinancieraRepository;
@@ -25,14 +24,10 @@ import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.repository.ComprobanteRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
-import com.concesionaria.app.domain.Comprobante;
-import com.concesionaria.app.domain.TipoComprobante;
-import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.CuotaPlanAhorro;
 import com.concesionaria.app.domain.ContratoPlanAhorro;
 import com.concesionaria.app.domain.AdjudicacionPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
-import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
@@ -75,16 +70,15 @@ public class PagoServiceImpl implements PagoService {
     private final EntidadFinancieraRepository entidadFinancieraRepository;
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final CurrencyConversionService currencyConversionService;
-    private final ComprobanteService comprobanteService;
-    private final TipoComprobanteRepository tipoComprobanteRepository;
-    private final ComprobanteRepository comprobanteRepository;
-    private final MovimientoCajaService movimientoCajaService;
     private final ComprobantePlanAhorroService comprobantePlanAhorroService;
     private final CuotaPlanAhorroRepository cuotaPlanAhorroRepository;
     private final ContratoPlanAhorroRepository contratoPlanAhorroRepository;
     private final PagoMetodoPolicy pagoMetodoPolicy;
     private final PagoCalculator pagoCalculator;
     private final PagoTextNormalizer pagoTextNormalizer;
+    private final PagoAnulacionService pagoAnulacionService;
+    private final PagoCajaBridge pagoCajaBridge;
+    private final PagoComprobanteBridge pagoComprobanteBridge;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -113,7 +107,8 @@ public class PagoServiceImpl implements PagoService {
         ContratoPlanAhorroRepository contratoPlanAhorroRepository,
         PagoMetodoPolicy pagoMetodoPolicy,
         PagoCalculator pagoCalculator,
-        PagoTextNormalizer pagoTextNormalizer
+        PagoTextNormalizer pagoTextNormalizer,
+        PagoAnulacionService pagoAnulacionService
     ) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
@@ -125,16 +120,32 @@ public class PagoServiceImpl implements PagoService {
         this.entidadFinancieraRepository = entidadFinancieraRepository;
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.currencyConversionService = currencyConversionService;
-        this.comprobanteService = comprobanteService;
-        this.tipoComprobanteRepository = tipoComprobanteRepository;
-        this.comprobanteRepository = comprobanteRepository;
-        this.movimientoCajaService = movimientoCajaService;
         this.comprobantePlanAhorroService = comprobantePlanAhorroService;
         this.cuotaPlanAhorroRepository = cuotaPlanAhorroRepository;
         this.contratoPlanAhorroRepository = contratoPlanAhorroRepository;
         this.pagoMetodoPolicy = pagoMetodoPolicy;
         this.pagoCalculator = pagoCalculator;
         this.pagoTextNormalizer = pagoTextNormalizer;
+        this.pagoCajaBridge = new PagoCajaBridge(movimientoCajaService, pagoMetodoPolicy);
+        this.pagoComprobanteBridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, pagoMetodoPolicy);
+        this.pagoAnulacionService =
+            pagoAnulacionService != null
+                ? pagoAnulacionService
+                : new PagoAnulacionService(
+                    pagoRepository,
+                    pagoMapper,
+                    ventaRepository,
+                    reservaRepository,
+                    ventaService,
+                    comprobantePlanAhorroService,
+                    cuotaPlanAhorroRepository,
+                    contratoPlanAhorroRepository,
+                    pagoMetodoPolicy,
+                    pagoTextNormalizer,
+                    pagoCalculator,
+                    this.pagoCajaBridge,
+                    this.pagoComprobanteBridge
+                );
     }
 
     // Constructor legacy para compatibilidad con tests que instancian manualmente el servicio.
@@ -208,7 +219,8 @@ public class PagoServiceImpl implements PagoService {
             null,
             new PagoMetodoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
             new PagoCalculator(currencyConversionService, new PagoTextNormalizer()),
-            new PagoTextNormalizer()
+            new PagoTextNormalizer(),
+            null
         );
     }
 
@@ -396,14 +408,8 @@ public class PagoServiceImpl implements PagoService {
             montoAplicadoVenta
         );
         pago = pagoRepository.save(pago);
-        boolean pagoMonetario = !pagoMetodoPolicy.esMetodoNoMonetarioInterno(metodoPago);
-        movimientoCajaService.registrarDesdePago(
-            pago,
-            pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
-            EstadoPago.REGISTRADO,
-            pagoMonetario
-        );
-        emitirComprobanteDePagoSiCorresponde(pago, metodoPago);
+        pagoCajaBridge.registrarPago(pago);
+        pagoComprobanteBridge.emitirSiCorresponde(pago, metodoPago);
 
         recalcularVentaEInventario(venta);
         return pagoMapper.toDto(pago);
@@ -483,14 +489,8 @@ public class PagoServiceImpl implements PagoService {
             pago.getMontoAplicadoVenta()
         );
         Pago pagoGuardado = pagoRepository.save(pago);
-        boolean pagoMonetario = !pagoMetodoPolicy.esMetodoNoMonetarioInterno(metodoPago);
-        movimientoCajaService.registrarDesdePago(
-            pagoGuardado,
-            pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
-            EstadoPago.REGISTRADO,
-            pagoMonetario
-        );
-        emitirComprobanteDePagoSiCorresponde(pagoGuardado, metodoPago);
+        pagoCajaBridge.registrarPago(pagoGuardado);
+        pagoComprobanteBridge.emitirSiCorresponde(pagoGuardado, metodoPago);
 
         recalcularMontoSeniaReserva(reserva);
         return pagoMapper.toDto(pagoGuardado);
@@ -498,93 +498,10 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO anularPago(Long pagoId, String motivo) {
-        Instant ahora = Instant.now();
-        Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago no existe"));
-        if (pago.getEstado() == EstadoPago.ANULADO) {
-            throw new BadRequestException("El pago ya se encuentra anulado");
+        if (pagoAnulacionService == null) {
+            throw new BadRequestException("La anulacion de pagos no esta disponible");
         }
-        if (motivo == null || motivo.isBlank()) {
-            throw new BadRequestException("Debe informar un motivo para anular el pago");
-        }
-        if (pago.getTipoMovimiento() == TipoMovimientoPago.ENTREGA_USADO && pago.getTasacionUsado() != null && pago.getTasacionUsado().getInventarioGenerado() != null) {
-            throw new BadRequestException("No se puede anular la entrega de usado porque ya genero inventario");
-        }
-        Venta venta = pago.getVenta();
-        Reserva reservaAsociada = pago.getReserva();
-        CuotaPlanAhorro cuotaPlan = cuotaPlanAhorroRepository == null ? null : cuotaPlanAhorroRepository.findFirstByPagoId(pagoId).orElse(null);
-        if ((venta == null || venta.getId() == null) && (reservaAsociada == null || reservaAsociada.getId() == null)) {
-            if (cuotaPlan == null) {
-                throw new BadRequestException("El pago no tiene una operacion asociada");
-            }
-        }
-        pago.setEstado(EstadoPago.ANULADO);
-        if (pago.getTipoMovimiento() == TipoMovimientoPago.PAGO_RECIBIDO || pago.getTipoMovimiento() == TipoMovimientoPago.ANTICIPO) {
-            pago.setTipoMovimiento(TipoMovimientoPago.ANULACION);
-        }
-        if (pago.getTipoMovimiento() == TipoMovimientoPago.ENTREGA_USADO && venta != null && venta.getTasacionUsado() != null) {
-            venta.setTasacionUsado(null);
-            venta.setLastModifiedDate(ahora);
-            ventaRepository.save(venta);
-        }
-        String usuarioAnulacion = currentUserLogin();
-        Instant fechaAnulacion = ahora;
-        pago.setMotivoAnulacion(motivo.trim());
-        pago.setUsuarioAnulacion(usuarioAnulacion);
-        pago.setFechaAnulacion(fechaAnulacion);
-        pago.setLastModifiedDate(ahora);
-        normalizarCamposTextoPago(pago);
-        LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
-        Pago pagoActualizado = pagoRepository.save(pago);
-        boolean monetario = pagoActualizado.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO &&
-            !pagoMetodoPolicy.esMetodoNoMonetarioInterno(pagoActualizado.getMetodoPago());
-        movimientoCajaService.registrarDesdePago(
-            pagoActualizado,
-            monetario ? TipoMovimientoCaja.REVERSO : TipoMovimientoCaja.INFORMATIVO,
-            EstadoPago.ANULADO,
-            monetario
-        );
-        anularComprobantesAsociadosAPago(pagoActualizado, motivo, usuarioAnulacion, fechaAnulacion);
-        comprobantePlanAhorroService.anularPorPago(pagoActualizado.getId(), motivo, usuarioAnulacion, fechaAnulacion);
-
-        if (cuotaPlan != null && cuotaPlanAhorroRepository != null) {
-            cuotaPlan.setEstado(EstadoCuotaPlanAhorro.PENDIENTE);
-            cuotaPlan.setFechaPago(null);
-            cuotaPlan.setPago(null);
-            cuotaPlanAhorroRepository.save(cuotaPlan);
-            recalcContratoPlan(cuotaPlan.getContrato());
-        }
-
-        if (venta != null && venta.getId() != null) {
-            recalcularVentaEInventario(venta);
-        } else if (reservaAsociada != null && reservaAsociada.getId() != null) {
-            Reserva reserva = reservaRepository.findById(reservaAsociada.getId()).orElse(null);
-            if (reserva != null) {
-                recalcularMontoSeniaReserva(reserva);
-            }
-        }
-        return pagoMapper.toDto(pagoActualizado);
-    }
-
-    private void recalcContratoPlan(ContratoPlanAhorro contrato) {
-        if (contrato == null || contrato.getId() == null || cuotaPlanAhorroRepository == null || contratoPlanAhorroRepository == null) {
-            return;
-        }
-        List<CuotaPlanAhorro> cuotas = cuotaPlanAhorroRepository.findAllByContratoIdOrderByNumeroCuotaAsc(contrato.getId());
-        long pagadas = cuotas.stream().filter(c -> c.getEstado() == EstadoCuotaPlanAhorro.PAGADA).count();
-        BigDecimal saldo = cuotas
-            .stream()
-            .filter(c -> c.getEstado() == EstadoCuotaPlanAhorro.PENDIENTE || c.getEstado() == EstadoCuotaPlanAhorro.VENCIDA)
-            .map(CuotaPlanAhorro::getImporte)
-            .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .setScale(2, PagoTextNormalizer.REDONDEO);
-        contrato.setCuotasPagadas((int) pagadas);
-        contrato.setSaldoPendiente(saldo);
-        if (saldo.compareTo(BigDecimal.ZERO) == 0) {
-            contrato.setEstado(EstadoContratoPlanAhorro.FINALIZADO);
-        } else if (contrato.getEstado() == EstadoContratoPlanAhorro.FINALIZADO) {
-            contrato.setEstado(EstadoContratoPlanAhorro.ACTIVO);
-        }
-        contratoPlanAhorroRepository.save(contrato);
+        return pagoAnulacionService.anularPago(pagoId, motivo);
     }
 
     private void recalcularVentaEInventario(Venta venta) {
@@ -734,51 +651,10 @@ public class PagoServiceImpl implements PagoService {
             montoTasado
         );
         Pago pagoGuardado = pagoRepository.save(pago);
-        movimientoCajaService.registrarDesdePago(pagoGuardado, TipoMovimientoCaja.INFORMATIVO, EstadoPago.REGISTRADO, false);
-        emitirComprobanteDePagoSiCorresponde(pagoGuardado, metodoPago);
+        pagoCajaBridge.registrarPago(pagoGuardado);
+        pagoComprobanteBridge.emitirSiCorresponde(pagoGuardado, metodoPago);
         recalcularVentaEInventario(venta);
         return pagoMapper.toDto(pagoGuardado);
-    }
-
-    private void emitirComprobanteDePagoSiCorresponde(Pago pago, MetodoPago metodoPago) {
-        if (pago == null || pago.getId() == null || pago.getVenta() == null || pago.getVenta().getId() == null) {
-            return;
-        }
-        if (!pagoMetodoPolicy.esMetodoEmitibleComprobante(metodoPago)) {
-            return;
-        }
-        String codigoTipo = pagoMetodoPolicy.resolverTipoComprobantePago(metodoPago);
-        TipoComprobante tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(codigoTipo).orElse(null);
-        if (tipo == null && !PagoMetodoPolicy.TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
-            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(PagoMetodoPolicy.TIPO_COMPROBANTE_REC).orElse(null);
-        }
-        if (tipo == null || tipo.getId() == null) {
-            LOG.warn("No se emitio comprobante de pago para pagoId={} por falta de tipo comprobante REC/SEN", pago.getId());
-            return;
-        }
-        if (comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(pago.getId(), tipo.getId(), EstadoComprobante.EMITIDO)) {
-            return;
-        }
-        comprobanteService.emitirComprobantePago(pago.getId(), tipo.getId());
-    }
-
-    private void anularComprobantesAsociadosAPago(Pago pago, String motivo, String usuario, Instant fecha) {
-        if (pago == null || pago.getId() == null) {
-            return;
-        }
-        List<Comprobante> comprobantes = comprobanteRepository.findAllByPagoIdOrderByFechaEmisionDescIdDesc(pago.getId());
-        for (Comprobante comprobante : comprobantes) {
-            if (comprobante.getEstado() == EstadoComprobante.ANULADO) {
-                continue;
-            }
-            comprobante.setEstado(EstadoComprobante.ANULADO);
-            comprobante.setMotivoAnulacion("Anulado por anulacion de pago: " + motivo);
-            comprobante.setUsuarioAnulacion(usuario);
-            comprobante.setFechaAnulacion(fecha);
-            comprobante.setLastModifiedBy(usuario);
-            comprobante.setLastModifiedDate(fecha);
-            comprobanteRepository.save(comprobante);
-        }
     }
 
     private void validarTasacionParaEntrega(Venta venta, TasacionUsado tasacion) {
