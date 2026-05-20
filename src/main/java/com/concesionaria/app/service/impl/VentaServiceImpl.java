@@ -423,18 +423,7 @@ public class VentaServiceImpl implements VentaService {
             throw new BadRequestException("No se puede confirmar una venta cancelada");
         }
 
-        Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
-        for (Long vehiculoId : vehiculoIds) {
-            Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-            EstadoInventario estadoAnterior = inv.getEstadoInventario();
-
-            inv.setEstadoInventario(EstadoInventario.VENDIDO);
-            inv.setLastModifiedDate(Instant.now());
-            inv.setLastModifiedBy(currentUserLogin());
-            inventarioRepository.save(inv);
-            cerrarReservaActiva(inv, EstadoReserva.CONVERTIDA, "Reserva convertida en venta pagada", venta);
-            registrarHistorial(inv, estadoAnterior, EstadoInventario.VENDIDO, "VENTA_CONFIRMADA", "Venta finalizada por pago completo");
-        }
+        ventaInventarioSyncService.marcarVendidoPorVenta(venta);
 
         EstadoVenta estadoAnterior = venta.getEstado();
         venta.setEstado(EstadoVenta.PAGADA);
@@ -449,65 +438,7 @@ public class VentaServiceImpl implements VentaService {
     public void sincronizarInventarioConVenta(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
         asegurarIngresoUsadoSiVentaCobrada(venta);
-        Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
-        if (vehiculoIds.isEmpty()) {
-            return;
-        }
-
-        for (Long vehiculoId : vehiculoIds) {
-            Inventario inventario = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-
-            normalizarReservaVencida(inventario);
-            EstadoInventario estadoAnterior = inventario.getEstadoInventario();
-
-            switch (venta.getEstado()) {
-                case PAGADA, FINALIZADA -> marcarInventarioVendido(inventario);
-                case PENDIENTE, RESERVADA -> {
-                    if (cumpleMinimoReserva(venta)) {
-                        marcarInventarioReservado(inventario, venta.getCliente(), venta);
-                    } else {
-                        liberarInventario(inventario);
-                    }
-                }
-                case CANCELADA -> liberarInventario(inventario);
-            }
-
-            EstadoVenta estadoEsperado = calcularEstadoSegunPagos(venta);
-            if (venta.getEstado() != estadoEsperado) {
-                EstadoVenta estadoAnteriorVenta = venta.getEstado();
-                venta.setEstado(estadoEsperado);
-                venta.setLastModifiedDate(Instant.now());
-                venta.setLastModifiedBy(currentUserLogin());
-                ventaRepository.save(venta);
-                registrarCambioEstadoVentaSiCorresponde(
-                    venta,
-                    estadoAnteriorVenta,
-                    "VENTA_ESTADO_RECALCULADO",
-                    "Estado recalculado segun pagos e inventario"
-                );
-            }
-
-            inventario.setLastModifiedDate(Instant.now());
-            inventario.setLastModifiedBy(currentUserLogin());
-            inventarioRepository.save(inventario);
-
-            if (estadoAnterior != inventario.getEstadoInventario()) {
-                boolean reservaConSeniaConfirmada =
-                    inventario.getEstadoInventario() == EstadoInventario.RESERVADO && (venta.getEstado() == EstadoVenta.PENDIENTE || venta.getEstado() == EstadoVenta.RESERVADA);
-                registrarHistorial(
-                    inventario,
-                    estadoAnterior,
-                    inventario.getEstadoInventario(),
-                    reservaConSeniaConfirmada ? "RESERVA_CONFIRMADA" : accionPorEstadoVenta(venta.getEstado()),
-                    reservaConSeniaConfirmada
-                        ?
-                        "Reserva generada con sena del " +
-                        porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
-                        "%"
-                        : "Sincronizacion automatica desde venta " + venta.getId()
-                );
-            }
-        }
+        ventaInventarioSyncService.sincronizarConVenta(ventaId);
     }
 
     @Override
@@ -553,162 +484,14 @@ public class VentaServiceImpl implements VentaService {
         generarInventarioTomaUsadoSiCorresponde(venta);
     }
 
-    private void marcarInventarioReservado(Inventario inventario, Cliente cliente, Venta venta) {
-        if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
-            throw new BadRequestException("No se puede reservar un vehiculo vendido");
-        }
-        inventario.setEstadoInventario(EstadoInventario.RESERVADO);
-        upsertReservaActiva(inventario, cliente, venta);
-    }
-
-    private void marcarInventarioVendido(Inventario inventario) {
-        inventario.setEstadoInventario(EstadoInventario.VENDIDO);
-        cerrarReservaActiva(inventario, EstadoReserva.CONVERTIDA, "Reserva convertida en venta", null);
-    }
-
-    private void liberarInventario(Inventario inventario) {
-        if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
-            return;
-        }
-        inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
-        cerrarReservaActiva(inventario, EstadoReserva.CANCELADA, "Reserva liberada por cambio de estado de venta", null);
-    }
-
-    private String accionPorEstadoVenta(EstadoVenta estadoVenta) {
-        return switch (estadoVenta) {
-            case PENDIENTE, RESERVADA -> "VENTA_RESERVADA";
-            case PAGADA, FINALIZADA -> "VENTA_CONFIRMADA";
-            case CANCELADA -> "VENTA_CANCELADA";
-        };
-    }
-
-    private void registrarHistorial(
-        Inventario inventario,
-        EstadoInventario estadoAnterior,
-        EstadoInventario estadoNuevo,
-        String accion,
-        String detalle
-    ) {
-        InventarioHistorial historial = new InventarioHistorial();
-        historial.setInventario(inventario);
-        historial.setEstadoAnterior(estadoAnterior);
-        historial.setEstadoNuevo(estadoNuevo);
-        historial.setAccion(accion);
-        historial.setDetalle(detalle);
-        historial.setMotivo(detalle);
-        reservaRepository
-            .findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(inventario.getId(), EstadoReserva.ACTIVA)
-            .map(Reserva::getCliente)
-            .ifPresent(historial::setCliente);
-        historial.setFecha(Instant.now());
-        historial.setUsuario(currentUserLogin());
-        inventarioHistorialRepository.save(historial);
-    }
-
     private void normalizarReservaVencida(Inventario inventario) {
-        if (inventario.getEstadoInventario() != EstadoInventario.RESERVADO) {
-            return;
-        }
-        Optional<Reserva> reservaActivaOpt = reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(
-            inventario.getId(),
-            EstadoReserva.ACTIVA
-        );
-        if (reservaActivaOpt.isEmpty()) {
-            return;
-        }
-        Reserva reservaActiva = reservaActivaOpt.get();
-        Instant vencimiento = reservaActiva.getFechaVencimiento();
-        if (vencimiento == null || vencimiento.isAfter(Instant.now())) {
-            return;
-        }
-        if (inventario.getVehiculo() != null && inventario.getVehiculo().getId() != null) {
-            boolean ventaActiva = ventaRepository.existsByVehiculoIdAndEstadoIn(
-                inventario.getVehiculo().getId(),
-                EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA)
-            );
-            if (ventaActiva) {
-                return;
-            }
-        }
-
-        EstadoInventario anterior = inventario.getEstadoInventario();
-        inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
-        inventario.setLastModifiedDate(Instant.now());
-        inventario.setLastModifiedBy(currentUserLogin());
-        inventarioRepository.save(inventario);
-        reservaActiva.setEstado(EstadoReserva.VENCIDA);
-        reservaActiva.setLastModifiedDate(Instant.now());
-        reservaRepository.save(reservaActiva);
-        registrarHistorial(inventario, anterior, EstadoInventario.DISPONIBLE, "RESERVA_EXPIRADA", "Reserva vencida automaticamente");
-    }
-
-    private void upsertReservaActiva(Inventario inventario, Cliente cliente, Venta venta) {
-        if (inventario == null || inventario.getId() == null || cliente == null) {
-            return;
-        }
-        Reserva reserva = reservaRepository
-            .findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(inventario.getId(), EstadoReserva.ACTIVA)
-            .orElseGet(Reserva::new);
-        reserva.setInventario(inventario);
-        reserva.setCliente(cliente);
-        if (venta != null) {
-            reserva.setMoneda(venta.getMoneda());
-            if (venta.getId() != null) {
-                reserva.setMontoSenia(totalPagadoRegistrado(venta.getId(), venta));
-            } else if (venta.getTotalPagado() != null) {
-                reserva.setMontoSenia(venta.getTotalPagado().setScale(2, RoundingMode.HALF_UP));
-            }
-        }
-        if (reserva.getFechaReserva() == null) {
-            reserva.setFechaReserva(Instant.now());
-        }
-        if (reserva.getFechaVencimiento() == null || !reserva.getFechaVencimiento().isAfter(reserva.getFechaReserva())) {
-            reserva.setFechaVencimiento(plusOneMonth(reserva.getFechaReserva()));
-        }
-        reserva.setEstado(EstadoReserva.ACTIVA);
-        reserva.setUsuarioCreacion(currentUserLogin());
-        if (reserva.getCreatedDate() == null) {
-            reserva.setCreatedDate(Instant.now());
-        }
-        reserva.setLastModifiedDate(Instant.now());
-        reservaRepository.save(reserva);
+        ventaInventarioSyncService.normalizarReservaVencida(inventario);
     }
 
     private void sincronizarReservaDesdeVenta(Venta venta) {
-        if (venta == null || venta.getReserva() == null || venta.getReserva().getId() == null) {
-            return;
-        }
-        Reserva reserva = reservaRepository.findById(venta.getReserva().getId()).orElse(null);
-        if (reserva == null) {
-            return;
-        }
-        if (venta.getMoneda() != null) {
-            reserva.setMoneda(venta.getMoneda());
-        }
-        if (venta.getId() != null) {
-            reserva.setMontoSenia(totalPagadoRegistrado(venta.getId(), venta));
-        } else if (venta.getTotalPagado() != null) {
-            reserva.setMontoSenia(venta.getTotalPagado().setScale(2, RoundingMode.HALF_UP));
-        }
-        reserva.setLastModifiedDate(Instant.now());
-        reservaRepository.save(reserva);
+        ventaInventarioSyncService.sincronizarReservaDesdeVenta(venta);
     }
 
-    private void cerrarReservaActiva(Inventario inventario, EstadoReserva estado, String detalle, Venta venta) {
-        if (inventario == null || inventario.getId() == null) {
-            return;
-        }
-        reservaRepository
-            .findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(inventario.getId(), EstadoReserva.ACTIVA)
-            .ifPresent(reserva -> {
-                reserva.setEstado(estado);
-                if (venta != null && venta.getMoneda() != null) {
-                    reserva.setMoneda(venta.getMoneda());
-                }
-                reserva.setLastModifiedDate(Instant.now());
-                reservaRepository.save(reserva);
-            });
-    }
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
@@ -733,10 +516,6 @@ public class VentaServiceImpl implements VentaService {
             .stream()
             .findFirst()
             .orElseThrow(() -> new BadRequestException("No hay usuario operador disponible para registrar la venta"));
-    }
-
-    private Instant plusOneMonth(Instant base) {
-        return base.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
     }
 
     private void generarInventarioTomaUsadoSiCorresponde(Venta venta) {
