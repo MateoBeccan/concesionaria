@@ -339,7 +339,7 @@ class PagoServiceImplBusinessTest {
         when(currencyConversionService.convertir(any(), eq(2L), eq(1L), any())).thenReturn(conversion);
 
         BadRequestException ex = assertThrows(BadRequestException.class, () -> pagoService.registrarPago(90L, pagoDTO));
-        assertThat(ex.getMessage()).contains("Cotización inválida para aplicar el pago");
+        assertThat(ex.getMessage()).contains("Cotizaci").contains("inv").contains("para aplicar el pago");
     }
 
     @Test

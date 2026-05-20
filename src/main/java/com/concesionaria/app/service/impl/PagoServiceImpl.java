@@ -39,20 +39,16 @@ import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.ComprobanteService;
 import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
-import com.concesionaria.app.service.dto.CotizacionConversionDTO;
 import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.PagoMapper;
 import com.concesionaria.app.security.SecurityUtils;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.Locale;
-import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -68,23 +64,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class PagoServiceImpl implements PagoService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PagoServiceImpl.class);
-    private static final int ESCALA_MONETARIA = 2;
-    private static final int ESCALA_COTIZACION = 8;
-    private static final RoundingMode REDONDEO = RoundingMode.HALF_UP;
-    private static final String CODIGO_CONTADO = "CONTADO";
-    private static final String CODIGO_TRANSFERENCIA = "TRANSFERENCIA";
-    private static final String CODIGO_DEPOSITO = "DEPOSITO";
-    private static final String CODIGO_CHEQUE = "CHEQUE";
-    private static final String CODIGO_DEBITO = "DEBITO";
-    private static final String CODIGO_CREDITO = "CREDITO";
-    private static final String CODIGO_AJUSTE = "AJUSTE";
-    private static final String CODIGO_BONIFICACION = "BONIFICACION";
-    private static final String CODIGO_ENTREGA_USADO = "ENTREGA_USADO";
-    private static final String CODIGO_PLAN_AHORRO = "PLAN_AHORRO";
-    private static final String CODIGO_TARJETA = "TARJETA";
-    private static final String CODIGO_SENIA = "SENIA";
-    private static final String TIPO_COMPROBANTE_REC = "REC";
-    private static final String TIPO_COMPROBANTE_SEN = "SEN";
 
     private final PagoRepository pagoRepository;
     private final PagoMapper pagoMapper;
@@ -103,6 +82,9 @@ public class PagoServiceImpl implements PagoService {
     private final ComprobantePlanAhorroService comprobantePlanAhorroService;
     private final CuotaPlanAhorroRepository cuotaPlanAhorroRepository;
     private final ContratoPlanAhorroRepository contratoPlanAhorroRepository;
+    private final PagoMetodoPolicy pagoMetodoPolicy;
+    private final PagoCalculator pagoCalculator;
+    private final PagoTextNormalizer pagoTextNormalizer;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -128,7 +110,10 @@ public class PagoServiceImpl implements PagoService {
         MovimientoCajaService movimientoCajaService,
         ComprobantePlanAhorroService comprobantePlanAhorroService,
         CuotaPlanAhorroRepository cuotaPlanAhorroRepository,
-        ContratoPlanAhorroRepository contratoPlanAhorroRepository
+        ContratoPlanAhorroRepository contratoPlanAhorroRepository,
+        PagoMetodoPolicy pagoMetodoPolicy,
+        PagoCalculator pagoCalculator,
+        PagoTextNormalizer pagoTextNormalizer
     ) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
@@ -147,6 +132,9 @@ public class PagoServiceImpl implements PagoService {
         this.comprobantePlanAhorroService = comprobantePlanAhorroService;
         this.cuotaPlanAhorroRepository = cuotaPlanAhorroRepository;
         this.contratoPlanAhorroRepository = contratoPlanAhorroRepository;
+        this.pagoMetodoPolicy = pagoMetodoPolicy;
+        this.pagoCalculator = pagoCalculator;
+        this.pagoTextNormalizer = pagoTextNormalizer;
     }
 
     // Constructor legacy para compatibilidad con tests que instancian manualmente el servicio.
@@ -217,7 +205,10 @@ public class PagoServiceImpl implements PagoService {
                 public void delete(Long id) {}
             },
             null,
-            null
+            null,
+            new PagoMetodoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
+            new PagoCalculator(currencyConversionService, new PagoTextNormalizer()),
+            new PagoTextNormalizer()
         );
     }
 
@@ -318,12 +309,12 @@ public class PagoServiceImpl implements PagoService {
         if (metodoPago == null) {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
-        validarMetodoPagoEspecial(metodoPago);
-        validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
-        validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
-        EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
-        if (esMetodoEntregaUsado(metodoPago)) {
+        pagoMetodoPolicy.validarMetodoPagoEspecial(metodoPago);
+        pagoMetodoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
+        pagoMetodoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
+        pagoMetodoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = pagoMetodoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
+        if (pagoMetodoPolicy.esMetodoEntregaUsado(metodoPago)) {
             return registrarPagoEntregaUsado(venta, pagoDTO, metodoPago);
         }
         if (pagoDTO.getTasacionUsadoId() != null) {
@@ -335,15 +326,9 @@ public class PagoServiceImpl implements PagoService {
         }
         Instant fechaPago = pagoDTO.getFecha() != null ? pagoDTO.getFecha() : ahora;
         Moneda monedaPago = resolverMonedaPago(pagoDTO, monedaVenta);
-        CotizacionConversionDTO conversion = currencyConversionService.convertir(
-            pagoDTO.getMonto(),
-            monedaPago.getId(),
-            monedaVenta.getId(),
-            fechaPago
-        );
-        validarConversion(conversion);
-        BigDecimal cotizacionUsada = normalizarCotizacion(conversion.getCotizacionAplicada());
-        BigDecimal montoAplicadoVenta = normalizarMoneda(conversion.getMontoConvertido());
+        PagoCalculator.PagoConversionResult conversionResult = pagoCalculator.convertirPago(pagoDTO.getMonto(), monedaPago, monedaVenta, fechaPago);
+        BigDecimal cotizacionUsada = conversionResult.cotizacionUsada();
+        BigDecimal montoAplicadoVenta = conversionResult.montoAplicado();
         if (montoAplicadoVenta.compareTo(BigDecimal.ZERO) <= 0) {
             throw new BadRequestException("El monto aplicado en moneda de venta debe ser mayor a 0");
         }
@@ -352,7 +337,7 @@ public class PagoServiceImpl implements PagoService {
         }
 
         BigDecimal totalPagadoActual = totalPagadoRegistrado(ventaId);
-        BigDecimal totalPagadoProyectado = normalizarMoneda(totalPagadoActual.add(montoAplicadoVenta));
+        BigDecimal totalPagadoProyectado = pagoCalculator.calcularTotalPagadoProyectado(totalPagadoActual, montoAplicadoVenta);
         BigDecimal montoMinimoReserva = calcularMontoMinimoReserva(venta);
         if (totalPagadoProyectado.compareTo(BigDecimal.ZERO) > 0 && totalPagadoProyectado.compareTo(montoMinimoReserva) < 0) {
             throw new BadRequestException(
@@ -375,14 +360,14 @@ public class PagoServiceImpl implements PagoService {
         pago.setEntidadFinanciera(entidadFinanciera);
         pago.setCotizacionUsada(cotizacionUsada);
         pago.setMontoAplicadoVenta(montoAplicadoVenta);
-        pago.setFechaCotizacionUsada(conversion.getFechaCotizacionUsada());
-        pago.setCotizacionRef(referenciaCotizacion(conversion.getCotizacionOrigenId()));
+        pago.setFechaCotizacionUsada(conversionResult.fechaCotizacionUsada());
+        pago.setCotizacionRef(referenciaCotizacion(conversionResult.cotizacionOrigenId()));
         if (pago.getUsuarioRegistro() == null || pago.getUsuarioRegistro().isBlank()) {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        completarDatosOperacion(pago, metodoPago, null);
-        completarBancoEntidadLegacy(pago, entidadFinanciera);
+        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, null);
+        pagoMetodoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -411,7 +396,7 @@ public class PagoServiceImpl implements PagoService {
             montoAplicadoVenta
         );
         pago = pagoRepository.save(pago);
-        boolean pagoMonetario = !esMetodoNoMonetarioInterno(metodoPago);
+        boolean pagoMonetario = !pagoMetodoPolicy.esMetodoNoMonetarioInterno(metodoPago);
         movimientoCajaService.registrarDesdePago(
             pago,
             pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
@@ -442,12 +427,12 @@ public class PagoServiceImpl implements PagoService {
         if (metodoPago == null) {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
-        validarMetodoPagoEspecial(metodoPago);
-        validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
-        validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
-        EntidadFinanciera entidadFinanciera = resolverEntidadFinanciera(pagoDTO, metodoPago);
-        if (esMetodoEntregaUsado(metodoPago)) {
+        pagoMetodoPolicy.validarMetodoPagoEspecial(metodoPago);
+        pagoMetodoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
+        pagoMetodoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
+        pagoMetodoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = pagoMetodoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
+        if (pagoMetodoPolicy.esMetodoEntregaUsado(metodoPago)) {
             throw new BadRequestException("ENTREGA_USADO solo puede registrarse sobre una venta");
         }
         if (pagoDTO.getTasacionUsadoId() != null) {
@@ -471,23 +456,17 @@ public class PagoServiceImpl implements PagoService {
         }
         pago.setMoneda(monedaPago);
         pago.setEntidadFinanciera(entidadFinanciera);
-        CotizacionConversionDTO conversion = currencyConversionService.convertir(
-            pagoDTO.getMonto(),
-            monedaPago.getId(),
-            monedaReserva.getId(),
-            fechaPago
-        );
-        validarConversion(conversion);
-        pago.setCotizacionUsada(normalizarCotizacion(conversion.getCotizacionAplicada()));
-        pago.setMontoAplicadoVenta(normalizarMoneda(conversion.getMontoConvertido()));
-        pago.setFechaCotizacionUsada(conversion.getFechaCotizacionUsada());
-        pago.setCotizacionRef(referenciaCotizacion(conversion.getCotizacionOrigenId()));
+        PagoCalculator.PagoConversionResult conversionResult = pagoCalculator.convertirPago(pagoDTO.getMonto(), monedaPago, monedaReserva, fechaPago);
+        pago.setCotizacionUsada(conversionResult.cotizacionUsada());
+        pago.setMontoAplicadoVenta(conversionResult.montoAplicado());
+        pago.setFechaCotizacionUsada(conversionResult.fechaCotizacionUsada());
+        pago.setCotizacionRef(referenciaCotizacion(conversionResult.cotizacionOrigenId()));
         if (pago.getUsuarioRegistro() == null || pago.getUsuarioRegistro().isBlank()) {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        completarDatosOperacion(pago, metodoPago, null);
-        completarBancoEntidadLegacy(pago, entidadFinanciera);
+        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, null);
+        pagoMetodoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -504,7 +483,7 @@ public class PagoServiceImpl implements PagoService {
             pago.getMontoAplicadoVenta()
         );
         Pago pagoGuardado = pagoRepository.save(pago);
-        boolean pagoMonetario = !esMetodoNoMonetarioInterno(metodoPago);
+        boolean pagoMonetario = !pagoMetodoPolicy.esMetodoNoMonetarioInterno(metodoPago);
         movimientoCajaService.registrarDesdePago(
             pagoGuardado,
             pagoMonetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
@@ -557,7 +536,7 @@ public class PagoServiceImpl implements PagoService {
         LOG.info("Anulando pago pagoId={} ventaId={} reservaId={}", pagoId, venta != null ? venta.getId() : null, reservaAsociada != null ? reservaAsociada.getId() : null);
         Pago pagoActualizado = pagoRepository.save(pago);
         boolean monetario = pagoActualizado.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO &&
-            !esMetodoNoMonetarioInterno(pagoActualizado.getMetodoPago());
+            !pagoMetodoPolicy.esMetodoNoMonetarioInterno(pagoActualizado.getMetodoPago());
         movimientoCajaService.registrarDesdePago(
             pagoActualizado,
             monetario ? TipoMovimientoCaja.REVERSO : TipoMovimientoCaja.INFORMATIVO,
@@ -597,7 +576,7 @@ public class PagoServiceImpl implements PagoService {
             .filter(c -> c.getEstado() == EstadoCuotaPlanAhorro.PENDIENTE || c.getEstado() == EstadoCuotaPlanAhorro.VENCIDA)
             .map(CuotaPlanAhorro::getImporte)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
-            .setScale(2, REDONDEO);
+            .setScale(2, PagoTextNormalizer.REDONDEO);
         contrato.setCuotasPagadas((int) pagadas);
         contrato.setSaldoPendiente(saldo);
         if (saldo.compareTo(BigDecimal.ZERO) == 0) {
@@ -612,7 +591,7 @@ public class PagoServiceImpl implements PagoService {
         Instant ahora = Instant.now();
         BigDecimal totalPagado = totalPagadoRegistrado(venta.getId());
         BigDecimal total = venta.getTotal() == null ? BigDecimal.ZERO : venta.getTotal();
-        BigDecimal saldo = normalizarMoneda(total.subtract(totalPagado));
+        BigDecimal saldo = pagoCalculator.calcularSaldoVenta(venta, totalPagado);
         if (saldo.compareTo(BigDecimal.ZERO) < 0) {
             throw new BadRequestException("Los pagos registrados superan el total de la venta");
         }
@@ -657,8 +636,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private BigDecimal calcularMontoMinimoReserva(Venta venta) {
-        BigDecimal base = venta.getImporteNeto() == null ? BigDecimal.ZERO : venta.getImporteNeto();
-        return normalizarMoneda(base.multiply(porcentajeMinimoReserva));
+        return pagoCalculator.calcularMontoMinimoReserva(venta, porcentajeMinimoReserva);
     }
 
     private String currentUserLogin() {
@@ -691,73 +669,6 @@ public class PagoServiceImpl implements PagoService {
         return monedaRepository.findById(pagoDTO.getMoneda().getId()).orElseThrow(() -> new BadRequestException("La moneda del pago no existe"));
     }
 
-    private void validarMetodoPagoEspecial(MetodoPago metodoPago) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (codigoMetodo == null) {
-            return;
-        }
-        if (
-            (CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
-                CODIGO_TARJETA.equals(codigoMetodo) ||
-                CODIGO_DEBITO.equals(codigoMetodo) ||
-                CODIGO_CREDITO.equals(codigoMetodo)) &&
-            (metodoPago.getRequiereReferencia() == null || !metodoPago.getRequiereReferencia())
-        ) {
-            LOG.warn("Metodo de pago {} deberia requerir referencia para trazabilidad", codigoMetodo);
-        }
-    }
-
-    private void validarDatosOperacionParaMetodo(PagoDTO pagoDTO, MetodoPago metodoPago) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (codigoMetodo == null) {
-            return;
-        }
-        if (CODIGO_CONTADO.equals(codigoMetodo)) {
-            return;
-        }
-        // Referencia y numero de operacion se autogeneran en backend cuando no son informados.
-    }
-
-    private void validarDatosAdministrativosPorMetodo(PagoDTO pagoDTO, MetodoPago metodoPago) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (codigoMetodo == null) {
-            return;
-        }
-        if (CODIGO_PLAN_AHORRO.equals(codigoMetodo)) {
-            return;
-        }
-        boolean bancoVacio = pagoDTO.getBancoEntidad() == null || pagoDTO.getBancoEntidad().isBlank();
-        boolean entidadVacia = pagoDTO.getEntidadFinanciera() == null || pagoDTO.getEntidadFinanciera().getId() == null;
-        boolean sinIdentificacionEntidad = bancoVacio && entidadVacia;
-        boolean comprobanteVacio = pagoDTO.getComprobanteExterno() == null || pagoDTO.getComprobanteExterno().isBlank();
-        boolean observacionesVacio = pagoDTO.getObservaciones() == null || pagoDTO.getObservaciones().isBlank();
-
-        switch (codigoMetodo) {
-            case CODIGO_TRANSFERENCIA:
-            case CODIGO_DEPOSITO:
-                if (sinIdentificacionEntidad) {
-                    throw new BadRequestException("Para " + codigoMetodo + " debe informar entidad financiera");
-                }
-                break;
-            case CODIGO_CHEQUE:
-                if (sinIdentificacionEntidad) {
-                    throw new BadRequestException("Para CHEQUE debe informar entidad financiera");
-                }
-                if (comprobanteVacio) {
-                    throw new BadRequestException("Para CHEQUE debe informar numero de cheque o comprobante externo");
-                }
-                break;
-            case CODIGO_AJUSTE:
-            case CODIGO_BONIFICACION:
-                if (observacionesVacio) {
-                    throw new BadRequestException("Para " + codigoMetodo + " debe informar observaciones");
-                }
-                break;
-            default:
-                break;
-        }
-    }
-
     private PagoDTO registrarPagoEntregaUsado(Venta venta, PagoDTO pagoDTO, MetodoPago metodoPago) {
         Instant ahora = Instant.now();
         if (pagoDTO.getTasacionUsadoId() == null) {
@@ -774,7 +685,7 @@ public class PagoServiceImpl implements PagoService {
             throw new BadRequestException("El monto tasado excede el saldo pendiente de la venta");
         }
         BigDecimal totalPagadoActual = totalPagadoRegistrado(venta.getId());
-        BigDecimal totalPagadoProyectado = normalizarMoneda(totalPagadoActual.add(montoTasado));
+        BigDecimal totalPagadoProyectado = pagoCalculator.calcularTotalPagadoProyectado(totalPagadoActual, montoTasado);
         BigDecimal montoMinimoReserva = calcularMontoMinimoReserva(venta);
         if (totalPagadoProyectado.compareTo(BigDecimal.ZERO) > 0 && totalPagadoProyectado.compareTo(montoMinimoReserva) < 0) {
             throw new BadRequestException(
@@ -806,7 +717,7 @@ public class PagoServiceImpl implements PagoService {
         if (pago.getFecha() == null) {
             pago.setFecha(ahora);
         }
-        completarDatosOperacion(pago, metodoPago, tasacion);
+        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, tasacion);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -833,27 +744,13 @@ public class PagoServiceImpl implements PagoService {
         if (pago == null || pago.getId() == null || pago.getVenta() == null || pago.getVenta().getId() == null) {
             return;
         }
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (codigoMetodo == null) {
+        if (!pagoMetodoPolicy.esMetodoEmitibleComprobante(metodoPago)) {
             return;
         }
-        boolean emitible = CODIGO_CONTADO.equals(codigoMetodo) ||
-            CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
-            CODIGO_DEPOSITO.equals(codigoMetodo) ||
-            CODIGO_CHEQUE.equals(codigoMetodo) ||
-            CODIGO_TARJETA.equals(codigoMetodo) ||
-            CODIGO_DEBITO.equals(codigoMetodo) ||
-            CODIGO_CREDITO.equals(codigoMetodo) ||
-            CODIGO_ENTREGA_USADO.equals(codigoMetodo) ||
-            CODIGO_SENIA.equals(codigoMetodo);
-        if (!emitible) {
-            return;
-        }
-
-        String codigoTipo = CODIGO_SENIA.equals(codigoMetodo) ? TIPO_COMPROBANTE_SEN : TIPO_COMPROBANTE_REC;
+        String codigoTipo = pagoMetodoPolicy.resolverTipoComprobantePago(metodoPago);
         TipoComprobante tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(codigoTipo).orElse(null);
-        if (tipo == null && !TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
-            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(TIPO_COMPROBANTE_REC).orElse(null);
+        if (tipo == null && !PagoMetodoPolicy.TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
+            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(PagoMetodoPolicy.TIPO_COMPROBANTE_REC).orElse(null);
         }
         if (tipo == null || tipo.getId() == null) {
             LOG.warn("No se emitio comprobante de pago para pagoId={} por falta de tipo comprobante REC/SEN", pago.getId());
@@ -921,28 +818,6 @@ public class PagoServiceImpl implements PagoService {
         }
     }
 
-    private boolean esMetodoEntregaUsado(MetodoPago metodoPago) {
-        return metodoPago != null && CODIGO_ENTREGA_USADO.equals(normalizarCodigoMetodo(metodoPago));
-    }
-
-    private boolean esMetodoNoMonetarioInterno(MetodoPago metodoPago) {
-        if (metodoPago == null) {
-            return false;
-        }
-        String codigo = normalizarCodigoMetodo(metodoPago);
-        return CODIGO_ENTREGA_USADO.equals(codigo) || CODIGO_PLAN_AHORRO.equals(codigo);
-    }
-
-    private void validarReglaMetodoPlanAhorro(PagoDTO pagoDTO, MetodoPago metodoPago) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (!CODIGO_PLAN_AHORRO.equals(codigoMetodo)) {
-            return;
-        }
-        if (pagoDTO.getAdjudicacionPlanAhorroId() == null || pagoDTO.getContratoPlanAhorroId() == null) {
-            throw new BadRequestException("El metodo PLAN_AHORRO solo puede usarse como aplicacion automatica desde una adjudicacion");
-        }
-    }
-
     private void validarContextoEntradaPago(PagoDTO pagoDTO) {
         if (pagoDTO == null) {
             throw new BadRequestException("Debe informar los datos del pago");
@@ -966,106 +841,20 @@ public class PagoServiceImpl implements PagoService {
         pago.setUsuarioAnulacion(normalizarTexto(pago.getUsuarioAnulacion(), 50));
     }
 
-    private void completarDatosOperacion(Pago pago, MetodoPago metodoPago, TasacionUsado tasacionUsado) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        if (codigoMetodo == null) {
-            codigoMetodo = "PAGO";
-        }
-        String timestamp = String.valueOf(Instant.now().toEpochMilli());
-        String token = UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
-
-        if (CODIGO_CONTADO.equals(codigoMetodo)) {
-            pago.setReferencia(null);
-            pago.setNumeroOperacion(null);
-            return;
-        }
-
-        if (CODIGO_ENTREGA_USADO.equals(codigoMetodo)) {
-            String tasacionRef = tasacionUsado != null && tasacionUsado.getId() != null ? String.valueOf(tasacionUsado.getId()) : token;
-            if (pago.getReferencia() == null || pago.getReferencia().isBlank()) {
-                pago.setReferencia("TAS-" + tasacionRef);
-            }
-            if (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank()) {
-                pago.setNumeroOperacion("ENT-" + timestamp.substring(Math.max(0, timestamp.length() - 8)));
-            }
-            return;
-        }
-
-        if (pago.getReferencia() == null || pago.getReferencia().isBlank()) {
-            pago.setReferencia(codigoMetodo + "-REF-" + token);
-        }
-        if (pago.getNumeroOperacion() == null || pago.getNumeroOperacion().isBlank()) {
-            pago.setNumeroOperacion(codigoMetodo + "-OP-" + timestamp.substring(Math.max(0, timestamp.length() - 8)));
-        }
-    }
-
-    private EntidadFinanciera resolverEntidadFinanciera(PagoDTO pagoDTO, MetodoPago metodoPago) {
-        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        boolean requiereEntidad = CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
-            CODIGO_DEPOSITO.equals(codigoMetodo) ||
-            CODIGO_CHEQUE.equals(codigoMetodo) ||
-            CODIGO_TARJETA.equals(codigoMetodo) ||
-            CODIGO_DEBITO.equals(codigoMetodo) ||
-            CODIGO_CREDITO.equals(codigoMetodo);
-
-        Long entidadId = pagoDTO.getEntidadFinanciera() != null ? pagoDTO.getEntidadFinanciera().getId() : null;
-        if (!requiereEntidad) {
-            return entidadId == null ? null : entidadFinancieraRepository.findById(entidadId).orElse(null);
-        }
-        if (entidadId != null) {
-            return entidadFinancieraRepository
-                .findById(entidadId)
-                .filter(EntidadFinanciera::getActiva)
-                .orElseThrow(() -> new BadRequestException("La entidad financiera no existe o no esta activa"));
-        }
-        if (pagoDTO.getBancoEntidad() != null && !pagoDTO.getBancoEntidad().isBlank()) {
-            return null;
-        }
-        throw new BadRequestException("Para " + codigoMetodo + " debe informar entidad financiera");
-    }
-
-    private void completarBancoEntidadLegacy(Pago pago, EntidadFinanciera entidadFinanciera) {
-        if (entidadFinanciera == null) {
-            return;
-        }
-        if (pago.getBancoEntidad() == null || pago.getBancoEntidad().isBlank()) {
-            pago.setBancoEntidad(entidadFinanciera.getNombre());
-        }
-    }
-
     private String normalizarTexto(String value, int max) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-        if (trimmed.length() > max) {
-            throw new BadRequestException("Un campo de texto excede el maximo permitido de " + max + " caracteres");
-        }
-        return trimmed;
+        return pagoTextNormalizer.normalizarTexto(value, max);
     }
 
     private BigDecimal normalizarMoneda(BigDecimal valor) {
-        return valor.setScale(ESCALA_MONETARIA, REDONDEO);
+        return pagoTextNormalizer.normalizarMoneda(valor);
     }
 
     private BigDecimal normalizarCotizacion(BigDecimal valor) {
-        return valor.setScale(ESCALA_COTIZACION, REDONDEO);
+        return pagoTextNormalizer.normalizarCotizacion(valor);
     }
 
     private Cotizacion referenciaCotizacion(Long cotizacionId) {
         return cotizacionId == null ? null : new Cotizacion().id(cotizacionId);
-    }
-
-    private void validarConversion(CotizacionConversionDTO conversion) {
-        if (conversion.getCotizacionAplicada() == null || conversion.getCotizacionAplicada().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Cotización inválida para aplicar el pago");
-        }
-        if (conversion.getMontoConvertido() == null || conversion.getMontoConvertido().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Monto convertido inválido");
-        }
     }
 
     private void validarVentaEnMonedaBase(Venta venta) {
@@ -1084,13 +873,6 @@ public class PagoServiceImpl implements PagoService {
         if (!esMonedaBase) {
             throw new BadRequestException(mensajeVentaMonedaBaseConfigurada());
         }
-    }
-
-    private String normalizarCodigoMetodo(MetodoPago metodoPago) {
-        if (metodoPago == null || metodoPago.getCodigo() == null) {
-            return null;
-        }
-        return metodoPago.getCodigo().trim().toUpperCase(Locale.ROOT);
     }
 
     private String mensajeVentaMonedaBaseConfigurada() {
