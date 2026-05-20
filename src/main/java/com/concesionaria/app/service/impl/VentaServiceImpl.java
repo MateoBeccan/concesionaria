@@ -77,6 +77,11 @@ public class VentaServiceImpl implements VentaService {
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final VentaHistorialRepository ventaHistorialRepository;
     private final CurrencyConversionService currencyConversionService;
+    private final VentaValidator ventaValidator;
+    private final VentaCalculator ventaCalculator;
+    private final VentaStateManager ventaStateManager;
+    private final VentaHistorialService ventaHistorialService;
+    private final VentaInventarioSyncService ventaInventarioSyncService;
 
     @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
     private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
@@ -97,7 +102,12 @@ public class VentaServiceImpl implements VentaService {
         ReservaRepository reservaRepository,
         TasacionUsadoRepository tasacionUsadoRepository,
         VentaHistorialRepository ventaHistorialRepository,
-        CurrencyConversionService currencyConversionService
+        CurrencyConversionService currencyConversionService,
+        VentaValidator ventaValidator,
+        VentaCalculator ventaCalculator,
+        VentaStateManager ventaStateManager,
+        VentaHistorialService ventaHistorialService,
+        VentaInventarioSyncService ventaInventarioSyncService
     ) {
         this.ventaRepository = ventaRepository;
         this.ventaMapper = ventaMapper;
@@ -112,6 +122,11 @@ public class VentaServiceImpl implements VentaService {
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.ventaHistorialRepository = ventaHistorialRepository;
         this.currencyConversionService = currencyConversionService;
+        this.ventaValidator = ventaValidator;
+        this.ventaCalculator = ventaCalculator;
+        this.ventaStateManager = ventaStateManager;
+        this.ventaHistorialService = ventaHistorialService;
+        this.ventaInventarioSyncService = ventaInventarioSyncService;
     }
 
     @Override
@@ -245,113 +260,29 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private void validarVentaDto(VentaDTO dto, boolean exigirMinimoTradicional) {
-        if (dto.getCliente() == null || dto.getCliente().getId() == null) {
-            throw new BadRequestException("El cliente es obligatorio");
-        }
-        if (dto.getFecha() == null) {
-            throw new BadRequestException("La fecha de la venta es obligatoria");
-        }
-        if (dto.getEstado() == null) {
-            throw new BadRequestException("El estado de la venta es obligatorio");
-        }
         if (dto.getVehiculo() == null || dto.getVehiculo().getId() == null) {
             throw new BadRequestException("El vehiculo de la venta es obligatorio");
         }
         Vehiculo vehiculo = vehiculoRepository
             .findById(dto.getVehiculo().getId())
             .orElseThrow(() -> new BadRequestException("El vehiculo de la venta no existe"));
-        if (vehiculo.getMoneda() == null || vehiculo.getMoneda().getId() == null) {
-            throw new BadRequestException("El vehiculo seleccionado no tiene moneda configurada");
-        }
-        if (vehiculo.getPrecio() == null || vehiculo.getPrecio().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("El vehiculo seleccionado no tiene un precio de lista valido");
-        }
         validarDisponibilidadInventarioParaVenta(dto, vehiculo);
         Moneda monedaBaseVenta = resolverMonedaBaseVenta();
-        dto.setMoneda(toMonedaDto(monedaBaseVenta));
         CotizacionConversionDTO conversion = resolverConversionVehiculoAVenta(dto, vehiculo, monedaBaseVenta);
-        dto.setCotizacion(conversion.getCotizacionAplicada());
-        dto.setFechaCotizacionUsada(conversion.getFechaCotizacionUsada());
-        dto.setCotizacionId(conversion.getCotizacionOrigenId());
         recalcularMontosDesdeVehiculo(dto, conversion.getMontoConvertido());
-
-        dto.setPrecioBaseVehiculo(vehiculo.getPrecio().setScale(2, RoundingMode.HALF_UP));
-        dto.setMonedaVehiculo(toMonedaDto(vehiculo));
-        dto.setImporteConvertido(conversion.getMontoConvertido());
-
-        if (dto.getReserva() != null && dto.getReserva().getId() != null) {
-            boolean reservaYaUsada = dto.getId() == null
-                ? ventaRepository.existsByReservaId(dto.getReserva().getId())
-                : ventaRepository.existsByReservaIdAndIdNot(dto.getReserva().getId(), dto.getId());
-            if (reservaYaUsada) {
-                throw new BadRequestException("La reserva ya se encuentra asociada a otra venta");
+        ventaValidator.validarVentaDto(
+            dto,
+            exigirMinimoTradicional,
+            monedaBaseVenta,
+            conversion,
+            porcentajeMinimoReservaEscalaHumana(),
+            this::calcularMontoMinimoReserva,
+            (ventaDto, ignoredVehiculo) -> resolveUsuarioOperador(ventaDto) != null,
+            inventario -> {
+                normalizarReservaVencida(inventario);
+                return null;
             }
-        }
-        validarReservaActivaParaVenta(dto);
-        boolean existeVentaActiva = dto.getId() == null
-            ? ventaRepository.existsByVehiculoIdAndEstadoIn(
-                dto.getVehiculo().getId(),
-                EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA)
-            )
-            : ventaRepository.existsByVehiculoIdAndEstadoInAndIdNot(
-                dto.getVehiculo().getId(),
-                EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA),
-                dto.getId()
-            );
-        if (existeVentaActiva) {
-            throw new BadRequestException("El vehiculo ya se encuentra asociado a otra venta activa");
-        }
-        if (resolveUsuarioOperador(dto) == null) {
-            throw new BadRequestException("No se pudo resolver el usuario operador de la venta");
-        }
-        if (dto.getImporteNeto().compareTo(BigDecimal.ZERO) <= 0 || dto.getTotal().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("La venta debe tener un total mayor a 0");
-        }
-
-        BigDecimal totalPagado = dto.getTotalPagado() == null ? BigDecimal.ZERO : dto.getTotalPagado();
-        BigDecimal saldo = dto.getSaldo() == null ? dto.getTotal().subtract(totalPagado) : dto.getSaldo();
-        if (totalPagado.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BadRequestException("El total pagado no puede ser negativo");
-        }
-        if (exigirMinimoTradicional && totalPagado.compareTo(BigDecimal.ZERO) == 0) {
-            throw new BadRequestException(
-                "La venta requiere un pago minimo del " +
-                porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
-                "% del valor del vehiculo"
-            );
-        }
-        if (saldo.compareTo(BigDecimal.ZERO) < 0) {
-            throw new BadRequestException("El saldo no puede ser negativo");
-        }
-        if (totalPagado.compareTo(dto.getTotal()) > 0) {
-            throw new BadRequestException("El total pagado no puede superar al total de la venta");
-        }
-        if (dto.getEstado() == EstadoVenta.PAGADA && saldo.compareTo(BigDecimal.ZERO) != 0) {
-            throw new BadRequestException("Una venta PAGADA debe tener saldo cero");
-        }
-        if (dto.getEstado() == EstadoVenta.CANCELADA && totalPagado.compareTo(BigDecimal.ZERO) > 0) {
-            throw new BadRequestException("No se puede marcar como CANCELADA una venta con pagos registrados");
-        }
-        BigDecimal montoMinimoReserva = calcularMontoMinimoReserva(dto.getImporteNeto());
-        if (exigirMinimoTradicional && totalPagado.compareTo(BigDecimal.ZERO) > 0 && totalPagado.compareTo(montoMinimoReserva) < 0) {
-            throw new BadRequestException(
-                "La venta requiere una sena minima del " +
-                porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
-                "% del valor del vehiculo"
-            );
-        }
-        if (dto.getEstado() == EstadoVenta.RESERVADA) {
-            if (totalPagado.compareTo(montoMinimoReserva) < 0) {
-                throw new BadRequestException(
-                    "La reserva requiere un pago minimo del " +
-                    porcentajeMinimoReservaEscalaHumana().stripTrailingZeros().toPlainString() +
-                    "% del valor del vehiculo"
-                );
-            }
-        }
-
-        dto.setTotalPagado(totalPagado);
-        dto.setSaldo(saldo);
+        );
     }
 
     @Override
@@ -934,69 +865,31 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private BigDecimal calcularMontoMinimoReserva(BigDecimal base) {
-        BigDecimal importeBase = base == null ? BigDecimal.ZERO : base;
-        return importeBase.multiply(porcentajeMinimoReserva).setScale(2, RoundingMode.HALF_UP);
+        return ventaCalculator.calcularMontoMinimoReserva(base, porcentajeMinimoReserva);
     }
 
     private BigDecimal porcentajeMinimoReservaEscalaHumana() {
-        return porcentajeMinimoReserva.multiply(new BigDecimal("100")).setScale(2, RoundingMode.HALF_UP);
+        return ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva);
     }
 
     private CotizacionConversionDTO resolverConversionVehiculoAVenta(VentaDTO dto, Vehiculo vehiculo, Moneda monedaBaseVenta) {
-        if (monedaBaseVenta == null || monedaBaseVenta.getId() == null) {
-            throw new BadRequestException("No se pudo resolver la moneda base de venta");
-        }
-        if (vehiculo.getMoneda() == null || vehiculo.getMoneda().getId() == null) {
-            throw new BadRequestException("El vehiculo seleccionado no tiene moneda configurada");
-        }
-
-        return currencyConversionService.convertir(vehiculo.getPrecio(), vehiculo.getMoneda().getId(), monedaBaseVenta.getId(), dto.getFecha());
+        return ventaCalculator.resolverConversionVehiculoAVenta(dto, vehiculo, monedaBaseVenta);
     }
 
     private void recalcularMontosDesdeVehiculo(VentaDTO dto, BigDecimal importeConvertido) {
-        BigDecimal porcentaje = dto.getPorcentajeImpuesto() == null ? new BigDecimal("21.00") : dto.getPorcentajeImpuesto();
-        BigDecimal impuesto = importeConvertido.multiply(porcentaje).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-        BigDecimal total = importeConvertido.add(impuesto).setScale(2, RoundingMode.HALF_UP);
-        BigDecimal totalPagado = dto.getTotalPagado() == null ? BigDecimal.ZERO : dto.getTotalPagado().setScale(2, RoundingMode.HALF_UP);
-        BigDecimal saldo = total.subtract(totalPagado).setScale(2, RoundingMode.HALF_UP);
-
-        dto.setPorcentajeImpuesto(porcentaje.setScale(2, RoundingMode.HALF_UP));
-        dto.setImporteNeto(importeConvertido);
-        dto.setImpuesto(impuesto);
-        dto.setTotal(total);
-        dto.setTotalPagado(totalPagado);
-        dto.setSaldo(saldo);
+        ventaCalculator.recalcularMontosDesdeVehiculo(dto, importeConvertido);
     }
 
     private MonedaDTO toMonedaDto(Vehiculo vehiculo) {
-        return toMonedaDto(vehiculo.getMoneda());
+        return ventaCalculator.toMonedaDto(vehiculo);
     }
 
     private MonedaDTO toMonedaDto(Moneda moneda) {
-        if (moneda == null || moneda.getId() == null) {
-            throw new BadRequestException("Moneda invalida");
-        }
-        MonedaDTO monedaDTO = new MonedaDTO();
-        monedaDTO.setId(moneda.getId());
-        monedaDTO.setCodigo(moneda.getCodigo());
-        monedaDTO.setDescripcion(moneda.getDescripcion());
-        monedaDTO.setSimbolo(moneda.getSimbolo());
-        return monedaDTO;
+        return ventaCalculator.toMonedaDto(moneda);
     }
 
     private Moneda resolverMonedaBaseVenta() {
-        Optional<Moneda> directa = monedaRepository.findByCodigoIgnoreCase(monedaBaseCodigo);
-        if (directa.isPresent()) {
-            return directa.get();
-        }
-
-        // Fallback defensivo para bases ya cargadas con codigos legacy como "PESOS ARGS".
-        return monedaRepository
-            .findAll()
-            .stream()
-            .filter(this::esAliasMonedaBase)
-            .findFirst()
-            .orElseThrow(() -> new BadRequestException("No existe moneda base configurada para ventas: " + monedaBaseCodigo));
+        return ventaCalculator.resolverMonedaBaseVenta(monedaBaseCodigo);
     }
 
     private boolean esAliasMonedaBase(Moneda moneda) {
@@ -1024,14 +917,7 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private BigDecimal totalPagadoRegistrado(Long ventaId, Venta venta) {
-        BigDecimal totalPagado = pagoRepository.sumMontoByVentaId(ventaId);
-        if (totalPagado == null) {
-            totalPagado = BigDecimal.ZERO;
-        }
-        if (totalPagado.compareTo(BigDecimal.ZERO) == 0 && venta.getTotalPagado() != null) {
-            totalPagado = venta.getTotalPagado();
-        }
-        return totalPagado.setScale(2, RoundingMode.HALF_UP);
+        return ventaCalculator.totalPagadoRegistrado(ventaId, venta);
     }
 
     private boolean cumpleMinimoReserva(Venta venta) {
@@ -1045,35 +931,11 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private EstadoVenta calcularEstadoSegunPagos(Venta venta) {
-        if (venta == null) {
-            return EstadoVenta.PENDIENTE;
-        }
-        if (venta.getEstado() == EstadoVenta.CANCELADA) {
-            return EstadoVenta.CANCELADA;
-        }
-
-        BigDecimal total = venta.getTotal() == null ? BigDecimal.ZERO : venta.getTotal();
-        BigDecimal totalPagado = venta.getId() == null ? BigDecimal.ZERO : totalPagadoRegistrado(venta.getId(), venta);
-        BigDecimal saldo = total.subtract(totalPagado).setScale(2, RoundingMode.HALF_UP);
-        if (saldo.compareTo(BigDecimal.ZERO) < 0) {
-            saldo = BigDecimal.ZERO;
-        }
-
-        venta.setTotalPagado(totalPagado);
-        venta.setSaldo(saldo);
-
-        if (saldo.compareTo(BigDecimal.ZERO) == 0 && total.compareTo(BigDecimal.ZERO) > 0) {
-            return EstadoVenta.PAGADA;
-        }
-
-        return cumpleMinimoReserva(venta) ? EstadoVenta.RESERVADA : EstadoVenta.PENDIENTE;
+        return ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva);
     }
 
     private BigDecimal calcularImporteBaseReserva(Venta venta) {
-        if (venta == null || venta.getId() == null) {
-            return BigDecimal.ZERO;
-        }
-        return venta.getImporteNeto() == null ? BigDecimal.ZERO : venta.getImporteNeto();
+        return ventaCalculator.calcularImporteBaseReserva(venta);
     }
 
     private void validarReservaActivaParaVenta(VentaDTO dto) {
@@ -1192,28 +1054,11 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private void registrarCambioEstadoVentaSiCorresponde(Venta venta, EstadoVenta estadoAnterior, String accion, String detalle) {
-        if (venta == null || venta.getId() == null || venta.getEstado() == null) {
-            return;
-        }
-        if (estadoAnterior == venta.getEstado()) {
-            return;
-        }
-        registrarHistorialVenta(venta, estadoAnterior, venta.getEstado(), accion, detalle);
+        ventaHistorialService.registrarCambioEstadoVentaSiCorresponde(venta, estadoAnterior, accion, detalle, this::currentUserLogin);
     }
 
     private void registrarHistorialVenta(Venta venta, EstadoVenta estadoAnterior, EstadoVenta estadoNuevo, String accion, String detalle) {
-        if (venta == null || venta.getId() == null || estadoNuevo == null) {
-            return;
-        }
-        VentaHistorial historial = new VentaHistorial();
-        historial.setVenta(venta);
-        historial.setFecha(Instant.now());
-        historial.setEstadoAnterior(estadoAnterior);
-        historial.setEstadoNuevo(estadoNuevo);
-        historial.setAccion(accion);
-        historial.setDetalle(detalle);
-        historial.setUsuario(currentUserLogin());
-        ventaHistorialRepository.save(historial);
+        ventaHistorialService.registrarHistorialVenta(venta, estadoAnterior, estadoNuevo, accion, detalle, this::currentUserLogin);
     }
 
     private VentaHistorialDTO toHistorialDto(VentaHistorial historial) {

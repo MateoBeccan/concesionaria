@@ -26,9 +26,9 @@ spring:
       indent-output: true
   datasource:
     type: com.zaxxer.hikari.HikariDataSource
-    url: jdbc:mysql://localhost:3306/concesionaria?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true
-    username: root
-    password: Mateobeccan2002
+    url: ${DB_URL:jdbc:mysql://localhost:3306/concesionaria?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true}
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
     hikari:
       poolName: Hikari
       auto-commit: false

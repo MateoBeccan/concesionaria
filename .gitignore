@@ -132,6 +132,15 @@ Desktop.ini
 .merge_file*
 
 ######################
+# Local secrets
+######################
+.env
+.env.local
+.env.*.local
+*.secrets.yml
+application-local-secrets.yml
+
+######################
 # Gradle Wrapper
 ######################
 !gradle/wrapper/gradle-wrapper.jar

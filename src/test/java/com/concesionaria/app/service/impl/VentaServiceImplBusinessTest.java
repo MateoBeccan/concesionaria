@@ -86,7 +86,12 @@ class VentaServiceImplBusinessTest {
                 reservaRepository,
                 tasacionUsadoRepository,
                 ventaHistorialRepository,
-                currencyConversionService
+                currencyConversionService,
+                new VentaValidator(ventaRepository, reservaRepository, inventarioRepository, vehiculoRepository),
+                new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository),
+                new VentaStateManager(new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository)),
+                new VentaHistorialService(ventaHistorialRepository),
+                new VentaInventarioSyncService()
             );
         ReflectionTestUtils.setField(service, "monedaBaseCodigo", "ARS");
     }
