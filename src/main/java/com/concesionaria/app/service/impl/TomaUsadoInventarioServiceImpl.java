@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.InventarioHistorial;
 import com.concesionaria.app.domain.Moneda;
@@ -27,7 +28,6 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -40,9 +40,7 @@ public class TomaUsadoInventarioServiceImpl implements TomaUsadoInventarioServic
     private final InventarioHistorialRepository inventarioHistorialRepository;
     private final VentaRepository ventaRepository;
     private final MonedaRepository monedaRepository;
-
-    @Value("${app.negocio.moneda-base-codigo:ARS}")
-    private String monedaBaseCodigo;
+    private final BusinessProperties businessProperties;
 
     public TomaUsadoInventarioServiceImpl(
         PagoRepository pagoRepository,
@@ -51,7 +49,8 @@ public class TomaUsadoInventarioServiceImpl implements TomaUsadoInventarioServic
         InventarioRepository inventarioRepository,
         InventarioHistorialRepository inventarioHistorialRepository,
         VentaRepository ventaRepository,
-        MonedaRepository monedaRepository
+        MonedaRepository monedaRepository,
+        BusinessProperties businessProperties
     ) {
         this.pagoRepository = pagoRepository;
         this.tasacionUsadoRepository = tasacionUsadoRepository;
@@ -60,6 +59,7 @@ public class TomaUsadoInventarioServiceImpl implements TomaUsadoInventarioServic
         this.inventarioHistorialRepository = inventarioHistorialRepository;
         this.ventaRepository = ventaRepository;
         this.monedaRepository = monedaRepository;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     @Override
@@ -186,8 +186,8 @@ public class TomaUsadoInventarioServiceImpl implements TomaUsadoInventarioServic
 
     private Moneda resolverMonedaBaseVenta() {
         return monedaRepository
-            .findByCodigoIgnoreCase(monedaBaseCodigo)
-            .orElseThrow(() -> new BadRequestException("No existe moneda base configurada para ventas: " + monedaBaseCodigo));
+            .findByCodigoIgnoreCase(businessProperties.getMonedaBaseCodigo())
+            .orElseThrow(() -> new BadRequestException("No existe moneda base configurada para ventas: " + businessProperties.getMonedaBaseCodigo()));
     }
 
     private String generarCodigoInternoStock(Long vehiculoId) {

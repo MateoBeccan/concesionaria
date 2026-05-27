@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.TasacionUsado;
 import com.concesionaria.app.domain.User;
 import com.concesionaria.app.domain.Moneda;
@@ -21,7 +22,6 @@ import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -41,9 +41,7 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
     private final UserRepository userRepository;
     private final MonedaRepository monedaRepository;
     private final TasacionUsadoMapper tasacionUsadoMapper;
-
-    @Value("${app.negocio.moneda-base-codigo:ARS}")
-    private String monedaBaseCodigo;
+    private final BusinessProperties businessProperties;
 
     public TasacionUsadoServiceImpl(
         TasacionUsadoRepository tasacionUsadoRepository,
@@ -53,7 +51,8 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
         TipoVehiculoRepository tipoVehiculoRepository,
         UserRepository userRepository,
         MonedaRepository monedaRepository,
-        TasacionUsadoMapper tasacionUsadoMapper
+        TasacionUsadoMapper tasacionUsadoMapper,
+        BusinessProperties businessProperties
     ) {
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.ventaRepository = ventaRepository;
@@ -63,6 +62,7 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
         this.userRepository = userRepository;
         this.monedaRepository = monedaRepository;
         this.tasacionUsadoMapper = tasacionUsadoMapper;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     @Override
@@ -165,7 +165,7 @@ public class TasacionUsadoServiceImpl implements TasacionUsadoService {
 
     private void normalizar(TasacionUsado entity) {
         Moneda monedaBase = monedaRepository
-            .findByCodigoIgnoreCase(monedaBaseCodigo)
+            .findByCodigoIgnoreCase(businessProperties.getMonedaBaseCodigo())
             .orElseThrow(() -> new BadRequestException("No existe la moneda base configurada"));
         if (entity.getMoneda() == null || entity.getMoneda().getId() == null) {
             entity.setMoneda(monedaBase);

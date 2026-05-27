@@ -44,7 +44,6 @@ public class PagoAnulacionService {
     private final ComprobantePlanAhorroService comprobantePlanAhorroService;
     private final CuotaPlanAhorroRepository cuotaPlanAhorroRepository;
     private final ContratoPlanAhorroRepository contratoPlanAhorroRepository;
-    private final PagoMetodoPolicy pagoMetodoPolicy;
     private final PagoTextNormalizer pagoTextNormalizer;
     private final PagoCalculator pagoCalculator;
     private final PagoCajaBridge pagoCajaBridge;
@@ -62,7 +61,6 @@ public class PagoAnulacionService {
         ComprobantePlanAhorroService comprobantePlanAhorroService,
         CuotaPlanAhorroRepository cuotaPlanAhorroRepository,
         ContratoPlanAhorroRepository contratoPlanAhorroRepository,
-        PagoMetodoPolicy pagoMetodoPolicy,
         PagoTextNormalizer pagoTextNormalizer,
         PagoCalculator pagoCalculator,
         PagoCajaBridge pagoCajaBridge,
@@ -76,7 +74,6 @@ public class PagoAnulacionService {
         this.comprobantePlanAhorroService = comprobantePlanAhorroService;
         this.cuotaPlanAhorroRepository = cuotaPlanAhorroRepository;
         this.contratoPlanAhorroRepository = contratoPlanAhorroRepository;
-        this.pagoMetodoPolicy = pagoMetodoPolicy;
         this.pagoTextNormalizer = pagoTextNormalizer;
         this.pagoCalculator = pagoCalculator;
         this.pagoCajaBridge = pagoCajaBridge;

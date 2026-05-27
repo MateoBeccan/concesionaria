@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,19 +89,20 @@ class VentaServiceImplBusinessTest {
                 ventaHistorialRepository,
                 currencyConversionService,
                 new VentaValidator(ventaRepository, reservaRepository, inventarioRepository, vehiculoRepository),
-                new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository),
+                new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository, BusinessProperties.defaults()),
                 new VentaHistorialService(ventaHistorialRepository),
                 new VentaInventarioSyncService(
                     ventaRepository,
                     inventarioRepository,
                     reservaRepository,
                     inventarioHistorialRepository,
-                    new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository),
-                    new VentaStateManager(new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository)),
-                    new VentaHistorialService(ventaHistorialRepository)
-                )
+                    new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository, BusinessProperties.defaults()),
+                    new VentaStateManager(new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository, BusinessProperties.defaults())),
+                    new VentaHistorialService(ventaHistorialRepository),
+                    BusinessProperties.defaults()
+                ),
+                BusinessProperties.defaults()
             );
-        ReflectionTestUtils.setField(service, "monedaBaseCodigo", "ARS");
     }
 
     @Test

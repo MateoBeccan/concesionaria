@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.InventarioHistorial;
 import com.concesionaria.app.domain.Reserva;
@@ -45,6 +46,7 @@ public class ReservaServiceImpl implements ReservaService {
     private final InventarioHistorialRepository inventarioHistorialRepository;
     private final PagoRepository pagoRepository;
     private final VentaRepository ventaRepository;
+    private final BusinessProperties businessProperties;
 
     public ReservaServiceImpl(
         ReservaRepository reservaRepository,
@@ -52,7 +54,8 @@ public class ReservaServiceImpl implements ReservaService {
         InventarioRepository inventarioRepository,
         InventarioHistorialRepository inventarioHistorialRepository,
         PagoRepository pagoRepository,
-        VentaRepository ventaRepository
+        VentaRepository ventaRepository,
+        BusinessProperties businessProperties
     ) {
         this.reservaRepository = reservaRepository;
         this.reservaMapper = reservaMapper;
@@ -60,6 +63,7 @@ public class ReservaServiceImpl implements ReservaService {
         this.inventarioHistorialRepository = inventarioHistorialRepository;
         this.pagoRepository = pagoRepository;
         this.ventaRepository = ventaRepository;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     @Override
@@ -192,7 +196,7 @@ public class ReservaServiceImpl implements ReservaService {
             reserva.setFechaReserva(Instant.now());
         }
         if (reserva.getFechaVencimiento() == null) {
-            reserva.setFechaVencimiento(plusOneMonth(reserva.getFechaReserva()));
+            reserva.setFechaVencimiento(sumarDiasVencimientoReserva(reserva.getFechaReserva()));
         }
         if (!reserva.getFechaVencimiento().isAfter(reserva.getFechaReserva())) {
             throw new BadRequestException("La fecha de vencimiento debe ser posterior a la fecha de reserva");
@@ -280,8 +284,8 @@ public class ReservaServiceImpl implements ReservaService {
         inventarioHistorialRepository.save(historial);
     }
 
-    private Instant plusOneMonth(Instant base) {
-        return base.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+    private Instant sumarDiasVencimientoReserva(Instant base) {
+        return base.atZone(ZoneOffset.UTC).plusDays(businessProperties.getReserva().getDiasVencimiento()).toInstant();
     }
 
     private String currentUserLogin() {

@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.InventarioHistorial;
@@ -20,7 +21,6 @@ import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -32,9 +32,7 @@ public class VentaInventarioSyncService {
     private final VentaCalculator ventaCalculator;
     private final VentaStateManager ventaStateManager;
     private final VentaHistorialService ventaHistorialService;
-
-    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
-    private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
+    private final BusinessProperties businessProperties;
 
     public VentaInventarioSyncService(
         VentaRepository ventaRepository,
@@ -43,7 +41,8 @@ public class VentaInventarioSyncService {
         InventarioHistorialRepository inventarioHistorialRepository,
         VentaCalculator ventaCalculator,
         VentaStateManager ventaStateManager,
-        VentaHistorialService ventaHistorialService
+        VentaHistorialService ventaHistorialService,
+        BusinessProperties businessProperties
     ) {
         this.ventaRepository = ventaRepository;
         this.inventarioRepository = inventarioRepository;
@@ -52,6 +51,7 @@ public class VentaInventarioSyncService {
         this.ventaCalculator = ventaCalculator;
         this.ventaStateManager = ventaStateManager;
         this.ventaHistorialService = ventaHistorialService;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     public void sincronizarConVenta(Long ventaId) {
@@ -82,7 +82,7 @@ public class VentaInventarioSyncService {
                 case CANCELADA -> liberarPorCancelacion(venta);
             }
 
-            EstadoVenta estadoEsperado = ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva);
+            EstadoVenta estadoEsperado = ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva());
             if (venta.getEstado() != estadoEsperado) {
                 EstadoVenta estadoAnteriorVenta = venta.getEstado();
                 venta.setEstado(estadoEsperado);
@@ -115,7 +115,7 @@ public class VentaInventarioSyncService {
                     reservaConSeniaConfirmada ? "RESERVA_CONFIRMADA" : accionPorEstadoVenta(venta.getEstado()),
                     reservaConSeniaConfirmada
                         ? "Reserva generada con sena del " +
-                        ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva).stripTrailingZeros().toPlainString() +
+                        ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva()).stripTrailingZeros().toPlainString() +
                         "%"
                         : "Sincronizacion automatica desde venta " + venta.getId()
                 );
@@ -258,7 +258,7 @@ public class VentaInventarioSyncService {
             return false;
         }
         BigDecimal totalPagado = ventaCalculator.totalPagadoRegistrado(venta.getId(), venta);
-        BigDecimal montoMinimo = ventaCalculator.calcularMontoMinimoReserva(ventaCalculator.calcularImporteBaseReserva(venta), porcentajeMinimoReserva);
+        BigDecimal montoMinimo = ventaCalculator.calcularMontoMinimoReserva(ventaCalculator.calcularImporteBaseReserva(venta), porcentajeMinimoReserva());
         return totalPagado.compareTo(montoMinimo) >= 0 && montoMinimo.compareTo(BigDecimal.ZERO) > 0;
     }
 
@@ -283,7 +283,7 @@ public class VentaInventarioSyncService {
             reserva.setFechaReserva(Instant.now());
         }
         if (reserva.getFechaVencimiento() == null || !reserva.getFechaVencimiento().isAfter(reserva.getFechaReserva())) {
-            reserva.setFechaVencimiento(plusOneMonth(reserva.getFechaReserva()));
+            reserva.setFechaVencimiento(sumarDiasVencimientoReserva(reserva.getFechaReserva()));
         }
         reserva.setEstado(EstadoReserva.ACTIVA);
         reserva.setUsuarioCreacion(currentUserLogin());
@@ -318,8 +318,12 @@ public class VentaInventarioSyncService {
         };
     }
 
-    private Instant plusOneMonth(Instant base) {
-        return base.atZone(ZoneOffset.UTC).plusMonths(1).toInstant();
+    private Instant sumarDiasVencimientoReserva(Instant base) {
+        return base.atZone(ZoneOffset.UTC).plusDays(businessProperties.getReserva().getDiasVencimiento()).toInstant();
+    }
+
+    private BigDecimal porcentajeMinimoReserva() {
+        return businessProperties.getReserva().getPorcentajeMinimo();
     }
 
     private String currentUserLogin() {

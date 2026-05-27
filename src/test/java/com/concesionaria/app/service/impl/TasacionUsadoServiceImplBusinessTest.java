@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,9 +54,9 @@ class TasacionUsadoServiceImplBusinessTest {
                 tipoVehiculoRepository,
                 userRepository,
                 monedaRepository,
-                tasacionUsadoMapper
+                tasacionUsadoMapper,
+                BusinessProperties.defaults()
             );
-        org.springframework.test.util.ReflectionTestUtils.setField(service, "monedaBaseCodigo", "ARS");
     }
 
     @Test

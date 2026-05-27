@@ -10,26 +10,17 @@ import static org.mockito.Mockito.when;
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.ContratoPlanAhorro;
 import com.concesionaria.app.domain.CuotaPlanAhorro;
-import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.domain.Moneda;
-import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.PlanAhorro;
 import com.concesionaria.app.domain.User;
 import com.concesionaria.app.domain.enumeration.EstadoContratoPlanAhorro;
-import com.concesionaria.app.domain.enumeration.EstadoComprobante;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
-import com.concesionaria.app.domain.enumeration.EstadoPago;
-import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.repository.ClienteRepository;
 import com.concesionaria.app.repository.ComprobantePlanAhorroRepository;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
-import com.concesionaria.app.repository.MetodoPagoRepository;
-import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.PlanAhorroRepository;
 import com.concesionaria.app.repository.UserRepository;
-import com.concesionaria.app.service.ComprobantePlanAhorroService;
-import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.dto.ClienteDTO;
 import com.concesionaria.app.service.dto.ContratoPlanAhorroDTO;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
@@ -69,19 +60,16 @@ class ContratoPlanAhorroServiceImplBusinessTest {
     private UserRepository userRepository;
 
     @Mock
-    private MetodoPagoRepository metodoPagoRepository;
-
-    @Mock
-    private PagoRepository pagoRepository;
-
-    @Mock
-    private MovimientoCajaService movimientoCajaService;
-
-    @Mock
-    private ComprobantePlanAhorroService comprobantePlanAhorroService;
-
-    @Mock
     private ComprobantePlanAhorroRepository comprobantePlanAhorroRepository;
+
+    @Mock
+    private ContratoPlanAhorroValidator contratoPlanAhorroValidator;
+
+    @Mock
+    private CuotaPlanAhorroGenerator cuotaPlanAhorroGenerator;
+
+    @Mock
+    private PagoCuotaPlanAhorroProcessor pagoCuotaPlanAhorroProcessor;
 
     @Mock
     private ContratoPlanAhorroMapper contratoMapper;
@@ -100,11 +88,10 @@ class ContratoPlanAhorroServiceImplBusinessTest {
                 planRepository,
                 clienteRepository,
                 userRepository,
-                metodoPagoRepository,
-                pagoRepository,
-                movimientoCajaService,
-                comprobantePlanAhorroService,
                 comprobantePlanAhorroRepository,
+                contratoPlanAhorroValidator,
+                cuotaPlanAhorroGenerator,
+                pagoCuotaPlanAhorroProcessor,
                 contratoMapper,
                 cuotaMapper
             );
@@ -127,7 +114,6 @@ class ContratoPlanAhorroServiceImplBusinessTest {
             c.setId(99L);
             return c;
         });
-        when(cuotaRepository.save(any(CuotaPlanAhorro.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(contratoMapper.toDto(any(ContratoPlanAhorro.class))).thenReturn(new ContratoPlanAhorroDTO());
 
         service.crearContrato(input);
@@ -138,11 +124,7 @@ class ContratoPlanAhorroServiceImplBusinessTest {
         assertThat(contratoCaptor.getValue().getCuotasTotales()).isEqualTo(84);
         assertThat(contratoCaptor.getValue().getCuotasPagadas()).isZero();
 
-        ArgumentCaptor<CuotaPlanAhorro> cuotaCaptor = ArgumentCaptor.forClass(CuotaPlanAhorro.class);
-        verify(cuotaRepository, org.mockito.Mockito.times(84)).save(cuotaCaptor.capture());
-        List<CuotaPlanAhorro> cuotas = cuotaCaptor.getAllValues();
-        assertThat(cuotas.getFirst().getImporte()).isEqualByComparingTo("291666.67");
-        assertThat(cuotas.getLast().getImporte()).isEqualByComparingTo("291666.39");
+        verify(cuotaPlanAhorroGenerator).generarCuotas(eq(contratoCaptor.getValue()), eq(plan), eq(input.getFechaInicio()));
     }
 
     @Test
@@ -159,39 +141,13 @@ class ContratoPlanAhorroServiceImplBusinessTest {
         cuota.setEstado(EstadoCuotaPlanAhorro.PENDIENTE);
         cuota.setImporte(new BigDecimal("291666.67"));
 
-        MetodoPago contado = new MetodoPago();
-        contado.setId(1L);
-        contado.setCodigo("CONTADO");
-
         when(cuotaRepository.findOneByIdForUser(501L, "user")).thenReturn(Optional.of(cuota));
-        when(metodoPagoRepository.findByCodigoIgnoreCase("CONTADO")).thenReturn(Optional.of(contado));
-        when(pagoRepository.save(any(Pago.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(cuotaRepository.save(any(CuotaPlanAhorro.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(cuotaRepository.findAllByContratoIdOrderByNumeroCuotaAsc(99L))
-            .thenReturn(
-                List.of(
-                    cuotaEstado("291666.67", EstadoCuotaPlanAhorro.PAGADA),
-                    cuotaEstado("24208333.33", EstadoCuotaPlanAhorro.PENDIENTE)
-                )
-            );
-        when(contratoRepository.save(any(ContratoPlanAhorro.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(cuotaMapper.toDto(any(CuotaPlanAhorro.class))).thenReturn(new CuotaPlanAhorroDTO());
+        when(pagoCuotaPlanAhorroProcessor.pagarCuota(eq(cuota), eq(new BigDecimal("291666.67")), eq("ok"), eq("user")))
+            .thenReturn(new CuotaPlanAhorroDTO());
 
         service.pagarCuota(501L, new BigDecimal("291666.67"), "ok");
 
-        ArgumentCaptor<Pago> pagoCaptor = ArgumentCaptor.forClass(Pago.class);
-        verify(pagoRepository).save(pagoCaptor.capture());
-        assertThat(pagoCaptor.getValue().getContratoPlanAhorro()).isNotNull();
-        assertThat(pagoCaptor.getValue().getContratoPlanAhorro().getId()).isEqualTo(99L);
-        assertThat(pagoCaptor.getValue().getVenta()).isNull();
-        assertThat(pagoCaptor.getValue().getReserva()).isNull();
-        assertThat(pagoCaptor.getValue().getTasacionUsado()).isNull();
-
-        ArgumentCaptor<ContratoPlanAhorro> contratoCaptor = ArgumentCaptor.forClass(ContratoPlanAhorro.class);
-        verify(contratoRepository).save(contratoCaptor.capture());
-        assertThat(contratoCaptor.getValue().getCuotasPagadas()).isEqualTo(1);
-        assertThat(contratoCaptor.getValue().getSaldoPendiente()).isEqualByComparingTo("24208333.33");
-        assertThat(contratoCaptor.getValue().getEstado()).isEqualTo(EstadoContratoPlanAhorro.ACTIVO);
+        verify(pagoCuotaPlanAhorroProcessor).pagarCuota(eq(cuota), eq(new BigDecimal("291666.67")), eq("ok"), eq("user"));
     }
 
     @Test
@@ -200,39 +156,29 @@ class ContratoPlanAhorroServiceImplBusinessTest {
         CuotaPlanAhorro cuota1 = cuotaConContrato(501L, 1, "291666.67", EstadoCuotaPlanAhorro.PENDIENTE, contrato);
         CuotaPlanAhorro cuota2 = cuotaConContrato(502L, 2, "291666.67", EstadoCuotaPlanAhorro.VENCIDA, contrato);
 
-        MetodoPago contado = new MetodoPago();
-        contado.setId(1L);
-        contado.setCodigo("CONTADO");
-
         when(cuotaRepository.findOneByIdForUser(501L, "user")).thenReturn(Optional.of(cuota1));
         when(cuotaRepository.findOneByIdForUser(502L, "user")).thenReturn(Optional.of(cuota2));
-        when(comprobantePlanAhorroRepository.existsByCuotaPlanAhorroIdAndEstado(any(Long.class), eq(EstadoComprobante.EMITIDO))).thenReturn(false);
-        when(metodoPagoRepository.findByCodigoIgnoreCase("CONTADO")).thenReturn(Optional.of(contado));
-        when(pagoRepository.save(any(Pago.class))).thenAnswer(invocation -> {
-            Pago pago = invocation.getArgument(0);
-            pago.setId(900L);
-            return pago;
-        });
-        when(cuotaRepository.save(any(CuotaPlanAhorro.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(cuotaMapper.toDto(any(CuotaPlanAhorro.class))).thenAnswer(invocation -> {
-            CuotaPlanAhorro cuota = invocation.getArgument(0);
-            CuotaPlanAhorroDTO dto = new CuotaPlanAhorroDTO();
-            dto.setId(cuota.getId());
-            dto.setPagoId(cuota.getPago() != null ? cuota.getPago().getId() : null);
-            return dto;
-        });
-        when(cuotaRepository.findAllByContratoIdOrderByNumeroCuotaAsc(99L))
-            .thenReturn(List.of(cuotaConContrato(501L, 1, "291666.67", EstadoCuotaPlanAhorro.PAGADA, contrato), cuotaConContrato(502L, 2, "291666.67", EstadoCuotaPlanAhorro.PAGADA, contrato)));
-        when(contratoRepository.save(any(ContratoPlanAhorro.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        CuotaPlanAhorroDTO cuotaUnoDto = new CuotaPlanAhorroDTO();
+        cuotaUnoDto.setId(501L);
+        CuotaPlanAhorroDTO cuotaDosDto = new CuotaPlanAhorroDTO();
+        cuotaDosDto.setId(502L);
+        when(
+            pagoCuotaPlanAhorroProcessor.pagarCuotas(
+                any(List.class),
+                eq(new BigDecimal("583333.34")),
+                eq("pago multiple"),
+                eq(null),
+                eq(1L),
+                eq("user")
+            )
+        )
+            .thenReturn(List.of(cuotaUnoDto, cuotaDosDto));
 
         List<CuotaPlanAhorroDTO> result = service.pagarCuotas(List.of(502L, 501L), new BigDecimal("583333.34"), "pago multiple", null, 1L);
 
         assertThat(result).hasSize(2);
-        assertThat(result).allMatch(dto -> dto.getPagoId().equals(900L));
-        verify(pagoRepository).save(any(Pago.class));
-        verify(cuotaRepository, org.mockito.Mockito.times(2)).save(any(CuotaPlanAhorro.class));
-        verify(comprobantePlanAhorroService, org.mockito.Mockito.times(2)).emitirParaCuota(any(CuotaPlanAhorro.class), any(Pago.class));
-        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        verify(pagoCuotaPlanAhorroProcessor)
+            .pagarCuotas(any(List.class), eq(new BigDecimal("583333.34")), eq("pago multiple"), eq(null), eq(1L), eq("user"));
     }
 
     @Test
@@ -244,6 +190,8 @@ class ContratoPlanAhorroServiceImplBusinessTest {
 
         when(cuotaRepository.findOneByIdForUser(601L, "user")).thenReturn(Optional.of(cuota1));
         when(cuotaRepository.findOneByIdForUser(602L, "user")).thenReturn(Optional.of(cuota2));
+        when(pagoCuotaPlanAhorroProcessor.pagarCuotas(any(List.class), eq(null), eq(null), eq(null), eq(null), eq("user")))
+            .thenThrow(new BadRequestException("Todas las cuotas deben pertenecer al mismo contrato"));
 
         assertThrows(BadRequestException.class, () -> service.pagarCuotas(List.of(601L, 602L), null, null, null, null));
     }
@@ -254,6 +202,8 @@ class ContratoPlanAhorroServiceImplBusinessTest {
         CuotaPlanAhorro cuota = cuotaConContrato(701L, 1, "1000.00", EstadoCuotaPlanAhorro.PAGADA, contrato);
 
         when(cuotaRepository.findOneByIdForUser(701L, "user")).thenReturn(Optional.of(cuota));
+        when(pagoCuotaPlanAhorroProcessor.pagarCuotas(any(List.class), eq(null), eq(null), eq(null), eq(null), eq("user")))
+            .thenThrow(new BadRequestException("Solo se pueden pagar cuotas pendientes o vencidas"));
 
         assertThrows(BadRequestException.class, () -> service.pagarCuotas(List.of(701L), null, null, null, null));
     }
@@ -289,13 +239,6 @@ class ContratoPlanAhorroServiceImplBusinessTest {
         cliente.setNombre("Juan");
         cliente.setApellido("Perez");
         return cliente;
-    }
-
-    private CuotaPlanAhorro cuotaEstado(String importe, EstadoCuotaPlanAhorro estado) {
-        CuotaPlanAhorro cuota = new CuotaPlanAhorro();
-        cuota.setImporte(new BigDecimal(importe));
-        cuota.setEstado(estado);
-        return cuota;
     }
 
     private ContratoPlanAhorro contratoBase(Long id) {

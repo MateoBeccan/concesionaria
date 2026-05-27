@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.service.exception.BadRequestException;
 import java.math.BigDecimal;
@@ -10,9 +11,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class PagoTextNormalizer {
 
-    public static final int ESCALA_MONETARIA = 2;
-    public static final int ESCALA_COTIZACION = 8;
     public static final RoundingMode REDONDEO = RoundingMode.HALF_UP;
+    private final BusinessProperties businessProperties;
+
+    public PagoTextNormalizer() {
+        this(BusinessProperties.defaults());
+    }
+
+    public PagoTextNormalizer(BusinessProperties businessProperties) {
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
+    }
 
     public String normalizarTexto(String value, int max) {
         if (value == null) {
@@ -36,11 +44,11 @@ public class PagoTextNormalizer {
     }
 
     public BigDecimal normalizarMoneda(BigDecimal valor) {
-        return valor.setScale(ESCALA_MONETARIA, REDONDEO);
+        return valor.setScale(businessProperties.getPagos().getEscalaMonetaria(), REDONDEO);
     }
 
     public BigDecimal normalizarCotizacion(BigDecimal valor) {
-        return valor.setScale(ESCALA_COTIZACION, REDONDEO);
+        return valor.setScale(businessProperties.getPagos().getEscalaCotizacion(), REDONDEO);
     }
 }
 

@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Moneda;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
@@ -24,11 +25,18 @@ public class VentaCalculator {
     private final CurrencyConversionService currencyConversionService;
     private final MonedaRepository monedaRepository;
     private final PagoRepository pagoRepository;
+    private final BusinessProperties businessProperties;
 
-    public VentaCalculator(CurrencyConversionService currencyConversionService, MonedaRepository monedaRepository, PagoRepository pagoRepository) {
+    public VentaCalculator(
+        CurrencyConversionService currencyConversionService,
+        MonedaRepository monedaRepository,
+        PagoRepository pagoRepository,
+        BusinessProperties businessProperties
+    ) {
         this.currencyConversionService = currencyConversionService;
         this.monedaRepository = monedaRepository;
         this.pagoRepository = pagoRepository;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     public BigDecimal calcularMontoMinimoReserva(BigDecimal base, BigDecimal porcentajeMinimoReserva) {
@@ -52,7 +60,7 @@ public class VentaCalculator {
     }
 
     public void recalcularMontosDesdeVehiculo(VentaDTO dto, BigDecimal importeConvertido) {
-        BigDecimal porcentaje = dto.getPorcentajeImpuesto() == null ? new BigDecimal("21.00") : dto.getPorcentajeImpuesto();
+        BigDecimal porcentaje = dto.getPorcentajeImpuesto() == null ? businessProperties.getImpuesto().getPorcentaje() : dto.getPorcentajeImpuesto();
         BigDecimal impuesto = importeConvertido.multiply(porcentaje).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         BigDecimal total = importeConvertido.add(impuesto).setScale(2, RoundingMode.HALF_UP);
         BigDecimal totalPagado = dto.getTotalPagado() == null ? BigDecimal.ZERO : dto.getTotalPagado().setScale(2, RoundingMode.HALF_UP);

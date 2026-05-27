@@ -29,7 +29,7 @@ class PagoCajaBridgeTest {
 
         bridge.registrarPago(pago);
 
-        verify(movimientoCajaService).registrarDesdePago(pago, eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
     }
 
     @Test
@@ -41,7 +41,7 @@ class PagoCajaBridgeTest {
 
         bridge.registrarAnulacion(pago);
 
-        verify(movimientoCajaService).registrarDesdePago(pago, eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.ANULADO), eq(false));
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.ANULADO), eq(false));
     }
 
     private Pago pago(String metodo, TipoMovimientoPago tipo) {

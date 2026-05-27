@@ -1,5 +1,6 @@
 package com.concesionaria.app.web.rest;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.security.AuthoritiesConstants;
 import com.concesionaria.app.security.SecurityUtils;
@@ -43,16 +44,15 @@ public class VentaResource {
     @Value("${jhipster.clientApp.name:concesionaria}")
     private String applicationName;
 
-    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
-    private BigDecimal porcentajeMinimoReserva;
-
     private final VentaService ventaService;
 
     private final VentaRepository ventaRepository;
+    private final BusinessProperties businessProperties;
 
-    public VentaResource(VentaService ventaService, VentaRepository ventaRepository) {
+    public VentaResource(VentaService ventaService, VentaRepository ventaRepository, BusinessProperties businessProperties) {
         this.ventaService = ventaService;
         this.ventaRepository = ventaRepository;
+        this.businessProperties = businessProperties;
     }
 
     /**
@@ -235,6 +235,7 @@ public class VentaResource {
 
     @GetMapping("/reserva-config")
     public ResponseEntity<Map<String, Object>> getReservaConfig() {
+        BigDecimal porcentajeMinimoReserva = businessProperties.getReserva().getPorcentajeMinimo();
         return ResponseEntity.ok(
             Map.of(
                 "porcentajeMinimo", porcentajeMinimoReserva,

@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.Venta;
@@ -24,33 +25,28 @@ import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.repository.ComprobanteRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
-import com.concesionaria.app.domain.CuotaPlanAhorro;
 import com.concesionaria.app.domain.ContratoPlanAhorro;
 import com.concesionaria.app.domain.AdjudicacionPlanAhorro;
-import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.PagoService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.ComprobanteService;
 import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
-import com.concesionaria.app.service.dto.MonedaDTO;
 import com.concesionaria.app.service.dto.PagoDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.PagoMapper;
 import com.concesionaria.app.security.SecurityUtils;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -70,21 +66,13 @@ public class PagoServiceImpl implements PagoService {
     private final EntidadFinancieraRepository entidadFinancieraRepository;
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final CurrencyConversionService currencyConversionService;
-    private final ComprobantePlanAhorroService comprobantePlanAhorroService;
-    private final CuotaPlanAhorroRepository cuotaPlanAhorroRepository;
-    private final ContratoPlanAhorroRepository contratoPlanAhorroRepository;
     private final PagoMetodoPolicy pagoMetodoPolicy;
     private final PagoCalculator pagoCalculator;
     private final PagoTextNormalizer pagoTextNormalizer;
     private final PagoAnulacionService pagoAnulacionService;
     private final PagoCajaBridge pagoCajaBridge;
     private final PagoComprobanteBridge pagoComprobanteBridge;
-
-    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
-    private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
-
-    @Value("${app.negocio.moneda-base-codigo:ARS}")
-    private String monedaBaseCodigo;
+    private final BusinessProperties businessProperties;
 
     @Autowired
     public PagoServiceImpl(
@@ -108,7 +96,8 @@ public class PagoServiceImpl implements PagoService {
         PagoMetodoPolicy pagoMetodoPolicy,
         PagoCalculator pagoCalculator,
         PagoTextNormalizer pagoTextNormalizer,
-        PagoAnulacionService pagoAnulacionService
+        PagoAnulacionService pagoAnulacionService,
+        BusinessProperties businessProperties
     ) {
         this.pagoRepository = pagoRepository;
         this.pagoMapper = pagoMapper;
@@ -120,12 +109,10 @@ public class PagoServiceImpl implements PagoService {
         this.entidadFinancieraRepository = entidadFinancieraRepository;
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.currencyConversionService = currencyConversionService;
-        this.comprobantePlanAhorroService = comprobantePlanAhorroService;
-        this.cuotaPlanAhorroRepository = cuotaPlanAhorroRepository;
-        this.contratoPlanAhorroRepository = contratoPlanAhorroRepository;
         this.pagoMetodoPolicy = pagoMetodoPolicy;
         this.pagoCalculator = pagoCalculator;
         this.pagoTextNormalizer = pagoTextNormalizer;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
         this.pagoCajaBridge = new PagoCajaBridge(movimientoCajaService, pagoMetodoPolicy);
         this.pagoComprobanteBridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, pagoMetodoPolicy);
         this.pagoAnulacionService =
@@ -140,7 +127,6 @@ public class PagoServiceImpl implements PagoService {
                     comprobantePlanAhorroService,
                     cuotaPlanAhorroRepository,
                     contratoPlanAhorroRepository,
-                    pagoMetodoPolicy,
                     pagoTextNormalizer,
                     pagoCalculator,
                     this.pagoCajaBridge,
@@ -220,7 +206,8 @@ public class PagoServiceImpl implements PagoService {
             new PagoMetodoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
             new PagoCalculator(currencyConversionService, new PagoTextNormalizer()),
             new PagoTextNormalizer(),
-            null
+            null,
+            BusinessProperties.defaults()
         );
     }
 
@@ -354,7 +341,7 @@ public class PagoServiceImpl implements PagoService {
         if (totalPagadoProyectado.compareTo(BigDecimal.ZERO) > 0 && totalPagadoProyectado.compareTo(montoMinimoReserva) < 0) {
             throw new BadRequestException(
                 "La venta requiere una sena minima del " +
-                porcentajeMinimoReserva.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() +
+                porcentajeMinimoReserva().multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() +
                 "% para registrar pagos"
             );
         }
@@ -498,9 +485,6 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO anularPago(Long pagoId, String motivo) {
-        if (pagoAnulacionService == null) {
-            throw new BadRequestException("La anulacion de pagos no esta disponible");
-        }
         return pagoAnulacionService.anularPago(pagoId, motivo);
     }
 
@@ -553,7 +537,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private BigDecimal calcularMontoMinimoReserva(Venta venta) {
-        return pagoCalculator.calcularMontoMinimoReserva(venta, porcentajeMinimoReserva);
+        return pagoCalculator.calcularMontoMinimoReserva(venta, porcentajeMinimoReserva());
     }
 
     private String currentUserLogin() {
@@ -607,7 +591,7 @@ public class PagoServiceImpl implements PagoService {
         if (totalPagadoProyectado.compareTo(BigDecimal.ZERO) > 0 && totalPagadoProyectado.compareTo(montoMinimoReserva) < 0) {
             throw new BadRequestException(
                 "La venta requiere una sena minima del " +
-                porcentajeMinimoReserva.multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() +
+                porcentajeMinimoReserva().multiply(new BigDecimal("100")).stripTrailingZeros().toPlainString() +
                 "% para registrar pagos"
             );
         }
@@ -673,10 +657,10 @@ public class PagoServiceImpl implements PagoService {
         if (tasacion.getMoneda() == null || tasacion.getMoneda().getId() == null || tasacion.getMoneda().getCodigo() == null) {
             throw new BadRequestException("La tasacion no tiene moneda configurada");
         }
-        boolean tasacionEnMonedaBase = tasacion.getMoneda().getCodigo().equalsIgnoreCase(monedaBaseCodigo);
+        boolean tasacionEnMonedaBase = tasacion.getMoneda().getCodigo().equalsIgnoreCase(monedaBaseCodigo());
         boolean tasacionEnMonedaVenta = venta.getMoneda() != null && venta.getMoneda().getId() != null && venta.getMoneda().getId().equals(tasacion.getMoneda().getId());
         if (!tasacionEnMonedaBase || !tasacionEnMonedaVenta) {
-            throw new BadRequestException("La tasacion debe estar en moneda base configurada: " + monedaBaseCodigo + " para aplicarse a la venta");
+            throw new BadRequestException("La tasacion debe estar en moneda base configurada: " + monedaBaseCodigo() + " para aplicarse a la venta");
         }
         if (tasacion.getInventarioGenerado() != null) {
             throw new BadRequestException("La tasacion ya genero inventario y no puede reutilizarse");
@@ -738,13 +722,13 @@ public class PagoServiceImpl implements PagoService {
         if (monedaVenta == null) {
             throw new BadRequestException(mensajeVentaMonedaBaseConfigurada());
         }
-        Moneda monedaBase = monedaRepository.findByCodigoIgnoreCase(monedaBaseCodigo).orElse(null);
+        Moneda monedaBase = monedaRepository.findByCodigoIgnoreCase(monedaBaseCodigo()).orElse(null);
         boolean esMonedaBase = false;
         if (monedaBase != null && monedaBase.getId() != null && monedaVenta.getId() != null) {
             esMonedaBase = monedaBase.getId().equals(monedaVenta.getId());
         }
         if (!esMonedaBase && monedaVenta.getCodigo() != null) {
-            esMonedaBase = monedaVenta.getCodigo().equalsIgnoreCase(monedaBaseCodigo);
+            esMonedaBase = monedaVenta.getCodigo().equalsIgnoreCase(monedaBaseCodigo());
         }
         if (!esMonedaBase) {
             throw new BadRequestException(mensajeVentaMonedaBaseConfigurada());
@@ -752,6 +736,14 @@ public class PagoServiceImpl implements PagoService {
     }
 
     private String mensajeVentaMonedaBaseConfigurada() {
-        return "La venta debe estar registrada en moneda base configurada: " + monedaBaseCodigo;
+        return "La venta debe estar registrada en moneda base configurada: " + monedaBaseCodigo();
+    }
+
+    private BigDecimal porcentajeMinimoReserva() {
+        return businessProperties.getReserva().getPorcentajeMinimo();
+    }
+
+    private String monedaBaseCodigo() {
+        return businessProperties.getMonedaBaseCodigo();
     }
 }

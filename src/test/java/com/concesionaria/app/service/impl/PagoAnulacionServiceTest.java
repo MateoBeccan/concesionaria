@@ -93,7 +93,6 @@ class PagoAnulacionServiceTest {
                 comprobantePlanAhorroService,
                 cuotaPlanAhorroRepository,
                 contratoPlanAhorroRepository,
-                metodoPolicy,
                 textNormalizer,
                 new PagoCalculator(null, textNormalizer),
                 cajaBridge,

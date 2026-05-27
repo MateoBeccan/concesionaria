@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -31,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class VentaInventarioSyncServiceTest {
@@ -49,7 +49,12 @@ class VentaInventarioSyncServiceTest {
 
     @BeforeEach
     void setUp() {
-        VentaCalculator calculator = new VentaCalculator(currencyConversionService, monedaRepository, pagoRepository);
+        VentaCalculator calculator = new VentaCalculator(
+            currencyConversionService,
+            monedaRepository,
+            pagoRepository,
+            BusinessProperties.defaults()
+        );
         service =
             new VentaInventarioSyncService(
                 ventaRepository,
@@ -58,9 +63,9 @@ class VentaInventarioSyncServiceTest {
                 inventarioHistorialRepository,
                 calculator,
                 new VentaStateManager(calculator),
-                new VentaHistorialService(ventaHistorialRepository)
+                new VentaHistorialService(ventaHistorialRepository),
+                BusinessProperties.defaults()
             );
-        ReflectionTestUtils.setField(service, "porcentajeMinimoReserva", new BigDecimal("0.10"));
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.concesionaria.app.service.impl;
 
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.domain.Cliente;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.InventarioHistorial;
@@ -48,7 +49,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -77,12 +77,7 @@ public class VentaServiceImpl implements VentaService {
     private final VentaCalculator ventaCalculator;
     private final VentaHistorialService ventaHistorialService;
     private final VentaInventarioSyncService ventaInventarioSyncService;
-
-    @Value("${app.negocio.reserva.porcentaje-minimo:0.10}")
-    private BigDecimal porcentajeMinimoReserva = new BigDecimal("0.10");
-
-    @Value("${app.negocio.moneda-base-codigo:ARS}")
-    private String monedaBaseCodigo;
+    private final BusinessProperties businessProperties;
 
     public VentaServiceImpl(
         VentaRepository ventaRepository,
@@ -101,7 +96,8 @@ public class VentaServiceImpl implements VentaService {
         VentaValidator ventaValidator,
         VentaCalculator ventaCalculator,
         VentaHistorialService ventaHistorialService,
-        VentaInventarioSyncService ventaInventarioSyncService
+        VentaInventarioSyncService ventaInventarioSyncService,
+        BusinessProperties businessProperties
     ) {
         this.ventaRepository = ventaRepository;
         this.ventaMapper = ventaMapper;
@@ -120,6 +116,7 @@ public class VentaServiceImpl implements VentaService {
         this.ventaCalculator = ventaCalculator;
         this.ventaHistorialService = ventaHistorialService;
         this.ventaInventarioSyncService = ventaInventarioSyncService;
+        this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
     @Override
@@ -621,7 +618,7 @@ public class VentaServiceImpl implements VentaService {
         }
         Moneda monedaBase = resolverMonedaBaseVenta();
         if (!monedaBase.getId().equals(venta.getMoneda().getId())) {
-            throw new BadRequestException("No se puede generar inventario del usado: la venta debe estar en moneda base ARS");
+            throw new BadRequestException("No se puede generar inventario del usado: la venta debe estar en moneda base " + monedaBaseCodigo());
         }
         if (!tasacion.getMoneda().getId().equals(venta.getMoneda().getId())) {
             throw new BadRequestException("No se puede generar inventario del usado: la tasacion debe estar en la misma moneda de la venta");
@@ -629,11 +626,11 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private BigDecimal calcularMontoMinimoReserva(BigDecimal base) {
-        return ventaCalculator.calcularMontoMinimoReserva(base, porcentajeMinimoReserva);
+        return ventaCalculator.calcularMontoMinimoReserva(base, porcentajeMinimoReserva());
     }
 
     private BigDecimal porcentajeMinimoReservaEscalaHumana() {
-        return ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva);
+        return ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva());
     }
 
     private CotizacionConversionDTO resolverConversionVehiculoAVenta(VentaDTO dto, Vehiculo vehiculo, Moneda monedaBaseVenta) {
@@ -645,11 +642,19 @@ public class VentaServiceImpl implements VentaService {
     }
 
     private Moneda resolverMonedaBaseVenta() {
-        return ventaCalculator.resolverMonedaBaseVenta(monedaBaseCodigo);
+        return ventaCalculator.resolverMonedaBaseVenta(monedaBaseCodigo());
     }
 
     private BigDecimal calcularImporteBaseReserva(Venta venta) {
         return ventaCalculator.calcularImporteBaseReserva(venta);
+    }
+
+    private BigDecimal porcentajeMinimoReserva() {
+        return businessProperties.getReserva().getPorcentajeMinimo();
+    }
+
+    private String monedaBaseCodigo() {
+        return businessProperties.getMonedaBaseCodigo();
     }
 
     private void validarReservaActivaParaVenta(VentaDTO dto) {

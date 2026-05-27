@@ -229,8 +229,17 @@ jhipster:
 # application:
 app:
   negocio:
+    moneda-base-codigo: ARS
+    impuesto:
+      porcentaje: 21.00
     reserva:
       porcentaje-minimo: 0.10
+      dias-vencimiento: 30
+    venta:
+      anticipo-minimo: 0.10
+    pagos:
+      escala-monetaria: 2
+      escala-cotizacion: 8
   comprobante:
     pdf:
       company:

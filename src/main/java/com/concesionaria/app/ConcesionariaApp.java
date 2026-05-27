@@ -1,6 +1,7 @@
 package com.concesionaria.app;
 
 import com.concesionaria.app.config.ApplicationProperties;
+import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.config.CRLFLogConverter;
 import jakarta.annotation.PostConstruct;
 import java.net.InetAddress;
@@ -22,7 +23,7 @@ import tech.jhipster.config.JHipsterConstants;
 
 @SpringBootApplication
 @EnableScheduling
-@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class })
+@EnableConfigurationProperties({ LiquibaseProperties.class, ApplicationProperties.class, BusinessProperties.class })
 public class ConcesionariaApp {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConcesionariaApp.class);
