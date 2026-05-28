@@ -61,17 +61,23 @@ class EntregaUnidadServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
+        EntregaUnidadValidator entregaUnidadValidator = new EntregaUnidadValidator(entregaUnidadRepository);
+        EntregaChecklistManager entregaChecklistManager = new EntregaChecklistManager(checklistItemRepository);
+        EntregaUnidadInventarioSync entregaUnidadInventarioSync = new EntregaUnidadInventarioSync(inventarioRepository);
+        EntregaUnidadHistorialService entregaUnidadHistorialService = new EntregaUnidadHistorialService(ventaHistorialRepository);
         service =
             new EntregaUnidadServiceImpl(
                 entregaUnidadRepository,
-                checklistItemRepository,
                 ventaRepository,
                 inventarioRepository,
-                ventaHistorialRepository,
                 new ClienteMapperImpl(),
                 new VehiculoMapperImpl(),
                 new InventarioMapperImpl(),
-                new VentaMapperImpl()
+                new VentaMapperImpl(),
+                entregaUnidadValidator,
+                entregaChecklistManager,
+                entregaUnidadInventarioSync,
+                entregaUnidadHistorialService
             );
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("admin", "n/a", "ROLE_ADMIN"));
     }

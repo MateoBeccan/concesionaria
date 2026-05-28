@@ -6,14 +6,9 @@ import com.concesionaria.app.domain.EntregaUnidad;
 import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Vehiculo;
 import com.concesionaria.app.domain.Venta;
-import com.concesionaria.app.domain.VentaHistorial;
 import com.concesionaria.app.domain.enumeration.EstadoEntregaUnidad;
-import com.concesionaria.app.domain.enumeration.EstadoInventario;
-import com.concesionaria.app.domain.enumeration.EstadoVenta;
-import com.concesionaria.app.repository.EntregaChecklistItemRepository;
 import com.concesionaria.app.repository.EntregaUnidadRepository;
 import com.concesionaria.app.repository.InventarioRepository;
-import com.concesionaria.app.repository.VentaHistorialRepository;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.EntregaUnidadService;
@@ -30,7 +25,6 @@ import com.concesionaria.app.service.mapper.VentaMapper;
 import com.concesionaria.app.service.mapper.VehiculoMapper;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
@@ -44,68 +38,50 @@ import org.springframework.transaction.annotation.Transactional;
 public class EntregaUnidadServiceImpl implements EntregaUnidadService {
 
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
-    private static final List<ChecklistTemplate> CHECKLIST_DEFAULT = List.of(
-        new ChecklistTemplate("DOC_VEHICULO", "Documentacion del vehiculo", true),
-        new ChecklistTemplate("CEDULA_CONSTANCIA", "Cedula/constancia", true),
-        new ChecklistTemplate("MANUAL_PROPIETARIO", "Manual del propietario", true),
-        new ChecklistTemplate("SEGUNDA_LLAVE", "Segunda llave", true),
-        new ChecklistTemplate("SEGURO_VIGENTE", "Seguro vigente", true),
-        new ChecklistTemplate("PATENTE_COLOCADA", "Patente colocada", true),
-        new ChecklistTemplate("LAVADO_REALIZADO", "Lavado realizado", true),
-        new ChecklistTemplate("PDI", "Inspeccion previa/PDI", true),
-        new ChecklistTemplate("KIT_SEGURIDAD", "Kit de seguridad", true),
-        new ChecklistTemplate("ACCESORIOS_ENTREGADOS", "Accesorios entregados", false)
-    );
 
     private final EntregaUnidadRepository entregaUnidadRepository;
-    private final EntregaChecklistItemRepository checklistItemRepository;
     private final VentaRepository ventaRepository;
     private final InventarioRepository inventarioRepository;
-    private final VentaHistorialRepository ventaHistorialRepository;
     private final ClienteMapper clienteMapper;
     private final VehiculoMapper vehiculoMapper;
     private final InventarioMapper inventarioMapper;
     private final VentaMapper ventaMapper;
+    private final EntregaUnidadValidator entregaUnidadValidator;
+    private final EntregaChecklistManager entregaChecklistManager;
+    private final EntregaUnidadInventarioSync entregaUnidadInventarioSync;
+    private final EntregaUnidadHistorialService entregaUnidadHistorialService;
 
     public EntregaUnidadServiceImpl(
         EntregaUnidadRepository entregaUnidadRepository,
-        EntregaChecklistItemRepository checklistItemRepository,
         VentaRepository ventaRepository,
         InventarioRepository inventarioRepository,
-        VentaHistorialRepository ventaHistorialRepository,
         ClienteMapper clienteMapper,
         VehiculoMapper vehiculoMapper,
         InventarioMapper inventarioMapper,
-        VentaMapper ventaMapper
+        VentaMapper ventaMapper,
+        EntregaUnidadValidator entregaUnidadValidator,
+        EntregaChecklistManager entregaChecklistManager,
+        EntregaUnidadInventarioSync entregaUnidadInventarioSync,
+        EntregaUnidadHistorialService entregaUnidadHistorialService
     ) {
         this.entregaUnidadRepository = entregaUnidadRepository;
-        this.checklistItemRepository = checklistItemRepository;
         this.ventaRepository = ventaRepository;
         this.inventarioRepository = inventarioRepository;
-        this.ventaHistorialRepository = ventaHistorialRepository;
         this.clienteMapper = clienteMapper;
         this.vehiculoMapper = vehiculoMapper;
         this.inventarioMapper = inventarioMapper;
         this.ventaMapper = ventaMapper;
+        this.entregaUnidadValidator = entregaUnidadValidator;
+        this.entregaChecklistManager = entregaChecklistManager;
+        this.entregaUnidadInventarioSync = entregaUnidadInventarioSync;
+        this.entregaUnidadHistorialService = entregaUnidadHistorialService;
     }
 
     @Override
     public EntregaUnidadDTO programarEntrega(Long ventaId, Instant fechaProgramada, String observaciones) {
         Venta venta = obtenerVentaConPermisos(ventaId);
-        if (venta.getEstado() == EstadoVenta.CANCELADA) {
-            throw new BadRequestException("No se puede programar entrega para una venta cancelada");
-        }
-        if (venta.getEstado() != EstadoVenta.PAGADA && venta.getEstado() != EstadoVenta.FINALIZADA) {
-            throw new BadRequestException("Solo se puede programar entrega para venta PAGADA o FINALIZADA");
-        }
-        if (
-            entregaUnidadRepository.existsByVentaIdAndEstadoIn(
-                ventaId,
-                EnumSet.of(EstadoEntregaUnidad.PENDIENTE, EstadoEntregaUnidad.PROGRAMADA, EstadoEntregaUnidad.ENTREGADA)
-            )
-        ) {
-            throw new BadRequestException("La venta ya tiene una entrega activa");
-        }
+        entregaUnidadValidator.validarVentaEntregable(venta);
+        entregaUnidadValidator.validarNoDuplicarEntregaActiva(ventaId);
         Inventario inventario = inventarioRepository
             .findByVehiculoId(venta.getVehiculo().getId())
             .orElseThrow(() -> new BadRequestException("No se encontro inventario para el vehiculo de la venta"));
@@ -122,16 +98,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         entrega.setCreatedDate(Instant.now());
         entrega.setLastModifiedDate(Instant.now());
         entrega = entregaUnidadRepository.save(entrega);
-
-        for (ChecklistTemplate template : CHECKLIST_DEFAULT) {
-            EntregaChecklistItem item = new EntregaChecklistItem();
-            item.setEntregaUnidad(entrega);
-            item.setCodigo(template.codigo());
-            item.setDescripcion(template.descripcion());
-            item.setObligatorio(template.obligatorio());
-            item.setCompletado(false);
-            checklistItemRepository.save(item);
-        }
+        entregaChecklistManager.crearChecklistInicial(entrega);
 
         return toDto(entrega);
     }
@@ -139,19 +106,9 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
     @Override
     public EntregaUnidadDTO actualizarChecklist(Long entregaId, List<EntregaChecklistItemDTO> items) {
         EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
-        if (entrega.getEstado() == EstadoEntregaUnidad.ENTREGADA || entrega.getEstado() == EstadoEntregaUnidad.CANCELADA) {
-            throw new BadRequestException("No se puede modificar checklist para una entrega cerrada");
-        }
-        List<EntregaChecklistItem> actuales = checklistItemRepository.findAllByEntregaUnidadIdOrderByIdAsc(entregaId);
-        for (EntregaChecklistItem actual : actuales) {
-            for (EntregaChecklistItemDTO input : items) {
-                if (actual.getId().equals(input.getId())) {
-                    actual.setCompletado(Boolean.TRUE.equals(input.getCompletado()));
-                    actual.setObservaciones(input.getObservaciones());
-                }
-            }
-        }
-        checklistItemRepository.saveAll(actuales);
+        entregaUnidadValidator.validarEstadoPermiteActualizarChecklist(entrega);
+        List<EntregaChecklistItem> actuales = entregaChecklistManager.obtenerChecklist(entregaId);
+        entregaChecklistManager.actualizarChecklist(actuales, items);
         entrega.setLastModifiedDate(Instant.now());
         entregaUnidadRepository.save(entrega);
         return toDto(entrega);
@@ -160,17 +117,12 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
     @Override
     public EntregaUnidadDTO confirmarEntrega(Long entregaId, Integer kilometrajeEntrega, String nivelCombustible, String observaciones) {
         EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
-        if (entrega.getEstado() == EstadoEntregaUnidad.CANCELADA) {
-            throw new BadRequestException("La entrega esta cancelada");
-        }
+        entregaUnidadValidator.validarEstadoPermiteConfirmar(entrega);
         if (entrega.getEstado() == EstadoEntregaUnidad.ENTREGADA) {
             return toDto(entrega);
         }
-        List<EntregaChecklistItem> checklist = checklistItemRepository.findAllByEntregaUnidadIdOrderByIdAsc(entregaId);
-        boolean pendientesObligatorios = checklist.stream().anyMatch(i -> Boolean.TRUE.equals(i.getObligatorio()) && !Boolean.TRUE.equals(i.getCompletado()));
-        if (pendientesObligatorios) {
-            throw new BadRequestException("No se puede confirmar entrega con checklist obligatorio incompleto");
-        }
+        List<EntregaChecklistItem> checklist = entregaChecklistManager.obtenerChecklist(entregaId);
+        entregaUnidadValidator.validarChecklistObligatorioCompleto(checklist);
 
         entrega.setEstado(EstadoEntregaUnidad.ENTREGADA);
         entrega.setFechaEntrega(Instant.now());
@@ -181,28 +133,31 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         entrega.setLastModifiedDate(Instant.now());
         entregaUnidadRepository.save(entrega);
 
-        Inventario inventario = inventarioRepository
-            .findById(entrega.getInventario().getId())
-            .orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-        inventario.setEstadoInventario(EstadoInventario.VENDIDO);
-        inventario.setFechaEgreso(Instant.now());
-        inventarioRepository.save(inventario);
+        entregaUnidadInventarioSync.marcarEntregado(entrega);
 
-        registrarHistorialEntrega(entrega.getVenta(), "ENTREGA_CONFIRMADA", "Entrega de unidad confirmada");
+        entregaUnidadHistorialService.registrarHistorialEntrega(
+            entrega.getVenta(),
+            "ENTREGA_CONFIRMADA",
+            "Entrega de unidad confirmada",
+            currentUserLogin()
+        );
         return toDto(entrega);
     }
 
     @Override
     public EntregaUnidadDTO cancelarEntrega(Long entregaId, String motivo) {
         EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
-        if (entrega.getEstado() == EstadoEntregaUnidad.ENTREGADA) {
-            throw new BadRequestException("No se puede cancelar una entrega ya confirmada");
-        }
+        entregaUnidadValidator.validarEstadoPermiteCancelar(entrega);
         entrega.setEstado(EstadoEntregaUnidad.CANCELADA);
         entrega.setObservaciones(motivo);
         entrega.setLastModifiedDate(Instant.now());
         entregaUnidadRepository.save(entrega);
-        registrarHistorialEntrega(entrega.getVenta(), "ENTREGA_CANCELADA", motivo != null ? motivo : "Entrega cancelada");
+        entregaUnidadHistorialService.registrarHistorialEntrega(
+            entrega.getVenta(),
+            "ENTREGA_CANCELADA",
+            motivo != null ? motivo : "Entrega cancelada",
+            currentUserLogin()
+        );
         return toDto(entrega);
     }
 
@@ -261,18 +216,6 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         return venta != null && venta.getUser() != null && currentUserLogin().equalsIgnoreCase(venta.getUser().getLogin());
     }
 
-    private void registrarHistorialEntrega(Venta venta, String accion, String detalle) {
-        VentaHistorial historial = new VentaHistorial();
-        historial.setVenta(venta);
-        historial.setFecha(Instant.now());
-        historial.setEstadoAnterior(venta.getEstado());
-        historial.setEstadoNuevo(venta.getEstado());
-        historial.setAccion(accion);
-        historial.setDetalle(detalle);
-        historial.setUsuario(currentUserLogin());
-        ventaHistorialRepository.save(historial);
-    }
-
     private EntregaUnidadDTO toDto(EntregaUnidad entrega) {
         EntregaUnidadDTO dto = new EntregaUnidadDTO();
         dto.setId(entrega.getId());
@@ -297,7 +240,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         dto.setInventario(inventarioDTO);
 
         List<EntregaChecklistItemDTO> checklist = new ArrayList<>();
-        for (EntregaChecklistItem item : checklistItemRepository.findAllByEntregaUnidadIdOrderByIdAsc(entrega.getId())) {
+        for (EntregaChecklistItem item : entregaChecklistManager.obtenerChecklist(entrega.getId())) {
             EntregaChecklistItemDTO itemDTO = new EntregaChecklistItemDTO();
             itemDTO.setId(item.getId());
             itemDTO.setCodigo(item.getCodigo());
@@ -318,7 +261,5 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
-
-    private record ChecklistTemplate(String codigo, String descripcion, boolean obligatorio) {}
 }
 
