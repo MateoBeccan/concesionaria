@@ -88,20 +88,28 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
+        AdjudicacionPlanAhorroValidator adjudicacionValidator = new AdjudicacionPlanAhorroValidator(adjudicacionRepository);
+        ElegibilidadAdjudicacionEvaluator elegibilidadEvaluator = new ElegibilidadAdjudicacionEvaluator(cuotaRepository);
+        GeneradorVentaPlanAhorro generadorVentaPlanAhorro = new GeneradorVentaPlanAhorro(inventarioRepository, ventaService);
+        AplicadorCreditoPlanAhorro aplicadorCreditoPlanAhorro = new AplicadorCreditoPlanAhorro(
+            pagoService,
+            pagoRepository,
+            metodoPagoRepository,
+            ventaRepository,
+            ventaService
+        );
         service =
             new AdjudicacionPlanAhorroServiceImpl(
                 adjudicacionRepository,
                 contratoRepository,
-                cuotaRepository,
                 inventarioRepository,
                 new InventarioMapperImpl(),
                 new ClienteMapperImpl(),
                 new VentaMapperImpl(),
-                ventaService,
-                pagoService,
-                pagoRepository,
-                metodoPagoRepository,
-                ventaRepository
+                adjudicacionValidator,
+                elegibilidadEvaluator,
+                generadorVentaPlanAhorro,
+                aplicadorCreditoPlanAhorro
             );
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("admin", "n/a", "ROLE_ADMIN"));
     }
