@@ -79,6 +79,11 @@ public class BusinessProperties {
         @Min(0)
         private int diasVencimiento = 30;
 
+        private boolean expiracionHabilitada = true;
+
+        @NotBlank
+        private String expiracionCron = "0 */15 * * * *";
+
         public BigDecimal getPorcentajeMinimo() {
             return porcentajeMinimo;
         }
@@ -93,6 +98,22 @@ public class BusinessProperties {
 
         public void setDiasVencimiento(int diasVencimiento) {
             this.diasVencimiento = diasVencimiento;
+        }
+
+        public boolean isExpiracionHabilitada() {
+            return expiracionHabilitada;
+        }
+
+        public void setExpiracionHabilitada(boolean expiracionHabilitada) {
+            this.expiracionHabilitada = expiracionHabilitada;
+        }
+
+        public String getExpiracionCron() {
+            return expiracionCron;
+        }
+
+        public void setExpiracionCron(String expiracionCron) {
+            this.expiracionCron = expiracionCron;
         }
     }
 
@@ -136,3 +157,4 @@ public class BusinessProperties {
         }
     }
 }
+

@@ -142,16 +142,19 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     public long expirarReservasVencidas() {
+        Instant now = Instant.now();
         long afectadas = 0L;
-        for (Reserva reserva : reservaRepository.findAllByEstadoAndFechaVencimientoBefore(EstadoReserva.ACTIVA, Instant.now())) {
-            Inventario inventario = reserva.getInventario();
-            if (inventario != null && inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
+        for (Reserva reserva : reservaRepository.findAllActivasVencidasForUpdate(EstadoReserva.ACTIVA, now)) {
+            if (reserva.getEstado() != EstadoReserva.ACTIVA || reserva.getFechaVencimiento() == null || !reserva.getFechaVencimiento().isBefore(now)) {
+                continue;
+            }
+            if (tieneVentaActiva(reserva)) {
                 continue;
             }
             reserva.setEstado(EstadoReserva.VENCIDA);
-            reserva.setLastModifiedDate(Instant.now());
+            reserva.setLastModifiedDate(now);
             Reserva updated = reservaRepository.save(reserva);
-            liberarInventario(updated, "RESERVA_VENCIDA", "Reserva vencida automaticamente");
+            liberarInventarioSiCorresponde(updated, now, "RESERVA_VENCIDA", "Reserva vencida automaticamente");
             afectadas++;
         }
         return afectadas;
@@ -247,18 +250,33 @@ public class ReservaServiceImpl implements ReservaService {
     }
 
     private void liberarInventario(Reserva reserva, String accion, String detalle) {
+        liberarInventarioSiCorresponde(reserva, Instant.now(), accion, detalle);
+    }
+
+    private void liberarInventarioSiCorresponde(Reserva reserva, Instant now, String accion, String detalle) {
         Inventario inventario = inventarioRepository
             .findById(reserva.getInventario().getId())
             .orElseThrow(() -> new BadRequestException("Inventario inexistente para reserva"));
-        if (inventario.getEstadoInventario() == EstadoInventario.VENDIDO) {
+        if (inventario.getEstadoInventario() != EstadoInventario.RESERVADO) {
             return;
         }
         EstadoInventario estadoAnterior = inventario.getEstadoInventario();
         inventario.setEstadoInventario(EstadoInventario.DISPONIBLE);
-        inventario.setLastModifiedDate(Instant.now());
+        inventario.setLastModifiedDate(now);
         inventario.setLastModifiedBy(currentUserLogin());
         inventarioRepository.save(inventario);
         registrarHistorial(inventario, estadoAnterior, EstadoInventario.DISPONIBLE, accion, detalle, reserva);
+    }
+
+    private boolean tieneVentaActiva(Reserva reserva) {
+        if (reserva == null || reserva.getId() == null) {
+            return false;
+        }
+        return ventaRepository
+            .findFirstByReservaIdOrderByFechaDesc(reserva.getId())
+            .map(Venta::getEstado)
+            .filter(estado -> EnumSet.of(EstadoVenta.PENDIENTE, EstadoVenta.RESERVADA, EstadoVenta.PAGADA, EstadoVenta.FINALIZADA).contains(estado))
+            .isPresent();
     }
 
     private void registrarHistorial(
@@ -366,3 +384,4 @@ public class ReservaServiceImpl implements ReservaService {
         }
     }
 }
+

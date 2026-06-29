@@ -1,7 +1,9 @@
 package com.concesionaria.app.web.rest;
 
 import com.concesionaria.app.repository.InventarioRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
 import com.concesionaria.app.service.InventarioService;
+import com.concesionaria.app.service.ReservaService;
 import com.concesionaria.app.service.dto.InventarioDTO;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
@@ -19,6 +21,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -43,9 +46,12 @@ public class InventarioResource {
 
     private final InventarioRepository inventarioRepository;
 
-    public InventarioResource(InventarioService inventarioService, InventarioRepository inventarioRepository) {
+    private final ReservaService reservaService;
+
+    public InventarioResource(InventarioService inventarioService, InventarioRepository inventarioRepository, ReservaService reservaService) {
         this.inventarioService = inventarioService;
         this.inventarioRepository = inventarioRepository;
+        this.reservaService = reservaService;
     }
 
     /**
@@ -171,9 +177,10 @@ public class InventarioResource {
     }
 
     @PostMapping("/expirar-reservas")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<Map<String, Long>> expirarReservas() {
         LOG.debug("REST request to expire Inventario reservations");
-        long expiradas = inventarioService.expirarReservasVencidas();
+        long expiradas = reservaService.expirarReservasVencidas();
         return ResponseEntity.ok(Map.of("reservasExpiradas", expiradas));
     }
 

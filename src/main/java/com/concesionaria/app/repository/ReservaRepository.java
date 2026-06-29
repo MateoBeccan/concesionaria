@@ -20,6 +20,21 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
 
     List<Reserva> findAllByEstadoAndFechaVencimientoBefore(EstadoReserva estado, Instant fecha);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+        """
+        select distinct r
+        from Reserva r
+        left join fetch r.inventario i
+        left join fetch i.vehiculo
+        left join fetch r.cliente
+        where r.estado = :estado
+          and r.fechaVencimiento < :now
+        order by r.fechaVencimiento asc, r.id asc
+        """
+    )
+    List<Reserva> findAllActivasVencidasForUpdate(@Param("estado") EstadoReserva estado, @Param("now") Instant now);
+
     @Query(value = "select r from Reserva r where r.usuarioCreacion = :login", countQuery = "select count(r) from Reserva r where r.usuarioCreacion = :login")
     Page<Reserva> findAllCurrentUser(@Param("login") String login, Pageable pageable);
 

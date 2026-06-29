@@ -235,6 +235,8 @@ app:
     reserva:
       porcentaje-minimo: 0.10
       dias-vencimiento: 30
+      expiracion-habilitada: true
+      expiracion-cron: '0 */15 * * * *'
     venta:
       anticipo-minimo: 0.10
     pagos:
@@ -248,3 +250,4 @@ app:
         phone: +54 11 4000-1234
         email: ventas@concesionariamb.com
         cuit: 30-12345678-9
+
