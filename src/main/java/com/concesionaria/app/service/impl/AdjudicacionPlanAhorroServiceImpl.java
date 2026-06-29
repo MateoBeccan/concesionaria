@@ -77,7 +77,7 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
 
     @Override
     public AdjudicacionPlanAhorroDTO adjudicarContrato(Long contratoId, String observaciones) {
-        ContratoPlanAhorro contrato = obtenerContratoConPermisos(contratoId);
+        ContratoPlanAhorro contrato = obtenerContratoConPermisosForUpdate(contratoId);
         validator.validarContratoAdjudicable(contrato);
         ElegibilidadAdjudicacionDTO elegibilidad = elegibilidadEvaluator.evaluar(contrato);
         if (!elegibilidad.isApto()) {
@@ -104,9 +104,9 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
 
     @Override
     public AdjudicacionPlanAhorroDTO asignarInventario(Long adjudicacionId, Long inventarioId) {
-        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisos(adjudicacionId);
+        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisosForUpdate(adjudicacionId);
         validator.validarEstadoPermiteAsignarInventario(adjudicacion);
-        Inventario inventario = inventarioRepository.findById(inventarioId).orElseThrow(() -> new BadRequestException("Inventario inexistente"));
+        Inventario inventario = inventarioRepository.findByIdForUpdate(inventarioId).or(() -> inventarioRepository.findById(inventarioId)).orElseThrow(() -> new BadRequestException("Inventario inexistente"));
         validator.validarInventarioDisponible(inventario);
         validator.validarInventarioCompatible(adjudicacion.getContratoPlanAhorro(), inventario);
 
@@ -118,7 +118,7 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
 
     @Override
     public AdjudicacionPlanAhorroDTO generarVenta(Long adjudicacionId) {
-        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisos(adjudicacionId);
+        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisosForUpdate(adjudicacionId);
         if (adjudicacion.getVenta() != null) {
             return toDto(adjudicacion);
         }
@@ -136,7 +136,7 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
 
     @Override
     public AdjudicacionPlanAhorroDTO cancelarAdjudicacion(Long adjudicacionId, String motivo) {
-        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisos(adjudicacionId);
+        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisosForUpdate(adjudicacionId);
         validator.validarEstadoPermiteCancelar(adjudicacion);
         adjudicacion.setEstado(EstadoAdjudicacionPlanAhorro.CANCELADA);
         adjudicacion.setObservaciones(motivo);
@@ -145,7 +145,7 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
 
     @Override
     public AdjudicacionPlanAhorroDTO marcarEntregada(Long adjudicacionId) {
-        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisos(adjudicacionId);
+        AdjudicacionPlanAhorro adjudicacion = obtenerAdjudicacionConPermisosForUpdate(adjudicacionId);
         validator.validarEstadoPermiteMarcarEntregada(adjudicacion);
         adjudicacion.setEstado(EstadoAdjudicacionPlanAhorro.ENTREGADA);
         return toDto(adjudicacionRepository.save(adjudicacion));
@@ -206,6 +206,26 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         return inventarioRepository.findDisponiblesByModeloObjetivo(com.concesionaria.app.domain.enumeration.EstadoInventario.DISPONIBLE, modeloId);
     }
 
+    private ContratoPlanAhorro obtenerContratoConPermisosForUpdate(Long contratoId) {
+        if (isAdmin()) {
+            return contratoRepository.findByIdForUpdate(contratoId).or(() -> contratoRepository.findById(contratoId)).orElseThrow(() -> new BadRequestException("Contrato inexistente"));
+        }
+        return contratoRepository
+            .findOneByIdAndUserLoginForUpdate(contratoId, currentUserLogin())
+            .or(() -> contratoRepository.findOneByIdAndUserLogin(contratoId, currentUserLogin()))
+            .orElseThrow(() -> new AccessDeniedException("No tienes permisos sobre este contrato"));
+    }
+
+    private AdjudicacionPlanAhorro obtenerAdjudicacionConPermisosForUpdate(Long adjudicacionId) {
+        if (isAdmin()) {
+            return adjudicacionRepository.findByIdForUpdate(adjudicacionId).or(() -> adjudicacionRepository.findById(adjudicacionId)).orElseThrow(() -> new BadRequestException("Adjudicacion inexistente"));
+        }
+        LOG.warn("Validando acceso de usuario {} a adjudicacion {}", currentUserLogin(), adjudicacionId);
+        return adjudicacionRepository
+            .findOneByIdAndUserLoginForUpdate(adjudicacionId, currentUserLogin())
+            .or(() -> adjudicacionRepository.findOneByIdAndUserLogin(adjudicacionId, currentUserLogin()))
+            .orElseThrow(() -> new AccessDeniedException("No tienes permisos sobre esta adjudicacion"));
+    }
     private ContratoPlanAhorro obtenerContratoConPermisos(Long contratoId) {
         if (isAdmin()) {
             return contratoRepository.findById(contratoId).orElseThrow(() -> new BadRequestException("Contrato inexistente"));
@@ -267,4 +287,6 @@ public class AdjudicacionPlanAhorroServiceImpl implements AdjudicacionPlanAhorro
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }
+
+
 

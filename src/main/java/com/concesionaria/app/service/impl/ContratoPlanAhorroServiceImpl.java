@@ -147,7 +147,7 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
 
     @Override
     public CuotaPlanAhorroDTO pagarCuota(Long cuotaId, BigDecimal monto, String observaciones) {
-        CuotaPlanAhorro cuota = obtenerCuotaConPermisos(cuotaId);
+        CuotaPlanAhorro cuota = obtenerCuotaConPermisosForUpdate(cuotaId);
         return pagoCuotaProcessor.pagarCuota(cuota, monto, observaciones, currentUserLogin());
     }
 
@@ -159,10 +159,19 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
         Long metodoPagoId,
         Long monedaId
     ) {
-        List<CuotaPlanAhorro> cuotas = cuotaIds.stream().distinct().map(this::obtenerCuotaConPermisos).sorted(Comparator.comparing(CuotaPlanAhorro::getNumeroCuota)).toList();
+        List<CuotaPlanAhorro> cuotas = cuotaIds.stream().distinct().sorted().map(this::obtenerCuotaConPermisosForUpdate).sorted(Comparator.comparing(CuotaPlanAhorro::getNumeroCuota)).toList();
         return pagoCuotaProcessor.pagarCuotas(cuotas, montoTotal, observaciones, metodoPagoId, monedaId, currentUserLogin());
     }
 
+    private CuotaPlanAhorro obtenerCuotaConPermisosForUpdate(Long cuotaId) {
+        if (isAdmin()) {
+            return cuotaRepository.findByIdForUpdate(cuotaId).or(() -> cuotaRepository.findById(cuotaId)).orElseThrow(() -> new BadRequestException("La cuota no existe"));
+        }
+        return cuotaRepository
+            .findOneByIdForUserForUpdate(cuotaId, currentUserLogin())
+            .or(() -> cuotaRepository.findOneByIdForUser(cuotaId, currentUserLogin()))
+            .orElseThrow(() -> new AccessDeniedException("No tienes permisos para acceder a esta cuota"));
+    }
     private CuotaPlanAhorro obtenerCuotaConPermisos(Long cuotaId) {
         if (isAdmin()) {
             return cuotaRepository.findById(cuotaId).orElseThrow(() -> new BadRequestException("La cuota no existe"));
@@ -201,3 +210,4 @@ public class ContratoPlanAhorroServiceImpl implements ContratoPlanAhorroService 
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }
+

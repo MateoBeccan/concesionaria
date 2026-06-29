@@ -286,7 +286,7 @@ public class PagoServiceImpl implements PagoService {
     public PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO) {
         Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
-        Venta venta = ventaRepository.findByIdForUpdate(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
         validarVentaEnMonedaBase(venta);
         if (venta.getEstado() == EstadoVenta.PAGADA) {
             throw new BadRequestException("La venta ya esta completamente pagada");
@@ -406,7 +406,7 @@ public class PagoServiceImpl implements PagoService {
     public PagoDTO registrarPagoReserva(Long reservaId, PagoDTO pagoDTO) {
         Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
-        Reserva reserva = reservaRepository.findById(reservaId).orElseThrow(() -> new BadRequestException("La reserva no existe"));
+        Reserva reserva = reservaRepository.findByIdForUpdate(reservaId).or(() -> reservaRepository.findById(reservaId)).orElseThrow(() -> new BadRequestException("La reserva no existe"));
         if (reserva.getEstado() != EstadoReserva.ACTIVA) {
             throw new BadRequestException("Solo se pueden registrar pagos en reservas ACTIVAS");
         }
@@ -747,3 +747,4 @@ public class PagoServiceImpl implements PagoService {
         return businessProperties.getMonedaBaseCodigo();
     }
 }
+

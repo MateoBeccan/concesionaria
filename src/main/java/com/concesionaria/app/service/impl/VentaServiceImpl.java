@@ -181,7 +181,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public VentaDTO update(VentaDTO dto) {
-        Venta existing = ventaRepository.findById(dto.getId()).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta existing = ventaRepository.findByIdForUpdate(dto.getId()).or(() -> ventaRepository.findById(dto.getId())).orElseThrow(() -> new BadRequestException("La venta no existe"));
         validarVentaDto(dto, true);
         Venta venta = ventaMapper.toEntity(dto);
         venta.setCotizacion(dto.getCotizacion());
@@ -329,7 +329,7 @@ public class VentaServiceImpl implements VentaService {
     public VentaDTO crearVenta(Long vehiculoId, Long clienteId) {
         Cliente cliente = clienteRepository.findById(clienteId).orElseThrow(() -> new BadRequestException("El cliente no existe"));
         Vehiculo vehiculo = vehiculoRepository.findById(vehiculoId).orElseThrow(() -> new BadRequestException("El vehiculo no existe"));
-        Inventario inv = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
+        Inventario inv = inventarioRepository.findByVehiculoIdForUpdate(vehiculoId).or(() -> inventarioRepository.findByVehiculoId(vehiculoId)).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
         normalizarReservaVencida(inv);
 
         if (inv.getEstadoInventario() == EstadoInventario.VENDIDO) {
@@ -404,7 +404,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public void confirmarVenta(Long ventaId) {
-        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
 
         if (venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
             throw new BadRequestException("La venta no esta totalmente paga");
@@ -426,7 +426,7 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public void sincronizarInventarioConVenta(Long ventaId) {
-        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
         asegurarIngresoUsadoSiVentaCobrada(venta);
         ventaInventarioSyncService.sincronizarConVenta(ventaId);
     }
@@ -793,3 +793,4 @@ public class VentaServiceImpl implements VentaService {
         return dto;
     }
 }
+

@@ -82,7 +82,7 @@ public class PagoAnulacionService {
 
     public PagoDTO anularPago(Long pagoId, String motivo) {
         Instant ahora = Instant.now();
-        Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago no existe"));
+        Pago pago = pagoRepository.findByIdForUpdate(pagoId).or(() -> pagoRepository.findById(pagoId)).orElseThrow(() -> new BadRequestException("El pago no existe"));
         if (pago.getEstado() == EstadoPago.ANULADO) {
             throw new BadRequestException("El pago ya se encuentra anulado");
         }
@@ -133,7 +133,7 @@ public class PagoAnulacionService {
         if (venta != null && venta.getId() != null) {
             recalcularVentaEInventario(venta);
         } else if (reservaAsociada != null && reservaAsociada.getId() != null) {
-            Reserva reserva = reservaRepository.findById(reservaAsociada.getId()).orElse(null);
+            Reserva reserva = reservaRepository.findByIdForUpdate(reservaAsociada.getId()).or(() -> reservaRepository.findById(reservaAsociada.getId())).orElse(null);
             if (reserva != null) {
                 BigDecimal total = pagoRepository.sumMontoByReservaId(reserva.getId());
                 reserva.setMontoSenia(total == null ? pagoTextNormalizer.normalizarMoneda(BigDecimal.ZERO) : pagoTextNormalizer.normalizarMoneda(total));
@@ -217,3 +217,4 @@ public class PagoAnulacionService {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }
+

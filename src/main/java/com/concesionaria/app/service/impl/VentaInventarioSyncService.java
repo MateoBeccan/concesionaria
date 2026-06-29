@@ -19,6 +19,7 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -55,14 +56,14 @@ public class VentaInventarioSyncService {
     }
 
     public void sincronizarConVenta(Long ventaId) {
-        Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
         Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
         if (vehiculoIds.isEmpty()) {
             return;
         }
 
         for (Long vehiculoId : vehiculoIds) {
-            Inventario inventario = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
+            Inventario inventario = inventarioRepository.findByVehiculoIdForUpdate(vehiculoId).or(() -> inventarioRepository.findByVehiculoId(vehiculoId)).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
             normalizarReservaVencida(inventario);
             EstadoInventario estadoAnterior = inventario.getEstadoInventario();
 
@@ -98,7 +99,7 @@ public class VentaInventarioSyncService {
                 );
             }
 
-            inventario = inventarioRepository.findByVehiculoId(vehiculoId).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
+            inventario = inventarioRepository.findByVehiculoIdForUpdate(vehiculoId).or(() -> inventarioRepository.findByVehiculoId(vehiculoId)).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
             inventario.setLastModifiedDate(Instant.now());
             inventario.setLastModifiedBy(currentUserLogin());
             inventarioRepository.save(inventario);
@@ -162,7 +163,7 @@ public class VentaInventarioSyncService {
         if (venta == null || venta.getReserva() == null || venta.getReserva().getId() == null) {
             return;
         }
-        Reserva reserva = reservaRepository.findById(venta.getReserva().getId()).orElse(null);
+        Reserva reserva = reservaRepository.findByIdForUpdate(venta.getReserva().getId()).or(() -> reservaRepository.findById(venta.getReserva().getId())).orElse(null);
         if (reserva == null) {
             return;
         }
@@ -238,11 +239,18 @@ public class VentaInventarioSyncService {
         inventarioHistorialRepository.save(historial);
     }
 
+    private Optional<Reserva> findReservaActivaForUpdate(Long inventarioId) {
+        if (inventarioId == null) {
+            return Optional.empty();
+        }
+        List<Reserva> reservas = reservaRepository.findAllByInventarioIdAndEstadoForUpdateOrderByFechaReservaDesc(inventarioId, EstadoReserva.ACTIVA);
+        return reservas.isEmpty() ? reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(inventarioId, EstadoReserva.ACTIVA) : reservas.stream().findFirst();
+    }
     private Inventario inventarioVenta(Venta venta) {
         if (venta == null || venta.getVehiculo() == null || venta.getVehiculo().getId() == null) {
             throw new BadRequestException("Inventario no encontrado");
         }
-        return inventarioRepository.findByVehiculoId(venta.getVehiculo().getId()).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
+        return inventarioRepository.findByVehiculoIdForUpdate(venta.getVehiculo().getId()).or(() -> inventarioRepository.findByVehiculoId(venta.getVehiculo().getId())).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
     }
 
     private Set<Long> vehiculoIdsDesdeVenta(Long ventaId) {
@@ -330,4 +338,7 @@ public class VentaInventarioSyncService {
         return com.concesionaria.app.security.SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }
+
+
+
 

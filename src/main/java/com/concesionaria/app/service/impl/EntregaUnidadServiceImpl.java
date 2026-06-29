@@ -79,7 +79,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
 
     @Override
     public EntregaUnidadDTO programarEntrega(Long ventaId, Instant fechaProgramada, String observaciones) {
-        Venta venta = obtenerVentaConPermisos(ventaId);
+        Venta venta = obtenerVentaConPermisosForUpdate(ventaId);
         entregaUnidadValidator.validarVentaEntregable(venta);
         entregaUnidadValidator.validarNoDuplicarEntregaActiva(ventaId);
         Inventario inventario = inventarioRepository
@@ -105,7 +105,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
 
     @Override
     public EntregaUnidadDTO actualizarChecklist(Long entregaId, List<EntregaChecklistItemDTO> items) {
-        EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
+        EntregaUnidad entrega = obtenerEntregaConPermisosForUpdate(entregaId);
         entregaUnidadValidator.validarEstadoPermiteActualizarChecklist(entrega);
         List<EntregaChecklistItem> actuales = entregaChecklistManager.obtenerChecklist(entregaId);
         entregaChecklistManager.actualizarChecklist(actuales, items);
@@ -116,7 +116,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
 
     @Override
     public EntregaUnidadDTO confirmarEntrega(Long entregaId, Integer kilometrajeEntrega, String nivelCombustible, String observaciones) {
-        EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
+        EntregaUnidad entrega = obtenerEntregaConPermisosForUpdate(entregaId);
         entregaUnidadValidator.validarEstadoPermiteConfirmar(entrega);
         if (entrega.getEstado() == EstadoEntregaUnidad.ENTREGADA) {
             return toDto(entrega);
@@ -146,7 +146,7 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
 
     @Override
     public EntregaUnidadDTO cancelarEntrega(Long entregaId, String motivo) {
-        EntregaUnidad entrega = obtenerEntregaConPermisos(entregaId);
+        EntregaUnidad entrega = obtenerEntregaConPermisosForUpdate(entregaId);
         entregaUnidadValidator.validarEstadoPermiteCancelar(entrega);
         entrega.setEstado(EstadoEntregaUnidad.CANCELADA);
         entrega.setObservaciones(motivo);
@@ -195,6 +195,23 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         return page.map(this::toDto);
     }
 
+    private Venta obtenerVentaConPermisosForUpdate(Long ventaId) {
+        Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
+        if (!isAdmin() && !esVentaDelUsuario(venta)) {
+            throw new AccessDeniedException("No tienes permisos para operar esta venta");
+        }
+        return venta;
+    }
+
+    private EntregaUnidad obtenerEntregaConPermisosForUpdate(Long entregaId) {
+        if (isAdmin()) {
+            return entregaUnidadRepository.findByIdForUpdate(entregaId).or(() -> entregaUnidadRepository.findById(entregaId)).orElseThrow(() -> new BadRequestException("Entrega no encontrada"));
+        }
+        return entregaUnidadRepository
+            .findOneByIdAndUserLoginForUpdate(entregaId, currentUserLogin())
+            .or(() -> entregaUnidadRepository.findOneByIdAndUserLogin(entregaId, currentUserLogin()))
+            .orElseThrow(() -> new AccessDeniedException("No tienes permisos sobre esta entrega"));
+    }
     private Venta obtenerVentaConPermisos(Long ventaId) {
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta no existe"));
         if (!isAdmin() && !esVentaDelUsuario(venta)) {
@@ -262,4 +279,5 @@ public class EntregaUnidadServiceImpl implements EntregaUnidadService {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 }
+
 

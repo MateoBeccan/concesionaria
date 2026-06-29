@@ -6,6 +6,7 @@ import com.concesionaria.app.domain.enumeration.EstadoPago;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -143,4 +144,7 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     );
 
     boolean existsByAdjudicacionPlanAhorroIdAndEstado(Long adjudicacionPlanAhorroId, EstadoPago estado);
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Pago p where p.id = :id")
+    Optional<Pago> findByIdForUpdate(@Param("id") Long id);
 }

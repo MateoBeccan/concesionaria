@@ -7,6 +7,7 @@ import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
+import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
@@ -27,6 +28,7 @@ public class PagoCuotaPlanAhorroProcessor {
 
     private static final String CODIGO_CONTADO = "CONTADO";
 
+    private final ContratoPlanAhorroRepository contratoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
     private final PagoRepository pagoRepository;
     private final CuotaPlanAhorroRepository cuotaRepository;
@@ -37,6 +39,7 @@ public class PagoCuotaPlanAhorroProcessor {
     private final CuotaPlanAhorroMapper cuotaMapper;
 
     public PagoCuotaPlanAhorroProcessor(
+        ContratoPlanAhorroRepository contratoRepository,
         MetodoPagoRepository metodoPagoRepository,
         PagoRepository pagoRepository,
         CuotaPlanAhorroRepository cuotaRepository,
@@ -46,6 +49,7 @@ public class PagoCuotaPlanAhorroProcessor {
         ContratoPlanAhorroCalculator calculator,
         CuotaPlanAhorroMapper cuotaMapper
     ) {
+        this.contratoRepository = contratoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
         this.pagoRepository = pagoRepository;
         this.cuotaRepository = cuotaRepository;
@@ -60,7 +64,7 @@ public class PagoCuotaPlanAhorroProcessor {
         validator.validarCuotaPagable(cuota);
         validator.validarMontoPagoIndividual(monto, cuota.getImporte());
 
-        ContratoPlanAhorro contrato = cuota.getContrato();
+        ContratoPlanAhorro contrato = bloquearContrato(cuota.getContrato());
         Instant ahora = Instant.now();
         Pago pago = crearPagoContrato(
             contrato,
@@ -96,7 +100,7 @@ public class PagoCuotaPlanAhorroProcessor {
         List<CuotaPlanAhorro> cuotas = cuotasInput.stream().sorted(Comparator.comparing(CuotaPlanAhorro::getNumeroCuota)).toList();
         cuotas.forEach(validator::validarCuotaPagableEnLote);
 
-        ContratoPlanAhorro contrato = cuotas.getFirst().getContrato();
+        ContratoPlanAhorro contrato = bloquearContrato(cuotas.getFirst().getContrato());
         BigDecimal totalEsperado = cuotas
             .stream()
             .map(CuotaPlanAhorro::getImporte)
@@ -124,6 +128,12 @@ public class PagoCuotaPlanAhorroProcessor {
         return cuotas.stream().map(cuotaMapper::toDto).toList();
     }
 
+    private ContratoPlanAhorro bloquearContrato(ContratoPlanAhorro contrato) {
+        if (contrato == null || contrato.getId() == null) {
+            throw new BadRequestException("Contrato inexistente");
+        }
+        return contratoRepository.findByIdForUpdate(contrato.getId()).orElseThrow(() -> new BadRequestException("Contrato inexistente"));
+    }
     private Pago crearPagoContrato(
         ContratoPlanAhorro contrato,
         BigDecimal monto,

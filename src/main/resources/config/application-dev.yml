@@ -41,8 +41,10 @@ spring:
     compose:
       enabled: false
   liquibase:
-    # En dev debe estar habilitado para mantener el esquema alineado con las entidades.
-    enabled: true
+    # En esta base manual (schema ya provisionado), por defecto lo dejamos deshabilitado
+    # para evitar colisiones de migraciones/objetos ya existentes.
+    # Si quieres volver a ejecutar migraciones: LIQUIBASE_ENABLED=true
+    enabled: ${LIQUIBASE_ENABLED:false}
     contexts: dev, faker
   jpa:
     hibernate:

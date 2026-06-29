@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 /**
  * Spring Data JPA repository for the Inventario entity.
@@ -47,4 +48,11 @@ public interface InventarioRepository extends JpaRepository<Inventario, Long> {
     )
     List<Inventario> findDisponiblesByModeloObjetivo(@Param("estado") EstadoInventario estado, @Param("modeloId") Long modeloId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Inventario i where i.id = :id")
+    Optional<Inventario> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select i from Inventario i where i.vehiculo.id = :vehiculoId")
+    Optional<Inventario> findByVehiculoIdForUpdate(@Param("vehiculoId") Long vehiculoId);
 }

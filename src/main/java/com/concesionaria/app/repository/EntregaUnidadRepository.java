@@ -4,9 +4,11 @@ import com.concesionaria.app.domain.EntregaUnidad;
 import com.concesionaria.app.domain.enumeration.EstadoEntregaUnidad;
 import java.time.Instant;
 import java.util.Optional;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -126,5 +128,18 @@ public interface EntregaUnidadRepository extends JpaRepository<EntregaUnidad, Lo
         @Param("ventaId") Long ventaId,
         Pageable pageable
     );
-}
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select e from EntregaUnidad e where e.id = :id")
+    Optional<EntregaUnidad> findByIdForUpdate(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query(
+        """
+        select e from EntregaUnidad e
+        join e.venta v
+        left join v.user u
+        where e.id = :id and u.login = :login
+        """
+    )
+    Optional<EntregaUnidad> findOneByIdAndUserLoginForUpdate(@Param("id") Long id, @Param("login") String login);
+}
