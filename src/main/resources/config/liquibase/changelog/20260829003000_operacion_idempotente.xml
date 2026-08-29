@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260829003000-1" author="codex">
+    <createTable tableName="operacion_idempotente">
+      <column name="id" type="bigint" autoIncrement="true">
+        <constraints primaryKey="true" nullable="false" primaryKeyName="pk_operacion_idempotente"/>
+      </column>
+      <column name="usuario" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="tipo_operacion" type="varchar(50)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="idempotency_key" type="varchar(100)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="request_hash" type="varchar(64)">
+        <constraints nullable="false"/>
+      </column>
+      <column name="response_data" type="longtext"/>
+      <column name="venta_id" type="bigint"/>
+      <column name="created_date" type="${datetimeType}">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <addUniqueConstraint
+      tableName="operacion_idempotente"
+      columnNames="usuario, tipo_operacion, idempotency_key"
+      constraintName="ux_operacion_idempotente_usuario_tipo_key"/>
+
+    <createIndex tableName="operacion_idempotente" indexName="idx_operacion_idempotente_venta_id">
+      <column name="venta_id"/>
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

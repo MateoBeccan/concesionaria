@@ -109,7 +109,7 @@ public class AplicadorCreditoPlanAhorro {
         venta.setLastModifiedBy(usuario);
         ventaRepository.save(venta);
         if (venta.getEstado() == EstadoVenta.PAGADA) {
-            ventaService.sincronizarInventarioConVenta(venta.getId());
+            ventaService.actualizarInventarioPorEstadoVenta(venta.getId());
         }
     }
 }

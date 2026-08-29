@@ -4,6 +4,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 import com.concesionaria.app.security.*;
 import com.concesionaria.app.web.filter.SpaWebFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -24,10 +25,50 @@ import tech.jhipster.config.JHipsterProperties;
 @EnableMethodSecurity(securedEnabled = true)
 public class SecurityConfiguration {
 
-    private final JHipsterProperties jHipsterProperties;
+    private static final String[] ADMIN_MANAGED_API_PATHS = {
+        "/api/carrocerias",
+        "/api/carrocerias/**",
+        "/api/combustibles",
+        "/api/combustibles/**",
+        "/api/condicion-ivas",
+        "/api/condicion-ivas/**",
+        "/api/cotizacions",
+        "/api/cotizacions/**",
+        "/api/marcas",
+        "/api/marcas/**",
+        "/api/metodo-pagos",
+        "/api/metodo-pagos/**",
+        "/api/modelos",
+        "/api/modelos/**",
+        "/api/monedas",
+        "/api/monedas/**",
+        "/api/motors",
+        "/api/motors/**",
+        "/api/tipo-cajas",
+        "/api/tipo-cajas/**",
+        "/api/tipo-comprobantes",
+        "/api/tipo-comprobantes/**",
+        "/api/tipo-documentos",
+        "/api/tipo-documentos/**",
+        "/api/tipo-vehiculos",
+        "/api/tipo-vehiculos/**",
+        "/api/traccions",
+        "/api/traccions/**",
+        "/api/ubicacion-stocks",
+        "/api/ubicacion-stocks/**",
+        "/api/versions",
+        "/api/versions/**"
+    };
 
-    public SecurityConfiguration(JHipsterProperties jHipsterProperties) {
+    private final JHipsterProperties jHipsterProperties;
+    private final boolean publicRegistrationEnabled;
+
+    public SecurityConfiguration(
+        JHipsterProperties jHipsterProperties,
+        @Value("${app.security.registration.public-enabled:false}") boolean publicRegistrationEnabled
+    ) {
         this.jHipsterProperties = jHipsterProperties;
+        this.publicRegistrationEnabled = publicRegistrationEnabled;
     }
 
     @Bean
@@ -52,7 +93,7 @@ public class SecurityConfiguration {
                         )
                     )
             )
-            .authorizeHttpRequests(authz ->
+            .authorizeHttpRequests(authz -> {
                 // prettier-ignore
                 authz
                     .requestMatchers("/index.html", "/*.js", "/*.txt", "/*.json", "/*.map", "/*.css").permitAll()
@@ -61,19 +102,39 @@ public class SecurityConfiguration {
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/authenticate").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/authenticate").permitAll()
-                    .requestMatchers("/api/register").permitAll()
                     .requestMatchers("/api/activate").permitAll()
                     .requestMatchers("/api/account/reset-password/init").permitAll()
-                    .requestMatchers("/api/account/reset-password/finish").permitAll()
+                    .requestMatchers("/api/account/reset-password/finish").permitAll();
+                if (publicRegistrationEnabled) {
+                    authz.requestMatchers("/api/register").permitAll();
+                }
+                authz
                     .requestMatchers("/api/admin/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.POST, ADMIN_MANAGED_API_PATHS).hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PUT, ADMIN_MANAGED_API_PATHS).hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PATCH, ADMIN_MANAGED_API_PATHS).hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.DELETE, ADMIN_MANAGED_API_PATHS).hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.POST, "/api/comprobantes").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PUT, "/api/comprobantes/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PATCH, "/api/comprobantes/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.DELETE, "/api/comprobantes/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.DELETE, "/api/ventas/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.POST, "/api/vehiculos").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PUT, "/api/vehiculos/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PATCH, "/api/vehiculos/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.DELETE, "/api/vehiculos/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.POST, "/api/inventarios").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PUT, "/api/inventarios/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.PATCH, "/api/inventarios/**").hasAuthority(AuthoritiesConstants.ADMIN)
+                    .requestMatchers(HttpMethod.DELETE, "/api/inventarios/**").hasAuthority(AuthoritiesConstants.ADMIN)
                     .requestMatchers("/api/**").authenticated()
                     .requestMatchers("/v3/api-docs/**").hasAuthority(AuthoritiesConstants.ADMIN)
                     .requestMatchers("/management/health").permitAll()
                     .requestMatchers("/management/health/**").permitAll()
                     .requestMatchers("/management/info").permitAll()
                     .requestMatchers("/management/prometheus").permitAll()
-                    .requestMatchers("/management/**").hasAuthority(AuthoritiesConstants.ADMIN)
-            )
+                    .requestMatchers("/management/**").hasAuthority(AuthoritiesConstants.ADMIN);
+            })
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exceptions ->
                 exceptions

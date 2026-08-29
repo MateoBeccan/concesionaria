@@ -73,7 +73,7 @@ public class ReservaServiceImpl implements ReservaService {
         Instant now = Instant.now();
         reserva.setCreatedDate(now);
         reserva.setLastModifiedDate(now);
-        if (reserva.getUsuarioCreacion() == null || reserva.getUsuarioCreacion().isBlank()) {
+        if (!isAdmin() || reserva.getUsuarioCreacion() == null || reserva.getUsuarioCreacion().isBlank()) {
             reserva.setUsuarioCreacion(currentUserLogin());
         }
         Reserva saved = reservaRepository.save(reserva);
@@ -86,8 +86,15 @@ public class ReservaServiceImpl implements ReservaService {
         if (dto.getId() == null) {
             throw new BadRequestException("La reserva requiere id para actualizar");
         }
+        validarAccesoReserva(dto.getId());
+        Reserva existing = reservaRepository
+            .findById(dto.getId())
+            .orElseThrow(() -> new BadRequestException("La reserva no existe"));
         Reserva reserva = reservaMapper.toEntity(dto);
         validarReserva(reserva, reserva.getId());
+        if (!isAdmin()) {
+            reserva.setUsuarioCreacion(existing.getUsuarioCreacion());
+        }
         reserva.setLastModifiedDate(Instant.now());
         Reserva saved = reservaRepository.save(reserva);
         aplicarReservaEnInventario(saved, "RESERVA_ACTUALIZADA", "Reserva actualizada");
@@ -96,10 +103,15 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     public Optional<ReservaDTO> partialUpdate(ReservaDTO dto) {
+        validarAccesoReserva(dto.getId());
         return reservaRepository
             .findById(dto.getId())
             .map(existing -> {
+                String usuarioCreacionOriginal = existing.getUsuarioCreacion();
                 reservaMapper.partialUpdate(existing, dto);
+                if (!isAdmin()) {
+                    existing.setUsuarioCreacion(usuarioCreacionOriginal);
+                }
                 validarReserva(existing, existing.getId());
                 existing.setLastModifiedDate(Instant.now());
                 return existing;
@@ -162,6 +174,7 @@ public class ReservaServiceImpl implements ReservaService {
 
     @Override
     public ReservaDTO cancelarReserva(Long id, String motivo) {
+        validarAccesoReserva(id);
         Reserva reserva = reservaRepository.findById(id).orElseThrow(() -> new BadRequestException("La reserva no existe"));
         if (reserva.getEstado() != EstadoReserva.ACTIVA) {
             throw new BadRequestException("Solo pueden cancelarse reservas activas");
@@ -310,8 +323,12 @@ public class ReservaServiceImpl implements ReservaService {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 
+    private boolean isAdmin() {
+        return SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN");
+    }
+
     private void validarAccesoReserva(Long reservaId) {
-        if (reservaId == null || SecurityUtils.hasCurrentUserAnyOfAuthorities("ROLE_ADMIN")) {
+        if (reservaId == null || isAdmin()) {
             return;
         }
         String login = currentUserLogin();

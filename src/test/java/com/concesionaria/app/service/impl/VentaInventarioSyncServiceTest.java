@@ -73,15 +73,13 @@ class VentaInventarioSyncServiceTest {
         Venta venta = ventaBase(1L, EstadoVenta.PENDIENTE, new BigDecimal("10000.00"), new BigDecimal("1000.00"));
         Inventario inventario = inventarioBase(10L, venta.getVehiculo().getId(), EstadoInventario.DISPONIBLE);
 
-        when(ventaRepository.findById(1L)).thenReturn(Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(100L)).thenReturn(Optional.of(inventario));
         when(pagoRepository.sumMontoByVentaId(1L)).thenReturn(new BigDecimal("1000.00"));
         when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(10L, EstadoReserva.ACTIVA)).thenReturn(Optional.empty());
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
         when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.sincronizarConVenta(1L);
+        service.actualizarPorEstadoVenta(venta);
 
         assertThat(inventario.getEstadoInventario()).isEqualTo(EstadoInventario.RESERVADO);
         verify(reservaRepository, times(1)).save(any(Reserva.class));
@@ -92,14 +90,11 @@ class VentaInventarioSyncServiceTest {
         Venta venta = ventaBase(2L, EstadoVenta.PAGADA, new BigDecimal("10000.00"), new BigDecimal("10000.00"));
         Inventario inventario = inventarioBase(20L, venta.getVehiculo().getId(), EstadoInventario.RESERVADO);
 
-        when(ventaRepository.findById(2L)).thenReturn(Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(200L)).thenReturn(Optional.of(inventario));
-        when(pagoRepository.sumMontoByVentaId(2L)).thenReturn(new BigDecimal("10000.00"));
         when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(20L, EstadoReserva.ACTIVA)).thenReturn(Optional.empty());
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.sincronizarConVenta(2L);
+        service.actualizarPorEstadoVenta(venta);
 
         assertThat(inventario.getEstadoInventario()).isEqualTo(EstadoInventario.VENDIDO);
     }
@@ -109,12 +104,11 @@ class VentaInventarioSyncServiceTest {
         Venta venta = ventaBase(3L, EstadoVenta.CANCELADA, new BigDecimal("10000.00"), new BigDecimal("0.00"));
         Inventario inventario = inventarioBase(30L, venta.getVehiculo().getId(), EstadoInventario.RESERVADO);
 
-        when(ventaRepository.findById(3L)).thenReturn(Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(300L)).thenReturn(Optional.of(inventario));
         when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(30L, EstadoReserva.ACTIVA)).thenReturn(Optional.empty());
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.sincronizarConVenta(3L);
+        service.actualizarPorEstadoVenta(venta);
 
         assertThat(inventario.getEstadoInventario()).isEqualTo(EstadoInventario.DISPONIBLE);
     }
@@ -124,16 +118,33 @@ class VentaInventarioSyncServiceTest {
         Venta venta = ventaBase(4L, EstadoVenta.PAGADA, new BigDecimal("10000.00"), new BigDecimal("10000.00"));
         Inventario inventario = inventarioBase(40L, venta.getVehiculo().getId(), EstadoInventario.VENDIDO);
 
-        when(ventaRepository.findById(4L)).thenReturn(Optional.of(venta));
         when(inventarioRepository.findByVehiculoId(400L)).thenReturn(Optional.of(inventario));
-        when(pagoRepository.sumMontoByVentaId(4L)).thenReturn(new BigDecimal("10000.00"));
         when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(40L, EstadoReserva.ACTIVA)).thenReturn(Optional.empty());
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        service.sincronizarConVenta(4L);
+        service.actualizarPorEstadoVenta(venta);
 
         verify(inventarioHistorialRepository, never()).save(any());
+    }
+
+    @Test
+    void reconciliacionRecalculaVentaYCorrigeInventario() {
+        Venta venta = ventaBase(5L, EstadoVenta.PENDIENTE, new BigDecimal("10000.00"), BigDecimal.ZERO);
+        venta.setTotal(new BigDecimal("10000.00"));
+        Inventario inventario = inventarioBase(50L, venta.getVehiculo().getId(), EstadoInventario.DISPONIBLE);
+
+        when(ventaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(venta));
+        when(inventarioRepository.findByVehiculoId(500L)).thenReturn(Optional.of(inventario));
+        when(pagoRepository.sumMontoByVentaId(5L)).thenReturn(new BigDecimal("10000.00"));
+        when(reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(50L, EstadoReserva.ACTIVA)).thenReturn(Optional.empty());
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.reconciliarVentaInventario(5L);
+
+        assertThat(venta.getEstado()).isEqualTo(EstadoVenta.PAGADA);
+        assertThat(inventario.getEstadoInventario()).isEqualTo(EstadoInventario.VENDIDO);
+        verify(ventaHistorialRepository).save(any());
     }
 
     private Venta ventaBase(Long id, EstadoVenta estado, BigDecimal importeNeto, BigDecimal totalPagado) {

@@ -168,7 +168,7 @@ public class PagoAnulacionService {
             }
             venta.setLastModifiedDate(ahora);
             ventaRepository.save(venta);
-            ventaService.sincronizarInventarioConVenta(venta.getId());
+            ventaService.actualizarInventarioPorEstadoVenta(venta.getId());
         }
     }
 

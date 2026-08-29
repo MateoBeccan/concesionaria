@@ -69,6 +69,7 @@
   <include file="config/liquibase/changelog/20260528164000_add_operational_triggers_inventory_reserva_venta_pago.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260601090000_financial_integrity_constraints.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260601093000_operational_indexes.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260829003000_operacion_idempotente.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <include file="config/liquibase/changelog/20260325200007_added_entity_constraints_Modelo.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
   <include file="config/liquibase/changelog/20260325200008_added_entity_constraints_Version.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
@@ -86,4 +87,3 @@
   <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
   <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->
 </databaseChangeLog>
-

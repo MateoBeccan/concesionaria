@@ -30,6 +30,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @AutoConfigureMockMvc
 @IntegrationTest
+@TestPropertySource(properties = "app.security.registration.public-enabled=true")
 class AccountResourceIT {
 
     static final String TEST_USER_LOGIN = "test";

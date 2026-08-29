@@ -4,9 +4,12 @@ import com.concesionaria.app.config.BusinessProperties;
 import com.concesionaria.app.repository.VentaRepository;
 import com.concesionaria.app.security.AuthoritiesConstants;
 import com.concesionaria.app.security.SecurityUtils;
+import com.concesionaria.app.service.VentaConfirmacionService;
 import com.concesionaria.app.service.VentaService;
 import com.concesionaria.app.service.dto.VentaDTO;
 import com.concesionaria.app.service.dto.VentaHistorialDTO;
+import com.concesionaria.app.web.rest.vm.ConfirmarVentaRequestVM;
+import com.concesionaria.app.web.rest.vm.ConfirmarVentaResponseVM;
 import com.concesionaria.app.web.rest.errors.BadRequestAlertException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import tech.jhipster.web.util.HeaderUtil;
@@ -45,12 +49,19 @@ public class VentaResource {
     private String applicationName;
 
     private final VentaService ventaService;
+    private final VentaConfirmacionService ventaConfirmacionService;
 
     private final VentaRepository ventaRepository;
     private final BusinessProperties businessProperties;
 
-    public VentaResource(VentaService ventaService, VentaRepository ventaRepository, BusinessProperties businessProperties) {
+    public VentaResource(
+        VentaService ventaService,
+        VentaConfirmacionService ventaConfirmacionService,
+        VentaRepository ventaRepository,
+        BusinessProperties businessProperties
+    ) {
         this.ventaService = ventaService;
+        this.ventaConfirmacionService = ventaConfirmacionService;
         this.ventaRepository = ventaRepository;
         this.businessProperties = businessProperties;
     }
@@ -210,6 +221,7 @@ public class VentaResource {
      * @return the {@link ResponseEntity} with status {@code 204 (NO_CONTENT)}.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority(\"" + AuthoritiesConstants.ADMIN + "\")")
     public ResponseEntity<Void> deleteVenta(@PathVariable("id") Long id) {
         LOG.debug("REST request to delete Venta : {}", id);
         ventaService.delete(id);
@@ -233,6 +245,18 @@ public class VentaResource {
             .body(result);
     }
 
+    @PostMapping("/confirmar")
+    public ResponseEntity<ConfirmarVentaResponseVM> confirmarVentaTransaccional(
+        @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+        @Valid @RequestBody ConfirmarVentaRequestVM request
+    ) throws URISyntaxException {
+        LOG.debug("REST request para confirmar venta transaccional");
+        ConfirmarVentaResponseVM result = ventaConfirmacionService.confirmarVenta(request, validarIdempotencyKey(idempotencyKey));
+        return ResponseEntity.created(new URI("/api/ventas/" + result.getVenta().getId()))
+            .headers(HeaderUtil.createEntityCreationAlert(applicationName, false, ENTITY_NAME, result.getVenta().getId().toString()))
+            .body(result);
+    }
+
     @GetMapping("/reserva-config")
     public ResponseEntity<Map<String, Object>> getReservaConfig() {
         BigDecimal porcentajeMinimoReserva = businessProperties.getReserva().getPorcentajeMinimo();
@@ -242,5 +266,19 @@ public class VentaResource {
                 "porcentajeMinimoLabel", porcentajeMinimoReserva.multiply(new BigDecimal("100"))
             )
         );
+    }
+
+    private String validarIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new BadRequestAlertException("Idempotency-Key header is required", ENTITY_NAME, "idempotencykeyrequired");
+        }
+        String key = idempotencyKey.trim();
+        if (key.length() > 100) {
+            throw new BadRequestAlertException("Idempotency-Key header is too long", ENTITY_NAME, "idempotencykeytoolong");
+        }
+        if (!key.matches("[A-Za-z0-9._:-]+")) {
+            throw new BadRequestAlertException("Idempotency-Key header has invalid format", ENTITY_NAME, "idempotencykeyinvalid");
+        }
+        return key;
     }
 }

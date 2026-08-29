@@ -15,7 +15,9 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -39,11 +41,18 @@ public class AccountResource {
     private final UserService userService;
 
     private final MailService mailService;
+    private final boolean publicRegistrationEnabled;
 
-    public AccountResource(UserRepository userRepository, UserService userService, MailService mailService) {
+    public AccountResource(
+        UserRepository userRepository,
+        UserService userService,
+        MailService mailService,
+        @Value("${app.security.registration.public-enabled:false}") boolean publicRegistrationEnabled
+    ) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.mailService = mailService;
+        this.publicRegistrationEnabled = publicRegistrationEnabled;
     }
 
     /**
@@ -57,6 +66,9 @@ public class AccountResource {
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public void registerAccount(@Valid @RequestBody ManagedUserVM managedUserVM) {
+        if (!publicRegistrationEnabled) {
+            throw new AccessDeniedException("El registro publico de usuarios esta deshabilitado");
+        }
         if (isPasswordLengthInvalid(managedUserVM.getPassword())) {
             throw new InvalidPasswordException();
         }

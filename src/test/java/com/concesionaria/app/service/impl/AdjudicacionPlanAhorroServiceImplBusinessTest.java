@@ -289,7 +289,7 @@ class AdjudicacionPlanAhorroServiceImplBusinessTest {
         assertThat(ventaPersistida.getEstado()).isEqualTo(EstadoVenta.PAGADA);
         assertThat(ventaPersistida.getSaldo()).isEqualByComparingTo("0.00");
         assertThat(ventaPersistida.getTotalPagado()).isEqualByComparingTo("1000.00");
-        verify(ventaService).sincronizarInventarioConVenta(500L);
+        verify(ventaService).actualizarInventarioPorEstadoVenta(500L);
     }
 
     @Test

@@ -28,9 +28,10 @@ import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.ReservaRepository;
 import com.concesionaria.app.repository.TasacionUsadoRepository;
 import com.concesionaria.app.repository.VehiculoRepository;
-import com.concesionaria.app.repository.VentaRepository;
-import com.concesionaria.app.repository.VentaHistorialRepository;
 import com.concesionaria.app.repository.UserRepository;
+import com.concesionaria.app.repository.VentaHistorialRepository;
+import com.concesionaria.app.repository.VentaRepository;
+import com.concesionaria.app.security.AuthoritiesConstants;
 import com.concesionaria.app.security.SecurityUtils;
 import com.concesionaria.app.service.CurrencyConversionService;
 import com.concesionaria.app.service.VentaService;
@@ -51,6 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -121,82 +123,23 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     public VentaDTO save(VentaDTO dto) {
-        validarVentaDto(dto, true);
-        Instant now = Instant.now();
-        String currentUser = currentUserLogin();
-        Venta venta = ventaMapper.toEntity(dto);
-        venta.setCotizacion(dto.getCotizacion());
-        venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
-        venta.setImporteNeto(dto.getImporteNeto());
-        venta.setImpuesto(dto.getImpuesto());
-        venta.setTotal(dto.getTotal());
-        venta.setTotalPagado(dto.getTotalPagado());
-        venta.setSaldo(dto.getSaldo());
-        venta.setUser(resolveUsuarioOperador(dto));
-        if (dto.getCotizacionId() != null) {
-            venta.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dto.getCotizacionId()));
-        } else {
-            venta.setCotizacionRef(null);
-        }
-        venta.setCreatedDate(now);
-        venta.setCreatedBy(currentUser);
-        venta.setLastModifiedDate(now);
-        venta.setLastModifiedBy(currentUser);
-        Venta saved = ventaRepository.save(venta);
-        registrarHistorialVenta(saved, null, saved.getEstado(), "VENTA_CREADA", "Alta de venta");
-        sincronizarReservaDesdeVenta(saved);
-        sincronizarInventarioConVenta(saved.getId());
-        return ventaMapper.toDto(saved);
+        return crearVentaDesdeDto(dto, true);
     }
 
     @Override
     public VentaDTO saveDesdePlanAhorro(VentaDTO dto) {
-        validarVentaDto(dto, false);
-        Instant now = Instant.now();
-        String currentUser = currentUserLogin();
-        Venta venta = ventaMapper.toEntity(dto);
-        venta.setCotizacion(dto.getCotizacion());
-        venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
-        venta.setImporteNeto(dto.getImporteNeto());
-        venta.setImpuesto(dto.getImpuesto());
-        venta.setTotal(dto.getTotal());
-        venta.setTotalPagado(dto.getTotalPagado());
-        venta.setSaldo(dto.getSaldo());
-        venta.setUser(resolveUsuarioOperador(dto));
-        if (dto.getCotizacionId() != null) {
-            venta.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dto.getCotizacionId()));
-        } else {
-            venta.setCotizacionRef(null);
-        }
-        venta.setCreatedDate(now);
-        venta.setCreatedBy(currentUser);
-        venta.setLastModifiedDate(now);
-        venta.setLastModifiedBy(currentUser);
-        Venta saved = ventaRepository.save(venta);
-        registrarHistorialVenta(saved, null, saved.getEstado(), "VENTA_CREADA", "Alta de venta");
-        sincronizarReservaDesdeVenta(saved);
-        sincronizarInventarioConVenta(saved.getId());
-        return ventaMapper.toDto(saved);
+        return crearVentaDesdeDto(dto, false);
     }
 
     @Override
     public VentaDTO update(VentaDTO dto) {
+        validarAccesoVenta(dto.getId());
         Venta existing = ventaRepository.findByIdForUpdate(dto.getId()).or(() -> ventaRepository.findById(dto.getId())).orElseThrow(() -> new BadRequestException("La venta no existe"));
         validarVentaDto(dto, true);
         Venta venta = ventaMapper.toEntity(dto);
-        venta.setCotizacion(dto.getCotizacion());
-        venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
-        venta.setImporteNeto(dto.getImporteNeto());
-        venta.setImpuesto(dto.getImpuesto());
-        venta.setTotal(dto.getTotal());
-        venta.setTotalPagado(dto.getTotalPagado());
-        venta.setSaldo(dto.getSaldo());
+        aplicarCamposCalculados(venta, dto);
         venta.setUser(resolveUsuarioOperador(dto));
-        if (dto.getCotizacionId() != null) {
-            venta.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dto.getCotizacionId()));
-        } else {
-            venta.setCotizacionRef(null);
-        }
+        aplicarCotizacionRef(venta, dto);
         venta.setCreatedDate(existing.getCreatedDate());
         venta.setCreatedBy(existing.getCreatedBy());
         venta.setLastModifiedDate(Instant.now());
@@ -205,12 +148,13 @@ public class VentaServiceImpl implements VentaService {
         Venta saved = ventaRepository.save(venta);
         registrarCambioEstadoVentaSiCorresponde(saved, estadoAnterior, "VENTA_ESTADO_ACTUALIZADO", "Cambio de estado por actualizacion de venta");
         sincronizarReservaDesdeVenta(saved);
-        sincronizarInventarioConVenta(saved.getId());
+        actualizarInventarioPorEstadoVenta(saved.getId());
         return ventaMapper.toDto(saved);
     }
 
     @Override
     public Optional<VentaDTO> partialUpdate(VentaDTO dto) {
+        validarAccesoVenta(dto.getId());
         return ventaRepository
             .findById(dto.getId())
             .map(existing -> {
@@ -218,27 +162,17 @@ public class VentaServiceImpl implements VentaService {
                 ventaMapper.partialUpdate(existing, dto);
                 VentaDTO dtoActualizado = ventaMapper.toDto(existing);
                 validarVentaDto(dtoActualizado, true);
-                existing.setCotizacion(dtoActualizado.getCotizacion());
-                existing.setFechaCotizacionUsada(dtoActualizado.getFechaCotizacionUsada());
-                existing.setImporteNeto(dtoActualizado.getImporteNeto());
-                existing.setImpuesto(dtoActualizado.getImpuesto());
-                existing.setTotal(dtoActualizado.getTotal());
-                existing.setTotalPagado(dtoActualizado.getTotalPagado());
-                existing.setSaldo(dtoActualizado.getSaldo());
+                aplicarCamposCalculados(existing, dtoActualizado);
                 if (existing.getCreatedBy() == null) {
                     existing.setCreatedBy(currentUserLogin());
                 }
                 existing.setUser(resolveUsuarioOperador(dtoActualizado));
-                if (dtoActualizado.getCotizacionId() != null) {
-                    existing.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dtoActualizado.getCotizacionId()));
-                } else {
-                    existing.setCotizacionRef(null);
-                }
+                aplicarCotizacionRef(existing, dtoActualizado);
                 existing.setLastModifiedDate(Instant.now());
                 existing.setLastModifiedBy(currentUserLogin());
                 Venta saved = ventaRepository.save(existing);
                 sincronizarReservaDesdeVenta(saved);
-                sincronizarInventarioConVenta(saved.getId());
+                actualizarInventarioPorEstadoVenta(saved.getId());
                 registrarCambioEstadoVentaSiCorresponde(
                     saved,
                     estadoAnterior,
@@ -276,38 +210,33 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<VentaDTO> findAll(Pageable pageable) {
-        Page<Venta> page = ventaRepository.findAll(pageable);
-        reconciliarInventarioVentasActivas(page.getContent());
-        return page.map(ventaMapper::toDto);
+        return ventaRepository.findAll(pageable).map(ventaMapper::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<VentaDTO> findAllWithEagerRelationships(Pageable pageable) {
-        Page<Venta> page = ventaRepository.findAllWithEagerRelationships(pageable);
-        reconciliarInventarioVentasActivas(page.getContent());
-        return page.map(ventaMapper::toDto);
+        return ventaRepository.findAllWithEagerRelationships(pageable).map(ventaMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<VentaDTO> findAllCurrentUser(Pageable pageable) {
-        Page<Venta> page = ventaRepository.findByUserIsCurrentUser(pageable);
-        reconciliarInventarioVentasActivas(page.getContent());
-        return page.map(ventaMapper::toDto);
+        return ventaRepository.findByUserIsCurrentUser(pageable).map(ventaMapper::toDto);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Page<VentaDTO> findAllCurrentUserWithEagerRelationships(Pageable pageable) {
-        Page<Venta> page = ventaRepository.findAllCurrentUserWithToOneRelationships(pageable);
-        reconciliarInventarioVentasActivas(page.getContent());
-        return page.map(ventaMapper::toDto);
+        return ventaRepository.findAllCurrentUserWithToOneRelationships(pageable).map(ventaMapper::toDto);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<VentaDTO> findOne(Long id) {
-        sincronizarInventarioConVenta(id);
+        validarAccesoVenta(id);
         return ventaRepository.findOneWithEagerRelationships(id).map(ventaMapper::toDto);
     }
 
@@ -317,11 +246,21 @@ public class VentaServiceImpl implements VentaService {
         if (reservaId == null) {
             return Optional.empty();
         }
-        return ventaRepository.findFirstByReservaIdOrderByFechaDesc(reservaId).map(ventaMapper::toDto);
+        return ventaRepository
+            .findFirstByReservaIdOrderByFechaDesc(reservaId)
+            .map(venta -> {
+                validarAccesoVenta(venta.getId());
+                return venta;
+            })
+            .map(ventaMapper::toDto);
     }
 
     @Override
     public void delete(Long id) {
+        if (!isAdmin()) {
+            throw new AccessDeniedException("Solo un administrador puede eliminar ventas");
+        }
+        validarAccesoVenta(id);
         ventaRepository.deleteById(id);
     }
 
@@ -397,13 +336,14 @@ public class VentaServiceImpl implements VentaService {
         Venta saved = ventaRepository.save(venta);
         registrarHistorialVenta(saved, null, saved.getEstado(), "VENTA_CREADA", "Alta de venta desde flujo rapido");
 
-        sincronizarInventarioConVenta(saved.getId());
+        actualizarInventarioPorEstadoVenta(saved.getId());
 
         return ventaMapper.toDto(saved);
     }
 
     @Override
     public void confirmarVenta(Long ventaId) {
+        validarAccesoVenta(ventaId);
         Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
 
         if (venta.getSaldo().compareTo(BigDecimal.ZERO) > 0) {
@@ -413,22 +353,32 @@ public class VentaServiceImpl implements VentaService {
             throw new BadRequestException("No se puede confirmar una venta cancelada");
         }
 
-        ventaInventarioSyncService.marcarVendidoPorVenta(venta);
-
         EstadoVenta estadoAnterior = venta.getEstado();
         venta.setEstado(EstadoVenta.PAGADA);
         venta.setLastModifiedDate(Instant.now());
         venta.setLastModifiedBy(currentUserLogin());
         ventaRepository.save(venta);
+        ventaInventarioSyncService.marcarVendidoPorVenta(venta);
         generarInventarioTomaUsadoSiCorresponde(venta);
         registrarCambioEstadoVentaSiCorresponde(venta, estadoAnterior, "VENTA_CONFIRMADA", "Venta confirmada por pago completo");
     }
 
     @Override
-    public void sincronizarInventarioConVenta(Long ventaId) {
+    public void actualizarInventarioPorEstadoVenta(Long ventaId) {
+        validarAccesoVenta(ventaId);
         Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
         asegurarIngresoUsadoSiVentaCobrada(venta);
-        ventaInventarioSyncService.sincronizarConVenta(ventaId);
+        ventaInventarioSyncService.actualizarPorEstadoVenta(venta);
+    }
+
+    @Override
+    public void reconciliarInventarioVenta(Long ventaId) {
+        if (!isAdmin()) {
+            throw new AccessDeniedException("Solo un administrador puede reconciliar inventario de ventas");
+        }
+        validarAccesoVenta(ventaId);
+        ventaInventarioSyncService.reconciliarVentaInventario(ventaId);
+        ventaRepository.findById(ventaId).ifPresent(this::asegurarIngresoUsadoSiVentaCobrada);
     }
 
     @Override
@@ -437,20 +387,8 @@ public class VentaServiceImpl implements VentaService {
         if (ventaId == null) {
             return List.of();
         }
+        validarAccesoVenta(ventaId);
         return ventaHistorialRepository.findAllByVentaIdOrderByFechaDesc(ventaId).stream().map(this::toHistorialDto).collect(Collectors.toList());
-    }
-
-    private void reconciliarInventarioVentasActivas(List<Venta> ventas) {
-        for (Venta venta : ventas) {
-            if (venta == null || venta.getId() == null || venta.getEstado() == null) {
-                continue;
-            }
-            try {
-                sincronizarInventarioConVenta(venta.getId());
-            } catch (BadRequestException ex) {
-                LOG.warn("No se pudo reconciliar inventario para venta {}: {}", venta.getId(), ex.getMessage());
-            }
-        }
     }
 
     private void asegurarIngresoUsadoSiVentaCobrada(Venta venta) {
@@ -474,13 +412,49 @@ public class VentaServiceImpl implements VentaService {
         ventaInventarioSyncService.sincronizarReservaDesdeVenta(venta);
     }
 
+    private VentaDTO crearVentaDesdeDto(VentaDTO dto, boolean exigirMinimoTradicional) {
+        validarVentaDto(dto, exigirMinimoTradicional);
+        Instant now = Instant.now();
+        String currentUser = currentUserLogin();
+        Venta venta = ventaMapper.toEntity(dto);
+        aplicarCamposCalculados(venta, dto);
+        venta.setUser(resolveUsuarioOperador(dto));
+        aplicarCotizacionRef(venta, dto);
+        venta.setCreatedDate(now);
+        venta.setCreatedBy(currentUser);
+        venta.setLastModifiedDate(now);
+        venta.setLastModifiedBy(currentUser);
+        Venta saved = ventaRepository.save(venta);
+        registrarHistorialVenta(saved, null, saved.getEstado(), "VENTA_CREADA", "Alta de venta");
+        sincronizarReservaDesdeVenta(saved);
+        actualizarInventarioPorEstadoVenta(saved.getId());
+        return ventaMapper.toDto(saved);
+    }
+
+    private void aplicarCamposCalculados(Venta venta, VentaDTO dto) {
+        venta.setCotizacion(dto.getCotizacion());
+        venta.setFechaCotizacionUsada(dto.getFechaCotizacionUsada());
+        venta.setImporteNeto(dto.getImporteNeto());
+        venta.setImpuesto(dto.getImpuesto());
+        venta.setTotal(dto.getTotal());
+        aplicarEstadoPagoRegistrado(venta);
+    }
+
+    private void aplicarCotizacionRef(Venta venta, VentaDTO dto) {
+        if (dto.getCotizacionId() != null) {
+            venta.setCotizacionRef(new com.concesionaria.app.domain.Cotizacion().id(dto.getCotizacionId()));
+        } else {
+            venta.setCotizacionRef(null);
+        }
+    }
+
 
     private String currentUserLogin() {
         return SecurityUtils.getCurrentUserLogin().orElse("system");
     }
 
     private User resolveUsuarioOperador(VentaDTO dto) {
-        if (dto != null && dto.getUser() != null && dto.getUser().getId() != null) {
+        if (dto != null && dto.getUser() != null && dto.getUser().getId() != null && isAdmin()) {
             return userRepository.findById(dto.getUser().getId()).orElseThrow(() -> new BadRequestException("El usuario operador no existe"));
         }
 
@@ -653,8 +627,57 @@ public class VentaServiceImpl implements VentaService {
         return businessProperties.getReserva().getPorcentajeMinimo();
     }
 
+    private void aplicarEstadoPagoRegistrado(Venta venta) {
+        BigDecimal total = venta.getTotal() == null ? BigDecimal.ZERO : venta.getTotal().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal totalPagado = totalPagadoRegistrado(venta.getId());
+        BigDecimal saldo = total.subtract(totalPagado).setScale(2, RoundingMode.HALF_UP);
+        if (saldo.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BadRequestException("Los pagos registrados superan el total de la venta");
+        }
+
+        venta.setTotalPagado(totalPagado);
+        venta.setSaldo(saldo);
+        if (venta.getEstado() == EstadoVenta.CANCELADA) {
+            return;
+        }
+        if (total.compareTo(BigDecimal.ZERO) > 0 && saldo.compareTo(BigDecimal.ZERO) == 0) {
+            venta.setEstado(EstadoVenta.PAGADA);
+            return;
+        }
+        BigDecimal minimoReserva = calcularMontoMinimoReserva(calcularImporteBaseReserva(venta));
+        if (totalPagado.compareTo(minimoReserva) >= 0 && minimoReserva.compareTo(BigDecimal.ZERO) > 0) {
+            venta.setEstado(EstadoVenta.RESERVADA);
+        } else {
+            venta.setEstado(EstadoVenta.PENDIENTE);
+        }
+    }
+
+    private BigDecimal totalPagadoRegistrado(Long ventaId) {
+        if (ventaId == null) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        BigDecimal total = pagoRepository.sumMontoByVentaId(ventaId);
+        return (total == null ? BigDecimal.ZERO : total).setScale(2, RoundingMode.HALF_UP);
+    }
+
     private String monedaBaseCodigo() {
         return businessProperties.getMonedaBaseCodigo();
+    }
+
+    private void validarAccesoVenta(Long ventaId) {
+        if (ventaId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = ventaRepository.existsAccessibleByIdForUser(ventaId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a venta {} para usuario {}", ventaId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a esta venta");
+        }
+    }
+
+    private boolean isAdmin() {
+        return SecurityUtils.hasCurrentUserAnyOfAuthorities(AuthoritiesConstants.ADMIN);
     }
 
     private void validarReservaActivaParaVenta(VentaDTO dto) {
@@ -793,4 +816,3 @@ public class VentaServiceImpl implements VentaService {
         return dto;
     }
 }
-

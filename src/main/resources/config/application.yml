@@ -228,6 +228,9 @@ jhipster:
 
 # application:
 app:
+  security:
+    registration:
+      public-enabled: ${APP_SECURITY_REGISTRATION_PUBLIC_ENABLED:false}
   negocio:
     moneda-base-codigo: ARS
     impuesto:
@@ -250,4 +253,3 @@ app:
         phone: +54 11 4000-1234
         email: ventas@concesionariamb.com
         cuit: 30-12345678-9
-

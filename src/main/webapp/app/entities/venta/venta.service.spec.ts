@@ -183,9 +183,8 @@ describe('Service Tests', () => {
 
       it('should delete a Venta', async () => {
         axiosStub.delete.resolves({ ok: true });
-        return service.delete(123).then(res => {
-          expect(res.ok).toBeTruthy();
-        });
+        await expect(service.delete(123)).resolves.toBeUndefined();
+        expect(axiosStub.delete.calledWith('api/ventas/123')).toBeTruthy();
       });
 
       it('should not delete a Venta', async () => {
@@ -197,6 +196,29 @@ describe('Service Tests', () => {
           .catch(err => {
             expect(err).toMatchObject(error);
           });
+      });
+
+      it('should confirm a Venta through the transactional workflow', async () => {
+        const payload = {
+          venta: { id: 123 },
+          pagos: [{ monto: 100 }],
+          tipoComprobanteId: 456,
+        };
+        const returnedFromService = {
+          venta: { id: 123, totalPagado: 100, saldo: 0 },
+          pagos: [{ id: 789, monto: 100 }],
+          comprobante: { id: 456, numeroComprobante: 'FAC-0001' },
+        };
+        axiosStub.post.resolves({ data: returnedFromService });
+
+        const res = await service.confirmarVenta(payload, 'key-a');
+
+        expect(
+          axiosStub.post.calledWith('api/ventas/confirmar', payload, {
+            headers: { 'Idempotency-Key': 'key-a' },
+          }),
+        ).toBeTruthy();
+        expect(res).toMatchObject(returnedFromService);
       });
     });
   });

@@ -6,6 +6,7 @@ services:
     environment:
       - _JAVA_OPTIONS=-Xmx512m -Xms256m
       - SPRING_PROFILES_ACTIVE=prod,api-docs
+      - JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET=${JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET:?set JWT base64 secret}
       - MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED=true
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/concesionaria?useUnicode=true&characterEncoding=utf8&useSSL=false&useLegacyDatetimeCode=false&createDatabaseIfNotExist=true
       - SPRING_DATASOURCE_USERNAME=root

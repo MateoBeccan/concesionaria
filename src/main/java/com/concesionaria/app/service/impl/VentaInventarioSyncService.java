@@ -21,7 +21,6 @@ import java.time.ZoneOffset;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -55,72 +54,64 @@ public class VentaInventarioSyncService {
         this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
     }
 
-    public void sincronizarConVenta(Long ventaId) {
+    public void reconciliarVentaInventario(Long ventaId) {
         Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
-        Set<Long> vehiculoIds = vehiculoIdsDesdeVenta(ventaId);
-        if (vehiculoIds.isEmpty()) {
-            return;
+        EstadoVenta estadoEsperado = ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva());
+        if (venta.getEstado() != estadoEsperado) {
+            EstadoVenta estadoAnteriorVenta = venta.getEstado();
+            venta.setEstado(estadoEsperado);
+            venta.setLastModifiedDate(Instant.now());
+            venta.setLastModifiedBy(currentUserLogin());
+            ventaRepository.save(venta);
+            ventaHistorialService.registrarCambioEstadoVentaSiCorresponde(
+                venta,
+                estadoAnteriorVenta,
+                "VENTA_ESTADO_RECALCULADO",
+                "Estado recalculado por reconciliacion de venta e inventario",
+                this::currentUserLogin
+            );
+        }
+        actualizarPorEstadoVenta(venta);
+    }
+
+    public void actualizarPorEstadoVenta(Venta venta) {
+        Inventario inventario = inventarioVenta(venta);
+        normalizarReservaVencida(inventario);
+        EstadoInventario estadoAnterior = inventario.getEstadoInventario();
+
+        switch (venta.getEstado()) {
+            case PAGADA, FINALIZADA -> marcarVendidoPorVenta(venta);
+            case PENDIENTE, RESERVADA -> {
+                if (cumpleMinimoReserva(venta)) {
+                    reservarPorVenta(venta);
+                } else {
+                    liberarPorCancelacion(venta);
+                }
+            }
+            case CANCELADA -> liberarPorCancelacion(venta);
         }
 
-        for (Long vehiculoId : vehiculoIds) {
-            Inventario inventario = inventarioRepository.findByVehiculoIdForUpdate(vehiculoId).or(() -> inventarioRepository.findByVehiculoId(vehiculoId)).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-            normalizarReservaVencida(inventario);
-            EstadoInventario estadoAnterior = inventario.getEstadoInventario();
+        inventario = inventarioVenta(venta);
+        inventario.setLastModifiedDate(Instant.now());
+        inventario.setLastModifiedBy(currentUserLogin());
+        inventarioRepository.save(inventario);
 
-            switch (venta.getEstado()) {
-                case PAGADA, FINALIZADA -> marcarVendidoPorVenta(
-                    venta,
-                    "Reserva convertida en venta",
-                    "Sincronizacion automatica desde venta " + venta.getId()
-                );
-                case PENDIENTE, RESERVADA -> {
-                    if (cumpleMinimoReserva(venta)) {
-                        reservarPorVenta(venta);
-                    } else {
-                        liberarPorCancelacion(venta);
-                    }
-                }
-                case CANCELADA -> liberarPorCancelacion(venta);
-            }
-
-            EstadoVenta estadoEsperado = ventaStateManager.calcularEstadoSegunPagos(venta, porcentajeMinimoReserva());
-            if (venta.getEstado() != estadoEsperado) {
-                EstadoVenta estadoAnteriorVenta = venta.getEstado();
-                venta.setEstado(estadoEsperado);
-                venta.setLastModifiedDate(Instant.now());
-                venta.setLastModifiedBy(currentUserLogin());
-                ventaRepository.save(venta);
-                ventaHistorialService.registrarCambioEstadoVentaSiCorresponde(
-                    venta,
-                    estadoAnteriorVenta,
-                    "VENTA_ESTADO_RECALCULADO",
-                    "Estado recalculado segun pagos e inventario",
-                    this::currentUserLogin
-                );
-            }
-
-            inventario = inventarioRepository.findByVehiculoIdForUpdate(vehiculoId).or(() -> inventarioRepository.findByVehiculoId(vehiculoId)).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-            inventario.setLastModifiedDate(Instant.now());
-            inventario.setLastModifiedBy(currentUserLogin());
-            inventarioRepository.save(inventario);
-
-            boolean ventaCobrada = venta.getEstado() == EstadoVenta.PAGADA || venta.getEstado() == EstadoVenta.FINALIZADA;
-            boolean historialVendidoYaRegistrado = ventaCobrada && inventario.getEstadoInventario() == EstadoInventario.VENDIDO;
-            if (estadoAnterior != inventario.getEstadoInventario() && !historialVendidoYaRegistrado) {
-                boolean reservaConSeniaConfirmada =
-                    inventario.getEstadoInventario() == EstadoInventario.RESERVADO && (venta.getEstado() == EstadoVenta.PENDIENTE || venta.getEstado() == EstadoVenta.RESERVADA);
-                registrarHistorialInventario(
-                    inventario,
-                    estadoAnterior,
-                    inventario.getEstadoInventario(),
-                    reservaConSeniaConfirmada ? "RESERVA_CONFIRMADA" : accionPorEstadoVenta(venta.getEstado()),
-                    reservaConSeniaConfirmada
-                        ? "Reserva generada con sena del " +
-                        ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva()).stripTrailingZeros().toPlainString() +
-                        "%"
-                        : "Sincronizacion automatica desde venta " + venta.getId()
-                );
-            }
+        boolean ventaCobrada = venta.getEstado() == EstadoVenta.PAGADA || venta.getEstado() == EstadoVenta.FINALIZADA;
+        boolean historialVendidoYaRegistrado = ventaCobrada && inventario.getEstadoInventario() == EstadoInventario.VENDIDO;
+        if (estadoAnterior != inventario.getEstadoInventario() && !historialVendidoYaRegistrado) {
+            boolean reservaConSeniaConfirmada =
+                inventario.getEstadoInventario() == EstadoInventario.RESERVADO && (venta.getEstado() == EstadoVenta.PENDIENTE || venta.getEstado() == EstadoVenta.RESERVADA);
+            registrarHistorialInventario(
+                inventario,
+                estadoAnterior,
+                inventario.getEstadoInventario(),
+                reservaConSeniaConfirmada ? "RESERVA_CONFIRMADA" : accionPorEstadoVenta(venta.getEstado()),
+                reservaConSeniaConfirmada
+                    ? "Reserva generada con sena del " +
+                    ventaCalculator.porcentajeMinimoReservaEscalaHumana(porcentajeMinimoReserva()).stripTrailingZeros().toPlainString() +
+                    "%"
+                    : "Actualizacion de inventario por estado de venta " + venta.getId()
+            );
         }
     }
 
@@ -251,14 +242,6 @@ public class VentaInventarioSyncService {
             throw new BadRequestException("Inventario no encontrado");
         }
         return inventarioRepository.findByVehiculoIdForUpdate(venta.getVehiculo().getId()).or(() -> inventarioRepository.findByVehiculoId(venta.getVehiculo().getId())).orElseThrow(() -> new BadRequestException("Inventario no encontrado"));
-    }
-
-    private Set<Long> vehiculoIdsDesdeVenta(Long ventaId) {
-        Venta venta = ventaRepository.findById(ventaId).orElse(null);
-        if (venta == null || venta.getVehiculo() == null || venta.getVehiculo().getId() == null) {
-            return Set.of();
-        }
-        return Set.of(venta.getVehiculo().getId());
     }
 
     private boolean cumpleMinimoReserva(Venta venta) {

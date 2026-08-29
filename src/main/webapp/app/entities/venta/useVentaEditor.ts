@@ -16,6 +16,7 @@ import type { ITasacionUsado } from '@/shared/model/tasacion-usado.model';
 import type { IVehiculo } from '@/shared/model/vehiculo.model';
 import type { IVenta } from '@/shared/model/venta.model';
 import type { ICotizacion } from '@/shared/model/cotizacion.model';
+import { pagoLocalToPayload, useVentaConfirmacion } from './useVentaConfirmacion';
 
 export interface DetalleLocal {
   _key: string;
@@ -165,9 +166,7 @@ export function useVentaEditor() {
       .reduce((acc, pago) => acc + Number(pago.montoAplicadoMonedaVenta ?? pago.monto ?? 0), 0),
   );
   const montoMinimoReserva = computed(() => Math.max(0, sumaSubtotales.value * porcentajeMinimoReserva.value));
-  const tieneComprobanteActivo = computed(() =>
-    comprobantes.value.some(comprobante => comprobante.estado === EstadoComprobante.EMITIDO),
-  );
+  const tieneComprobanteActivo = computed(() => comprobantes.value.some(comprobante => comprobante.estado === EstadoComprobante.EMITIDO));
   const cumpleMinimoReserva = computed(() => sumaPagos.value + EPSILON >= montoMinimoReserva.value && montoMinimoReserva.value > 0);
   const estadoCalculado = computed(() => {
     if (detalles.value.length === 0) {
@@ -236,6 +235,47 @@ export function useVentaEditor() {
     venta.value.saldo = Math.max(0, Number(venta.value.total ?? 0) - sumaPagos.value);
     venta.value.estado = estadoCalculado.value;
   }
+
+  function pagoDtoToLocal(pago: IPago): PagoLocal {
+    return {
+      _key: `loaded-${pago.id}`,
+      id: pago.id,
+      monto: Number(pago.monto),
+      montoAplicadoMonedaVenta: Number(pago.montoAplicadoVenta ?? pago.monto ?? 0),
+      fecha: new Date(pago.fecha!),
+      referencia: pago.referencia ?? '',
+      numeroOperacion: pago.numeroOperacion ?? '',
+      bancoEntidad: pago.bancoEntidad ?? '',
+      entidadFinanciera: pago.entidadFinanciera ?? null,
+      comprobanteExterno: pago.comprobanteExterno ?? '',
+      observaciones: pago.observaciones ?? '',
+      metodoPago: pago.metodoPago ?? null,
+      moneda: pago.moneda ?? null,
+      cotizacionUsada: Number(pago.cotizacionUsada ?? 1),
+      tasacionUsadoId: pago.tasacionUsadoId ?? pago.tasacionUsado?.id ?? null,
+      tasacionUsado: pago.tasacionUsado ?? null,
+      estado: pago.estado ?? EstadoPago.REGISTRADO,
+      guardado: true,
+      usuarioRegistro: pago.usuarioRegistro ?? null,
+      comprobanteNumero: null,
+    };
+  }
+
+  const { confirmar } = useVentaConfirmacion({
+    state: {
+      venta,
+      detalles,
+      pagos,
+      comprobantes,
+      guardando,
+      error,
+    },
+    rules: {
+      tieneComprobanteActivo,
+      validarVentaAntesDeGuardar,
+    },
+    pagoDtoToLocal,
+  });
 
   function setPorcentajeMinimoReserva(porcentaje: number) {
     if (!Number.isFinite(porcentaje) || porcentaje <= 0) {
@@ -423,12 +463,14 @@ export function useVentaEditor() {
     }
 
     error.value = null;
-    detalles.value = [{
-      _key: `vehiculo-${vehiculo.id ?? Date.now()}`,
-      vehiculo,
-      precioUnitario: precio,
-      subtotal: precio,
-    }];
+    detalles.value = [
+      {
+        _key: `vehiculo-${vehiculo.id ?? Date.now()}`,
+        vehiculo,
+        precioUnitario: precio,
+        subtotal: precio,
+      },
+    ];
     venta.value.vehiculo = vehiculo;
     if (!venta.value.moneda?.id) {
       venta.value.moneda = resolverMonedaBaseVenta() ?? vehiculo.moneda;
@@ -493,8 +535,8 @@ export function useVentaEditor() {
     }
 
     const monedaPago = moneda ?? venta.value.moneda ?? null;
-    let cotizacionUsada = 1;
-    let montoAplicadoMonedaVenta = montoNormalizado;
+    let cotizacionUsada: number;
+    let montoAplicadoMonedaVenta: number;
     try {
       cotizacionUsada = await resolverCotizacionPagoEnMonedaVenta(monedaPago);
       montoAplicadoMonedaVenta = Number((montoNormalizado * cotizacionUsada).toFixed(2));
@@ -575,11 +617,11 @@ export function useVentaEditor() {
 
     const monedaVehiculoId = detalles.value[0]?.vehiculo?.moneda?.id;
     const monedaVentaId = venta.value.moneda.id;
-      if (monedaVehiculoId && monedaVentaId === monedaVehiculoId) {
-        venta.value.cotizacion = 1;
-      } else {
-        const cotizacion = Number(venta.value.cotizacion ?? 0);
-        if (!Number.isFinite(cotizacion) || cotizacion <= 0) {
+    if (monedaVehiculoId && monedaVentaId === monedaVehiculoId) {
+      venta.value.cotizacion = 1;
+    } else {
+      const cotizacion = Number(venta.value.cotizacion ?? 0);
+      if (!Number.isFinite(cotizacion) || cotizacion <= 0) {
         throw new Error('La cotizacion es obligatoria cuando la moneda de la venta difiere de la moneda del vehiculo');
       }
     }
@@ -618,7 +660,6 @@ export function useVentaEditor() {
       if (!Number.isFinite(Number(pago.monto)) || Number(pago.monto) <= 0) {
         throw new Error('Todos los pagos deben tener un monto mayor a 0');
       }
-
     }
 
     if (sumaPagos.value - total > EPSILON) {
@@ -669,21 +710,7 @@ export function useVentaEditor() {
 
   async function guardarPagos(ventaId: number) {
     for (const pago of pagos.value.filter(item => !item.guardado && item.estado !== EstadoPago.ANULADO)) {
-      const payload = {
-        id: pago.id,
-        monto: pago.monto,
-        fecha: pago.fecha,
-        referencia: pago.referencia || null,
-        bancoEntidad: pago.bancoEntidad || null,
-        entidadFinanciera: pago.entidadFinanciera?.id ? { id: pago.entidadFinanciera.id } : null,
-        comprobanteExterno: pago.comprobanteExterno || null,
-        observaciones: pago.observaciones || null,
-        cotizacionUsada: pago.cotizacionUsada,
-        tasacionUsadoId: pago.tasacionUsadoId ?? null,
-        venta: { id: ventaId },
-        metodoPago: pago.metodoPago ? { id: pago.metodoPago.id } : null,
-        moneda: pago.moneda ? { id: pago.moneda.id } : null,
-      };
+      const payload = pagoLocalToPayload(pago, ventaId);
 
       const res = await axios.post(`api/pagos/registrar?ventaId=${ventaId}`, payload);
       pago.id = res.data.id;
@@ -726,26 +753,6 @@ export function useVentaEditor() {
     return emitido;
   }
 
-  async function confirmar(tipoComprobante?: ITipoComprobante): Promise<{ venta: IVenta; comprobante?: IComprobante }> {
-    guardando.value = true;
-    error.value = null;
-
-    try {
-      validarVentaAntesDeGuardar();
-      const ventaGuardada = await guardarVenta();
-      await guardarPagos(ventaGuardada.id!);
-
-      let comprobante: IComprobante | undefined;
-      if (tipoComprobante) {
-        comprobante = await generarComprobante(ventaGuardada.id!, tipoComprobante);
-      }
-
-      return { venta: ventaGuardada, comprobante };
-    } finally {
-      guardando.value = false;
-    }
-  }
-
   async function cargarVenta(ventaId: number) {
     cargandoVenta.value = true;
     try {
@@ -757,39 +764,20 @@ export function useVentaEditor() {
 
       venta.value = ventaRes.data;
       if (ventaRes.data.vehiculo?.id) {
-        detalles.value = [{
-          _key: `vehiculo-${ventaRes.data.vehiculo.id}`,
-          vehiculo: ventaRes.data.vehiculo,
-          precioUnitario: Number(ventaRes.data.vehiculo.precio ?? ventaRes.data.importeNeto ?? 0),
-          subtotal: Number(ventaRes.data.importeConvertido ?? ventaRes.data.importeNeto ?? 0),
-        }];
+        detalles.value = [
+          {
+            _key: `vehiculo-${ventaRes.data.vehiculo.id}`,
+            vehiculo: ventaRes.data.vehiculo,
+            precioUnitario: Number(ventaRes.data.vehiculo.precio ?? ventaRes.data.importeNeto ?? 0),
+            subtotal: Number(ventaRes.data.importeConvertido ?? ventaRes.data.importeNeto ?? 0),
+          },
+        ];
         await cargarOpcionesCotizacion({ aplicarPorDefecto: false });
       } else {
         detalles.value = [];
       }
 
-      pagos.value = (pagosRes.data as IPago[]).map(pago => ({
-        _key: `loaded-${pago.id}`,
-        id: pago.id,
-        monto: Number(pago.monto),
-      montoAplicadoMonedaVenta: Number(pago.montoAplicadoVenta ?? pago.monto ?? 0),
-        fecha: new Date(pago.fecha!),
-        referencia: pago.referencia ?? '',
-        numeroOperacion: pago.numeroOperacion ?? '',
-        bancoEntidad: pago.bancoEntidad ?? '',
-        entidadFinanciera: pago.entidadFinanciera ?? null,
-        comprobanteExterno: pago.comprobanteExterno ?? '',
-        observaciones: pago.observaciones ?? '',
-        metodoPago: pago.metodoPago ?? null,
-        moneda: pago.moneda ?? null,
-        cotizacionUsada: Number(pago.cotizacionUsada ?? 1),
-        tasacionUsadoId: pago.tasacionUsadoId ?? pago.tasacionUsado?.id ?? null,
-        tasacionUsado: pago.tasacionUsado ?? null,
-        estado: pago.estado ?? EstadoPago.REGISTRADO,
-        guardado: true,
-        usuarioRegistro: pago.usuarioRegistro ?? null,
-        comprobanteNumero: null,
-      }));
+      pagos.value = (pagosRes.data as IPago[]).map(pagoDtoToLocal);
       await Promise.all(pagos.value.map(item => refrescarComprobantePago(item)));
 
       comprobantes.value = comprobantesRes.data as IComprobante[];
@@ -824,28 +812,7 @@ export function useVentaEditor() {
         axios.get(`api/pagos/by-venta/${venta.value.id}`),
       ]);
       venta.value = ventaRes.data;
-      pagos.value = (pagosRes.data as IPago[]).map(item => ({
-        _key: `loaded-${item.id}`,
-        id: item.id,
-        monto: Number(item.monto),
-      montoAplicadoMonedaVenta: Number(item.montoAplicadoVenta ?? item.monto ?? 0),
-        fecha: new Date(item.fecha!),
-        referencia: item.referencia ?? '',
-        numeroOperacion: item.numeroOperacion ?? '',
-        bancoEntidad: item.bancoEntidad ?? '',
-        entidadFinanciera: item.entidadFinanciera ?? null,
-        comprobanteExterno: item.comprobanteExterno ?? '',
-        observaciones: item.observaciones ?? '',
-        metodoPago: item.metodoPago ?? null,
-        moneda: item.moneda ?? null,
-        cotizacionUsada: Number(item.cotizacionUsada ?? 1),
-        tasacionUsadoId: item.tasacionUsadoId ?? item.tasacionUsado?.id ?? null,
-        tasacionUsado: item.tasacionUsado ?? null,
-        estado: item.estado ?? EstadoPago.REGISTRADO,
-        guardado: true,
-        usuarioRegistro: item.usuarioRegistro ?? null,
-        comprobanteNumero: null,
-      }));
+      pagos.value = (pagosRes.data as IPago[]).map(pagoDtoToLocal);
       await Promise.all(pagos.value.map(entry => refrescarComprobantePago(entry)));
     }
 
@@ -870,6 +837,7 @@ export function useVentaEditor() {
     pagos,
     guardando,
     error,
+    comprobantes,
     clientes,
     monedas,
     metodoPagos,

@@ -105,6 +105,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     @Transactional(readOnly = true)
     public List<ComprobanteDTO> findByVentaId(Long ventaId) {
         LOG.debug("Request to get Comprobantes by Venta : {}", ventaId);
+        validarAccesoVenta(ventaId);
         if (isAdmin()) {
             return comprobanteRepository.findAllByVentaIdWithRelaciones(ventaId).stream().map(comprobanteMapper::toDto).toList();
         }
@@ -114,6 +115,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     @Override
     @Transactional(readOnly = true)
     public List<ComprobanteDTO> findByPagoId(Long pagoId) {
+        validarAccesoPago(pagoId);
         if (isAdmin()) {
             return comprobanteRepository.findAllByPagoIdOrderByFechaEmisionDescIdDesc(pagoId).stream().map(comprobanteMapper::toDto).toList();
         }
@@ -124,6 +126,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     public ComprobanteDTO emitirComprobante(Long ventaId, Long tipoComprobanteId) {
         LOG.debug("Request to emitir comprobante para venta {} y tipo {}", ventaId, tipoComprobanteId);
 
+        validarAccesoVenta(ventaId);
         Venta venta = ventaRepository.findById(ventaId).orElseThrow(() -> new BadRequestException("La venta informada no existe"));
         validarVentaCompletada(venta);
         validarTotalesVentaParaComprobante(venta);
@@ -166,6 +169,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
 
     @Override
     public ComprobanteDTO emitirComprobantePago(Long pagoId, Long tipoComprobanteId) {
+        validarAccesoPago(pagoId);
         Pago pago = pagoRepository.findById(pagoId).orElseThrow(() -> new BadRequestException("El pago informado no existe"));
         if (pago.getVenta() == null || pago.getVenta().getId() == null) {
             throw new BadRequestException("Solo se puede emitir comprobante para pagos asociados a una venta");
@@ -211,6 +215,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     @Override
     public ComprobanteDTO anularComprobante(Long comprobanteId, String motivo) {
         LOG.debug("Request to anular comprobante : {}", comprobanteId);
+        validarAccesoComprobante(comprobanteId);
         Comprobante comprobante = comprobanteRepository
             .findById(comprobanteId)
             .orElseThrow(() -> new BadRequestException("El comprobante no existe"));
@@ -290,6 +295,30 @@ public class ComprobanteServiceImpl implements ComprobanteService {
         if (!allowed) {
             LOG.warn("Acceso denegado a comprobante {} para usuario {}", comprobanteId, login);
             throw new AccessDeniedException("No tienes permisos para acceder a este comprobante");
+        }
+    }
+
+    private void validarAccesoVenta(Long ventaId) {
+        if (ventaId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = ventaRepository.existsAccessibleByIdForUser(ventaId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a venta {} para comprobantes por usuario {}", ventaId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a esta venta");
+        }
+    }
+
+    private void validarAccesoPago(Long pagoId) {
+        if (pagoId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = pagoRepository.existsAccessibleByIdForUser(pagoId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a pago {} para comprobantes por usuario {}", pagoId, login);
+            throw new AccessDeniedException("No tienes permisos para acceder a este pago");
         }
     }
 }

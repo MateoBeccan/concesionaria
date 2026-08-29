@@ -175,7 +175,7 @@ class PagoServiceImplBusinessTest {
         assertThat(venta.getSaldo()).isEqualByComparingTo("8500.00");
         verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.REGISTRADO), eq(true));
         verify(ventaRepository).findByIdForUpdate(30L);
-        verify(ventaService).sincronizarInventarioConVenta(30L);
+        verify(ventaService).actualizarInventarioPorEstadoVenta(30L);
         verify(ventaService, never()).confirmarVenta(any());
     }
 
@@ -241,7 +241,7 @@ class PagoServiceImplBusinessTest {
 
         assertThat(venta.getSaldo()).isEqualByComparingTo("0.00");
         verify(ventaService).confirmarVenta(40L);
-        verify(ventaService, never()).sincronizarInventarioConVenta(eq(40L));
+        verify(ventaService, never()).actualizarInventarioPorEstadoVenta(eq(40L));
     }
 
     @Test
@@ -284,7 +284,7 @@ class PagoServiceImplBusinessTest {
         assertThat(venta.getTotalPagado()).isEqualByComparingTo("0.00");
         assertThat(venta.getSaldo()).isEqualByComparingTo("1000.00");
         verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.ANULADO), eq(true));
-        verify(ventaService).sincronizarInventarioConVenta(60L);
+        verify(ventaService).actualizarInventarioPorEstadoVenta(60L);
         verify(ventaService, never()).confirmarVenta(any());
     }
 
@@ -422,7 +422,7 @@ class PagoServiceImplBusinessTest {
         assertThat(pago.getTasacionUsado()).isNotNull();
         assertThat(venta.getTasacionUsado()).isNotNull();
         verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.REGISTRADO), eq(false));
-        verify(ventaService).sincronizarInventarioConVenta(110L);
+        verify(ventaService).actualizarInventarioPorEstadoVenta(110L);
     }
 
     @Test
@@ -522,7 +522,7 @@ class PagoServiceImplBusinessTest {
         pagoService.anularPago(9030L, "Operacion revertida");
 
         assertThat(venta.getTasacionUsado()).isNull();
-        verify(ventaService).sincronizarInventarioConVenta(113L);
+        verify(ventaService).actualizarInventarioPorEstadoVenta(113L);
     }
 
     @Test

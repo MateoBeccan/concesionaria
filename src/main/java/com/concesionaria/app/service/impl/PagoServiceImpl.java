@@ -284,6 +284,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPago(Long ventaId, PagoDTO pagoDTO) {
+        validarAccesoVenta(ventaId);
         Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
         Venta venta = ventaRepository.findByIdForUpdate(ventaId).or(() -> ventaRepository.findById(ventaId)).orElseThrow(() -> new BadRequestException("La venta no existe"));
@@ -404,6 +405,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO registrarPagoReserva(Long reservaId, PagoDTO pagoDTO) {
+        validarAccesoReserva(reservaId);
         Instant ahora = Instant.now();
         validarContextoEntradaPago(pagoDTO);
         Reserva reserva = reservaRepository.findByIdForUpdate(reservaId).or(() -> reservaRepository.findById(reservaId)).orElseThrow(() -> new BadRequestException("La reserva no existe"));
@@ -485,6 +487,7 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     public PagoDTO anularPago(Long pagoId, String motivo) {
+        validarAccesoPago(pagoId);
         return pagoAnulacionService.anularPago(pagoId, motivo);
     }
 
@@ -513,7 +516,7 @@ public class PagoServiceImpl implements PagoService {
             }
             venta.setLastModifiedDate(ahora);
             ventaRepository.save(venta);
-            ventaService.sincronizarInventarioConVenta(venta.getId());
+            ventaService.actualizarInventarioPorEstadoVenta(venta.getId());
         }
     }
 
@@ -557,6 +560,30 @@ public class PagoServiceImpl implements PagoService {
         if (!allowed) {
             LOG.warn("Acceso denegado a pago {} para usuario {}", pagoId, login);
             throw new AccessDeniedException("No tienes permisos para acceder a este pago");
+        }
+    }
+
+    private void validarAccesoVenta(Long ventaId) {
+        if (ventaId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = ventaRepository.existsAccessibleByIdForUser(ventaId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a venta {} para registrar pago por usuario {}", ventaId, login);
+            throw new AccessDeniedException("No tienes permisos para operar esta venta");
+        }
+    }
+
+    private void validarAccesoReserva(Long reservaId) {
+        if (reservaId == null || isAdmin()) {
+            return;
+        }
+        String login = currentUserLogin();
+        boolean allowed = reservaRepository.existsAccessibleByIdForUser(reservaId, login);
+        if (!allowed) {
+            LOG.warn("Acceso denegado a reserva {} para registrar pago por usuario {}", reservaId, login);
+            throw new AccessDeniedException("No tienes permisos para operar esta reserva");
         }
     }
 
@@ -747,4 +774,3 @@ public class PagoServiceImpl implements PagoService {
         return businessProperties.getMonedaBaseCodigo();
     }
 }
-

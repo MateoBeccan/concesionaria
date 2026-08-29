@@ -44,12 +44,20 @@ import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.VentaMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +81,7 @@ class VentaServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("admin", "n/a", "ROLE_ADMIN"));
         service =
             new VentaServiceImpl(
                 ventaRepository,
@@ -105,6 +114,11 @@ class VentaServiceImplBusinessTest {
             );
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void bloqueaIngresoUsadoSiFaltaKm() {
         Moneda ars = new Moneda().id(1L);
@@ -126,6 +140,99 @@ class VentaServiceImplBusinessTest {
             () -> ReflectionTestUtils.invokeMethod(service, "validarTasacionParaIngresoInventario", venta, tasacion)
         );
         assertThat(ex.getMessage()).contains("kilometraje");
+    }
+
+    @Test
+    void usuarioNoPuedeLeerVentaAjenaYNoEjecutaSincronizacion() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "n/a", "ROLE_USER"));
+        when(ventaRepository.existsAccessibleByIdForUser(10L, "user")).thenReturn(false);
+
+        assertThrows(AccessDeniedException.class, () -> service.findOne(10L));
+
+        verify(ventaRepository, never()).findByIdForUpdate(10L);
+        verify(ventaRepository, never()).findOneWithEagerRelationships(10L);
+    }
+
+    @Test
+    void usuarioPuedeLeerVentaPropiaDespuesDeValidarOwnership() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "n/a", "ROLE_USER"));
+        Venta venta = new Venta();
+        venta.setId(10L);
+        VentaDTO dto = new VentaDTO();
+        dto.setId(10L);
+
+        when(ventaRepository.existsAccessibleByIdForUser(10L, "user")).thenReturn(true);
+        when(ventaRepository.findOneWithEagerRelationships(10L)).thenReturn(Optional.of(venta));
+        when(ventaMapper.toDto(venta)).thenReturn(dto);
+
+        Optional<VentaDTO> result = service.findOne(10L);
+
+        assertThat(result).isPresent();
+        assertThat(result.orElseThrow().getId()).isEqualTo(10L);
+        verify(ventaRepository, never()).findByIdForUpdate(10L);
+        verify(ventaRepository, never()).findById(10L);
+    }
+
+    @Test
+    void adminPuedeLeerVentaSinValidarOwnership() {
+        Venta venta = new Venta();
+        venta.setId(11L);
+        VentaDTO dto = new VentaDTO();
+        dto.setId(11L);
+
+        when(ventaRepository.findOneWithEagerRelationships(11L)).thenReturn(Optional.of(venta));
+        when(ventaMapper.toDto(venta)).thenReturn(dto);
+
+        Optional<VentaDTO> result = service.findOne(11L);
+
+        assertThat(result).isPresent();
+        verify(ventaRepository, never()).existsAccessibleByIdForUser(11L, "admin");
+        verify(ventaRepository, never()).findByIdForUpdate(11L);
+        verify(ventaRepository, never()).findById(11L);
+    }
+
+    @Test
+    void findAllNoReconciliaInventarioNiEjecutaEscrituras() {
+        Venta venta = new Venta();
+        venta.setId(21L);
+        VentaDTO dto = new VentaDTO();
+        dto.setId(21L);
+
+        when(ventaRepository.findAll(PageRequest.of(0, 10))).thenReturn(new PageImpl<>(List.of(venta)));
+        when(ventaMapper.toDto(venta)).thenReturn(dto);
+
+        var result = service.findAll(PageRequest.of(0, 10));
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(ventaRepository, never()).findByIdForUpdate(21L);
+        verify(inventarioRepository, never()).save(any(Inventario.class));
+        verify(inventarioHistorialRepository, never()).save(any());
+    }
+
+    @Test
+    void usuarioNoPuedeEliminarVentasAunqueSeanPropias() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "n/a", "ROLE_USER"));
+
+        assertThrows(AccessDeniedException.class, () -> service.delete(12L));
+
+        verify(ventaRepository, never()).deleteById(12L);
+    }
+
+    @Test
+    void usuarioNoPuedeReconciliarInventarioVenta() {
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("user", "n/a", "ROLE_USER"));
+
+        assertThrows(AccessDeniedException.class, () -> service.reconciliarInventarioVenta(12L));
+
+        verify(ventaRepository, never()).findByIdForUpdate(12L);
+        verify(inventarioRepository, never()).save(any(Inventario.class));
+    }
+
+    @Test
+    void adminPuedeEliminarVentas() {
+        service.delete(13L);
+
+        verify(ventaRepository).deleteById(13L);
     }
 
     @Test
@@ -315,7 +422,7 @@ class VentaServiceImplBusinessTest {
         when(inventarioRepository.save(any(Inventario.class))).thenAnswer(inv -> inv.getArgument(0));
         when(pagoRepository.sumMontoByVentaId(203L)).thenReturn(new BigDecimal("1000.00"));
 
-        service.sincronizarInventarioConVenta(203L);
+        service.actualizarInventarioPorEstadoVenta(203L);
 
         verify(vehiculoRepository, never()).save(any(Vehiculo.class));
     }
@@ -353,7 +460,7 @@ class VentaServiceImplBusinessTest {
             return v;
         });
 
-        service.sincronizarInventarioConVenta(205L);
+        service.actualizarInventarioPorEstadoVenta(205L);
 
         verify(vehiculoRepository, times(1)).save(any(Vehiculo.class));
         verify(tasacionUsadoRepository, times(1)).save(any(TasacionUsado.class));

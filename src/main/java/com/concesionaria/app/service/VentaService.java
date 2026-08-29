@@ -35,7 +35,9 @@ public interface VentaService {
 
     void confirmarVenta(Long ventaId);
 
-    void sincronizarInventarioConVenta(Long ventaId);
+    void actualizarInventarioPorEstadoVenta(Long ventaId);
+
+    void reconciliarInventarioVenta(Long ventaId);
 
     List<VentaHistorialDTO> findHistorialByVentaId(Long ventaId);
 
