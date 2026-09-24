@@ -36,15 +36,19 @@ SPRING_PROFILES_ACTIVE=prod
 DB_URL=jdbc:mysql://HOST:PORT/DATABASE?sslMode=REQUIRED&useUnicode=true&characterEncoding=utf8
 DB_USER=AVNADMIN_OR_USER
 DB_PASSWORD=PASSWORD
-JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET=GENERATED_BASE64_SECRET
+JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET=GENERATED_64_BYTE_BASE64_SECRET
 JHIPSTER_MAIL_BASE_URL=https://YOUR-RENDER-APP.onrender.com
 APP_SECURITY_REGISTRATION_PUBLIC_ENABLED=false
 ```
 
-Generate a JWT secret locally with:
+Generate a JWT secret locally, then copy it manually into Render as
+`JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET`. The decoded secret must be
+at least 64 random bytes for HS512.
 
 ```powershell
-[Convert]::ToBase64String((1..64 | ForEach-Object { Get-Random -Maximum 256 }))
+$bytes = New-Object byte[] 64
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
 ```
 
 For demos, keep registration disabled and create/test users intentionally.

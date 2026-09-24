@@ -16,7 +16,7 @@ services:
       - key: DB_PASSWORD
         sync: false
       - key: JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET
-        generateValue: true
+        sync: false
       - key: JHIPSTER_MAIL_BASE_URL
         sync: false
       - key: APP_SECURITY_REGISTRATION_PUBLIC_ENABLED
