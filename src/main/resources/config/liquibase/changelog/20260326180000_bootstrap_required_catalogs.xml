@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260326180000-1-bootstrap-required-catalogs" author="codex">
+        <sql>
+            INSERT INTO moneda (codigo, descripcion, simbolo, activo)
+            SELECT 'ARS', 'Peso argentino', '$', true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM moneda
+                WHERE UPPER(TRIM(codigo)) = 'ARS'
+            );
+        </sql>
+
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'CONTADO', 'Contado', true, false
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'CONTADO'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'TRANSFERENCIA', 'Transferencia bancaria', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'TRANSFERENCIA'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'DEPOSITO', 'Deposito bancario', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'DEPOSITO'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'CHEQUE', 'Cheque', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'CHEQUE'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'DEBITO', 'Tarjeta de debito', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'DEBITO'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'CREDITO', 'Tarjeta de credito', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'CREDITO'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'AJUSTE', 'Ajuste', true, false
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'AJUSTE'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'BONIFICACION', 'Bonificacion', true, false
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'BONIFICACION'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'ENTREGA_USADO', 'Entrega de usado', true, false
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'ENTREGA_USADO'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'TARJETA', 'Tarjeta', true, true
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'TARJETA'
+            );
+        </sql>
+        <sql>
+            INSERT INTO metodo_pago (codigo, descripcion, activo, requiere_referencia)
+            SELECT 'SENIA', 'Senia', true, false
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM metodo_pago
+                WHERE UPPER(TRIM(codigo)) = 'SENIA'
+            );
+        </sql>
+
+        <sql>
+            INSERT INTO tipo_comprobante (codigo, descripcion)
+            SELECT 'REC', 'Recibo'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM tipo_comprobante
+                WHERE UPPER(TRIM(codigo)) = 'REC'
+            );
+        </sql>
+        <sql>
+            INSERT INTO tipo_comprobante (codigo, descripcion)
+            SELECT 'SEN', 'Senia'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM tipo_comprobante
+                WHERE UPPER(TRIM(codigo)) = 'SEN'
+            );
+        </sql>
+
+        <sql>
+            INSERT INTO tipo_documento (codigo, descripcion)
+            SELECT 'DNI', 'Documento Nacional de Identidad'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM tipo_documento
+                WHERE UPPER(TRIM(codigo)) = 'DNI'
+            );
+        </sql>
+        <sql>
+            INSERT INTO tipo_documento (codigo, descripcion)
+            SELECT 'CUIT', 'Clave Unica de Identificacion Tributaria'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM tipo_documento
+                WHERE UPPER(TRIM(codigo)) = 'CUIT'
+            );
+        </sql>
+        <sql>
+            INSERT INTO tipo_documento (codigo, descripcion)
+            SELECT 'CUIL', 'Codigo Unico de Identificacion Laboral'
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM tipo_documento
+                WHERE UPPER(TRIM(codigo)) = 'CUIL'
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

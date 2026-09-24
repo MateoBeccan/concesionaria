@@ -35,6 +35,7 @@
   <include file="config/liquibase/changelog/20260325200026_added_entity_Vehiculo.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
   <include file="config/liquibase/changelog/20260326171110_added_entity_Inventario.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
   <include file="config/liquibase/changelog/20260326171111_added_entity_TipoDocumento.xml" relativeToChangelogFile="false" contextFilter="bootstrap"/>
+  <include file="config/liquibase/changelog/20260326180000_bootstrap_required_catalogs.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260412143000_add_version_motor_table.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260412150000_seed_version_motor_template.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260412170000_update_vehiculo_patente_nullable.xml" relativeToChangelogFile="false"/>
