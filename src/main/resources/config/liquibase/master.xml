@@ -83,6 +83,7 @@
   <include file="config/liquibase/changelog/20260514110000_entrega_unidad_fase5a.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260519103000_regla_adjudicacion_plan_normalization.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260519120000_fix_chk_pago_destino_plan_venta.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260519130000_normalize_mysql_boolean_types.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260829003000_operacion_idempotente.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->

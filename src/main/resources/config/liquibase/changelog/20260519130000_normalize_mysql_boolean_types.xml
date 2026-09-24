@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260519130000-1-normalize-entidad-financiera-boolean-types" author="codex">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <tableExists tableName="entidad_financiera"/>
+        <columnExists tableName="entidad_financiera" columnName="activa"/>
+        <sqlCheck expectedResult="1">
+          SELECT COUNT(*)
+          FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'entidad_financiera'
+            AND COLUMN_NAME = 'activa'
+            AND DATA_TYPE = 'bit'
+        </sqlCheck>
+      </and>
+    </preConditions>
+    <sql dbms="mysql">
+      ALTER TABLE entidad_financiera
+        MODIFY COLUMN activa TINYINT(1) NOT NULL DEFAULT 1;
+    </sql>
+  </changeSet>
+
+  <changeSet id="20260519130000-2-normalize-entrega-checklist-item-boolean-types" author="codex">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <tableExists tableName="entrega_checklist_item"/>
+        <columnExists tableName="entrega_checklist_item" columnName="obligatorio"/>
+        <columnExists tableName="entrega_checklist_item" columnName="completado"/>
+        <or>
+          <sqlCheck expectedResult="1">
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'entrega_checklist_item'
+              AND COLUMN_NAME = 'obligatorio'
+              AND DATA_TYPE = 'bit'
+          </sqlCheck>
+          <sqlCheck expectedResult="1">
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'entrega_checklist_item'
+              AND COLUMN_NAME = 'completado'
+              AND DATA_TYPE = 'bit'
+          </sqlCheck>
+        </or>
+      </and>
+    </preConditions>
+    <sql dbms="mysql">
+      ALTER TABLE entrega_checklist_item
+        MODIFY COLUMN obligatorio TINYINT(1) NOT NULL,
+        MODIFY COLUMN completado TINYINT(1) NOT NULL;
+    </sql>
+  </changeSet>
+
+  <changeSet id="20260519130000-3-normalize-regla-adjudicacion-plan-boolean-types" author="codex">
+    <preConditions onFail="MARK_RAN">
+      <and>
+        <tableExists tableName="regla_adjudicacion_plan"/>
+        <columnExists tableName="regla_adjudicacion_plan" columnName="permite_mora"/>
+        <columnExists tableName="regla_adjudicacion_plan" columnName="requiere_contrato_activo"/>
+        <columnExists tableName="regla_adjudicacion_plan" columnName="activo"/>
+        <or>
+          <sqlCheck expectedResult="1">
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'regla_adjudicacion_plan'
+              AND COLUMN_NAME = 'permite_mora'
+              AND DATA_TYPE = 'bit'
+          </sqlCheck>
+          <sqlCheck expectedResult="1">
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'regla_adjudicacion_plan'
+              AND COLUMN_NAME = 'requiere_contrato_activo'
+              AND DATA_TYPE = 'bit'
+          </sqlCheck>
+          <sqlCheck expectedResult="1">
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'regla_adjudicacion_plan'
+              AND COLUMN_NAME = 'activo'
+              AND DATA_TYPE = 'bit'
+          </sqlCheck>
+        </or>
+      </and>
+    </preConditions>
+    <sql dbms="mysql">
+      ALTER TABLE regla_adjudicacion_plan
+        MODIFY COLUMN permite_mora TINYINT(1) NOT NULL DEFAULT 0,
+        MODIFY COLUMN requiere_contrato_activo TINYINT(1) NOT NULL DEFAULT 1,
+        MODIFY COLUMN activo TINYINT(1) NOT NULL DEFAULT 1;
+    </sql>
+  </changeSet>
+</databaseChangeLog>
