@@ -16,7 +16,7 @@ and password.
 Use this JDBC URL format:
 
 ```text
-jdbc:mysql://HOST:PORT/DATABASE?ssl-mode=REQUIRED&useUnicode=true&characterEncoding=utf8&useSSL=true&enabledTLSProtocols=TLSv1.2
+jdbc:mysql://HOST:PORT/DATABASE?sslMode=REQUIRED&useUnicode=true&characterEncoding=utf8
 ```
 
 ## Render
@@ -33,7 +33,7 @@ Set these environment variables:
 
 ```text
 SPRING_PROFILES_ACTIVE=prod
-DB_URL=jdbc:mysql://HOST:PORT/DATABASE?ssl-mode=REQUIRED&useUnicode=true&characterEncoding=utf8&useSSL=true&enabledTLSProtocols=TLSv1.2
+DB_URL=jdbc:mysql://HOST:PORT/DATABASE?sslMode=REQUIRED&useUnicode=true&characterEncoding=utf8
 DB_USER=AVNADMIN_OR_USER
 DB_PASSWORD=PASSWORD
 JHIPSTER_SECURITY_AUTHENTICATION_JWT_BASE64_SECRET=GENERATED_BASE64_SECRET
