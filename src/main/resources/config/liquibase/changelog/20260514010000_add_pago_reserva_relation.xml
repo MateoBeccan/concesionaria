@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="20260514010000-1-add-pago-reserva-id" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <tableExists tableName="reserva"/>
+                <not>
+                    <columnExists tableName="pago" columnName="reserva_id"/>
+                </not>
+            </and>
+        </preConditions>
+        <addColumn tableName="pago">
+            <column name="reserva_id" type="bigint"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="20260514010000-2-add-pago-reserva-fk" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <tableExists tableName="reserva"/>
+                <columnExists tableName="pago" columnName="reserva_id"/>
+                <not>
+                    <foreignKeyConstraintExists foreignKeyName="fk_pago__reserva_id"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(*)
+                    FROM information_schema.KEY_COLUMN_USAGE
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'pago'
+                      AND COLUMN_NAME = 'reserva_id'
+                      AND REFERENCED_TABLE_NAME = 'reserva'
+                      AND REFERENCED_COLUMN_NAME = 'id'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <addForeignKeyConstraint
+            baseTableName="pago"
+            baseColumnNames="reserva_id"
+            constraintName="fk_pago__reserva_id"
+            referencedTableName="reserva"
+            referencedColumnNames="id"/>
+    </changeSet>
+
+    <changeSet id="20260514010000-3-add-pago-reserva-index" author="codex">
+        <preConditions onFail="MARK_RAN">
+            <and>
+                <tableExists tableName="pago"/>
+                <columnExists tableName="pago" columnName="reserva_id"/>
+                <not>
+                    <indexExists tableName="pago" indexName="idx_pago__reserva_id"/>
+                </not>
+                <sqlCheck expectedResult="0">
+                    SELECT COUNT(DISTINCT INDEX_NAME)
+                    FROM information_schema.STATISTICS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'pago'
+                      AND COLUMN_NAME = 'reserva_id'
+                </sqlCheck>
+            </and>
+        </preConditions>
+        <createIndex tableName="pago" indexName="idx_pago__reserva_id">
+            <column name="reserva_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
