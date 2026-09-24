@@ -9,6 +9,8 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      - key: SPRING_LIQUIBASE_CONTEXTS
+        value: prod,bootstrap
       - key: DB_URL
         sync: false
       - key: DB_USER
