@@ -122,3 +122,6 @@ jhipster:
 # ===================================================================
 
 # application:
+application:
+  liquibase:
+    async-start: false
