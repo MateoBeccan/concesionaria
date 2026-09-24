@@ -1,0 +1,11 @@
+.git
+.idea
+.devcontainer
+.jhipster
+node_modules
+target
+npm-debug.log*
+*.iml
+.env
+.env.*
+!.env.example
