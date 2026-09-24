@@ -234,7 +234,7 @@ public class VentaValidator {
         if (reservaActivaOpt.isEmpty()) {
             throw new BadRequestException("El vehiculo seleccionado se encuentra reservado y no esta disponible");
         }
-        Reserva reservaActiva = reservaActivaOpt.get();
+        Reserva reservaActiva = reservaActivaOpt.orElseThrow();
         Long reservaDtoId = dto.getReserva() != null ? dto.getReserva().getId() : null;
         if (!esReservaPropiaDeVenta(dto, reservaActiva, reservaDtoId)) {
             throw new BadRequestException("El vehiculo seleccionado se encuentra reservado por otra operacion activa");

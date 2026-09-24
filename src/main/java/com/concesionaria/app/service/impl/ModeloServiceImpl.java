@@ -129,7 +129,7 @@ public class ModeloServiceImpl implements ModeloService {
                 modeloDTO.getMarca().getId()
             );
 
-        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+        if (existente.isPresent() && !existente.orElseThrow().getId().equals(idActual)) {
             throw new BadRequestException("Ya existe un modelo con ese nombre para la marca");
         }
     }

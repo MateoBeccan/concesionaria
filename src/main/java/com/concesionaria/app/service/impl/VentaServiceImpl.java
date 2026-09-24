@@ -276,7 +276,7 @@ public class VentaServiceImpl implements VentaService {
         }
         if (inv.getEstadoInventario() == EstadoInventario.RESERVADO) {
             var reservaActiva = reservaRepository.findFirstByInventarioIdAndEstadoOrderByFechaReservaDesc(inv.getId(), EstadoReserva.ACTIVA);
-            if (reservaActiva.isPresent() && !reservaActiva.get().getCliente().getId().equals(clienteId)) {
+            if (reservaActiva.isPresent() && !reservaActiva.orElseThrow().getCliente().getId().equals(clienteId)) {
                 throw new BadRequestException("El vehiculo esta reservado por otro cliente");
             }
         }
@@ -460,7 +460,7 @@ public class VentaServiceImpl implements VentaService {
 
         Optional<String> login = SecurityUtils.getCurrentUserLogin();
         if (login.isPresent()) {
-            return userRepository.findOneByLogin(login.get()).orElseGet(this::resolveUsuarioFallback);
+            return userRepository.findOneByLogin(login.orElseThrow()).orElseGet(this::resolveUsuarioFallback);
         }
 
         return resolveUsuarioFallback();
@@ -755,7 +755,7 @@ public class VentaServiceImpl implements VentaService {
             throw new BadRequestException("El vehiculo seleccionado se encuentra reservado y no esta disponible");
         }
 
-        Reserva reservaActiva = reservaActivaOpt.get();
+        Reserva reservaActiva = reservaActivaOpt.orElseThrow();
         Long reservaDtoId = dto.getReserva() != null ? dto.getReserva().getId() : null;
         if (!esReservaPropiaDeVenta(dto, reservaActiva, reservaDtoId)) {
             throw new BadRequestException("El vehiculo seleccionado se encuentra reservado por otra operacion activa");

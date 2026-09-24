@@ -168,7 +168,7 @@ public class InventarioVentaSyncServiceImpl implements InventarioVentaSyncServic
         if (reservaActivaOpt.isEmpty()) {
             return;
         }
-        Reserva reservaActiva = reservaActivaOpt.get();
+        Reserva reservaActiva = reservaActivaOpt.orElseThrow();
         Instant vencimiento = reservaActiva.getFechaVencimiento();
         if (vencimiento == null || vencimiento.isAfter(Instant.now())) {
             return;

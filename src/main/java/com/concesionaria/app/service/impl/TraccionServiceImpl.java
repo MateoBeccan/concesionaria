@@ -105,7 +105,7 @@ public class TraccionServiceImpl implements TraccionService {
         Optional<Traccion> existente = traccionRepository
             .findByNombreIgnoreCase(nombre);
 
-        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+        if (existente.isPresent() && !existente.orElseThrow().getId().equals(idActual)) {
             throw new BadRequestException("Ya existe una tracción con ese nombre");
         }
 

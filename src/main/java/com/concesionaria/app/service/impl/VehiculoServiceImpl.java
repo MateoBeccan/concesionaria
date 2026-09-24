@@ -347,7 +347,7 @@ public class VehiculoServiceImpl implements VehiculoService {
         if (reservaActivaOpt.isEmpty()) {
             return;
         }
-        var reservaActiva = reservaActivaOpt.get();
+        var reservaActiva = reservaActivaOpt.orElseThrow();
         Instant vencimiento = reservaActiva.getFechaVencimiento();
         if (vencimiento == null || vencimiento.isAfter(Instant.now())) {
             return;

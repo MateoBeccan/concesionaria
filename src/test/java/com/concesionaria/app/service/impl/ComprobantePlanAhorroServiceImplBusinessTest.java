@@ -130,8 +130,8 @@ class ComprobantePlanAhorroServiceImplBusinessTest {
         Optional<ComprobantePdfResult> result = service.generarPdf(778L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().content()).isNotEmpty();
-        assertThat(result.get().fileName()).isEqualTo("CPA-000010.pdf");
+        assertThat(result.orElseThrow().content()).isNotEmpty();
+        assertThat(result.orElseThrow().fileName()).isEqualTo("CPA-000010.pdf");
     }
 
     @Test

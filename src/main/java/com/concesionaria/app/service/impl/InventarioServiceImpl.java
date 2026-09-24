@@ -298,7 +298,7 @@ public class InventarioServiceImpl implements InventarioService {
             return false;
         }
 
-        Reserva reservaActiva = reservaActivaOpt.get();
+        Reserva reservaActiva = reservaActivaOpt.orElseThrow();
         Instant vencimiento = reservaActiva.getFechaVencimiento();
         if (vencimiento == null || !vencimiento.isBefore(Instant.now())) {
             return false;

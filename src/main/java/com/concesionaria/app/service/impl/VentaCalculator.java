@@ -93,7 +93,7 @@ public class VentaCalculator {
     public Moneda resolverMonedaBaseVenta(String monedaBaseCodigo) {
         Optional<Moneda> directa = monedaRepository.findByCodigoIgnoreCase(monedaBaseCodigo);
         if (directa.isPresent()) {
-            return directa.get();
+            return directa.orElseThrow();
         }
 
         return monedaRepository

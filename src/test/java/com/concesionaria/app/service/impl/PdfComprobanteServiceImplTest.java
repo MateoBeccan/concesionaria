@@ -63,9 +63,9 @@ class PdfComprobanteServiceImplTest {
         var result = pdfComprobanteService.generarPdfComprobante(1L);
 
         assertThat(result).isPresent();
-        assertThat(result.get().content()).isNotEmpty();
-        assertThat(result.get().fileName()).isEqualTo("FAC-000001.pdf");
-        String pdfText = extractText(result.get().content());
+        assertThat(result.orElseThrow().content()).isNotEmpty();
+        assertThat(result.orElseThrow().fileName()).isEqualTo("FAC-000001.pdf");
+        String pdfText = extractText(result.orElseThrow().content());
         assertThat(pdfText).contains("Concesionaria MB");
         assertThat(pdfText).contains("FAC-000001");
         assertThat(pdfText).contains("Documento generado automaticamente");
@@ -79,7 +79,7 @@ class PdfComprobanteServiceImplTest {
         var result = pdfComprobanteService.generarPdfComprobante(2L);
 
         assertThat(result).isPresent();
-        String pdfText = extractText(result.get().content());
+        String pdfText = extractText(result.orElseThrow().content());
         assertThat(pdfText).contains("ANULADO");
     }
 

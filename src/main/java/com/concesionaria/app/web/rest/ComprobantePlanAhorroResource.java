@@ -43,7 +43,7 @@ public class ComprobantePlanAhorroResource {
         if (result.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        ComprobantePdfResult pdf = result.get();
+        ComprobantePdfResult pdf = result.orElseThrow();
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_PDF)
             .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + pdf.fileName() + "\"")

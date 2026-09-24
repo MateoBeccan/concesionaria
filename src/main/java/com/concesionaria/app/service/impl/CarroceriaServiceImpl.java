@@ -106,7 +106,7 @@ public class CarroceriaServiceImpl implements CarroceriaService {
         Optional<Carroceria> existente = carroceriaRepository
             .findByNombreIgnoreCase(nombre);
 
-        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+        if (existente.isPresent() && !existente.orElseThrow().getId().equals(idActual)) {
             throw new BadRequestException("Ya existe una carrocería con ese nombre");
         }
 

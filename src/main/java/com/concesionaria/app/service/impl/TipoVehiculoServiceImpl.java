@@ -106,7 +106,7 @@ public class TipoVehiculoServiceImpl implements TipoVehiculoService {
         Optional<TipoVehiculo> existente = tipoVehiculoRepository
             .findByNombreIgnoreCase(nombre);
 
-        if (existente.isPresent() && !existente.get().getId().equals(idActual)) {
+        if (existente.isPresent() && !existente.orElseThrow().getId().equals(idActual)) {
             throw new BadRequestException("Ya existe un tipo de vehículo con ese nombre");
         }
 
