@@ -48,6 +48,8 @@ spring:
     compose:
       enabled: false
   jpa:
+    properties:
+      hibernate.type.preferred_boolean_jdbc_type: TINYINT
     hibernate:
       ddl-auto: validate
   liquibase:
