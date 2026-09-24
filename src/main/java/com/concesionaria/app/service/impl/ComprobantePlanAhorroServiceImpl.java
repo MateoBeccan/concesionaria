@@ -30,12 +30,10 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -263,17 +261,17 @@ public class ComprobantePlanAhorroServiceImpl implements ComprobantePlanAhorroSe
     }
 
     private Image loadLogoFromFileSystem() {
-        Path configuredPath = Paths.get(companyLogoPath);
+        Path configuredPath = Path.of(companyLogoPath);
         Path[] candidates = new Path[] {
             configuredPath,
-            Paths.get("src/main/webapp/content/images/branding/logo.png"),
-            Paths.get("src/main/webapp/content/images/branding/Logo.png"),
-            Paths.get("content/images/branding/logo.png"),
+            Path.of("src/main/webapp/content/images/branding/logo.png"),
+            Path.of("src/main/webapp/content/images/branding/Logo.png"),
+            Path.of("content/images/branding/logo.png"),
         };
         for (Path candidate : candidates) {
             try {
                 if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                    try (InputStream inputStream = new FileInputStream(candidate.toFile())) {
+                    try (InputStream inputStream = Files.newInputStream(candidate)) {
                         return Image.getInstance(inputStream.readAllBytes());
                     }
                 }

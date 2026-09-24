@@ -27,7 +27,6 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.BaseFont;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -36,7 +35,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -195,18 +193,18 @@ public class PdfComprobanteServiceImpl implements PdfComprobanteService {
     }
 
     private Image loadLogoFromFileSystem() {
-        Path configuredPath = Paths.get(companyLogoPath);
+        Path configuredPath = Path.of(companyLogoPath);
         Path[] candidates = new Path[] {
             configuredPath,
-            Paths.get("src/main/webapp/content/images/branding/logo.png"),
-            Paths.get("src/main/webapp/content/images/branding/Logo.png"),
-            Paths.get("content/images/branding/logo.png"),
+            Path.of("src/main/webapp/content/images/branding/logo.png"),
+            Path.of("src/main/webapp/content/images/branding/Logo.png"),
+            Path.of("content/images/branding/logo.png"),
         };
 
         for (Path candidate : candidates) {
             try {
                 if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                    try (InputStream inputStream = new FileInputStream(candidate.toFile())) {
+                    try (InputStream inputStream = Files.newInputStream(candidate)) {
                         LOG.debug("Cargando logo PDF desde archivo: {}", candidate.toAbsolutePath());
                         return Image.getInstance(inputStream.readAllBytes());
                     }
