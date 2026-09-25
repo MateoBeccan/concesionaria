@@ -18,7 +18,6 @@ import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
-import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
 import com.concesionaria.app.service.mapper.CuotaPlanAhorroMapper;
@@ -41,7 +40,7 @@ class PagoCuotaPlanAhorroProcessorTest {
     private MetodoPagoRepository metodoPagoRepository;
 
     @Mock
-    private PagoRepository pagoRepository;
+    private PagoRegistrationService pagoRegistrationService;
 
     @Mock
     private CuotaPlanAhorroRepository cuotaRepository;
@@ -69,7 +68,7 @@ class PagoCuotaPlanAhorroProcessorTest {
             new PagoCuotaPlanAhorroProcessor(
                 contratoRepository,
                 metodoPagoRepository,
-                pagoRepository,
+                pagoRegistrationService,
                 cuotaRepository,
                 pagoCajaBridge,
                 comprobantePlanAhorroService,
@@ -96,31 +95,28 @@ class PagoCuotaPlanAhorroProcessorTest {
 
         when(contratoRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(contrato));
         when(metodoPagoRepository.findByCodigoIgnoreCase("CONTADO")).thenReturn(Optional.of(contado));
-        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> {
-            Pago pago = inv.getArgument(0);
-            pago.setId(9001L);
-            return pago;
-        });
+        when(pagoRegistrationService.registrar(any(RegistrarPagoCommand.class))).thenAnswer(inv -> pagoDesdeCommand(inv.getArgument(0)));
         when(cuotaRepository.save(any(CuotaPlanAhorro.class))).thenAnswer(inv -> inv.getArgument(0));
         when(cuotaMapper.toDto(cuota)).thenReturn(dto);
 
         CuotaPlanAhorroDTO result = processor.pagarCuota(cuota, new BigDecimal("291666.67"), "pago cuota 3", "asesor");
 
         assertThat(result.getId()).isEqualTo(501L);
-        ArgumentCaptor<Pago> pagoCaptor = ArgumentCaptor.forClass(Pago.class);
-        verify(pagoRepository).save(pagoCaptor.capture());
-        Pago pago = pagoCaptor.getValue();
+        ArgumentCaptor<RegistrarPagoCommand> commandCaptor = ArgumentCaptor.forClass(RegistrarPagoCommand.class);
+        verify(pagoRegistrationService).registrar(commandCaptor.capture());
+        RegistrarPagoCommand command = commandCaptor.getValue();
+        Pago pago = cuota.getPago();
         assertThat(pago.getId()).isEqualTo(9001L);
-        assertThat(pago.getContratoPlanAhorro()).isSameAs(contrato);
-        assertThat(pago.getVenta()).isNull();
-        assertThat(pago.getReserva()).isNull();
-        assertThat(pago.getMonto()).isEqualByComparingTo("291666.67");
-        assertThat(pago.getMontoAplicadoVenta()).isEqualByComparingTo("291666.67");
-        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REGISTRADO);
-        assertThat(pago.getTipoMovimiento()).isEqualTo(TipoMovimientoPago.PAGO_RECIBIDO);
-        assertThat(pago.getMetodoPago()).isSameAs(contado);
-        assertThat(pago.getMoneda().getCodigo()).isEqualTo("ARS");
-        assertThat(pago.getUsuarioRegistro()).isEqualTo("asesor");
+        assertThat(command.contratoPlanAhorro()).isSameAs(contrato);
+        assertThat(command.venta()).isNull();
+        assertThat(command.reserva()).isNull();
+        assertThat(command.monto()).isEqualByComparingTo("291666.67");
+        assertThat(command.montoAplicadoVenta()).isEqualByComparingTo("291666.67");
+        assertThat(command.estado()).isEqualTo(EstadoPago.REGISTRADO);
+        assertThat(command.tipoMovimiento()).isEqualTo(TipoMovimientoPago.PAGO_RECIBIDO);
+        assertThat(command.metodoPago()).isSameAs(contado);
+        assertThat(command.moneda().getCodigo()).isEqualTo("ARS");
+        assertThat(command.usuarioRegistro()).isEqualTo("asesor");
         assertThat(cuota.getPago()).isSameAs(pago);
         assertThat(cuota.getEstado()).isEqualTo(EstadoCuotaPlanAhorro.PAGADA);
         assertThat(cuota.getFechaPago()).isNotNull();
@@ -128,6 +124,26 @@ class PagoCuotaPlanAhorroProcessorTest {
         verify(calculator).recalcularContrato(contrato);
         verify(pagoCajaBridge).registrarPago(pago);
         verify(comprobantePlanAhorroService).emitirParaCuota(cuota, pago);
+    }
+
+    private Pago pagoDesdeCommand(RegistrarPagoCommand command) {
+        Pago pago = new Pago();
+        pago.setId(9001L);
+        pago.setFecha(command.fecha());
+        pago.setMonto(command.monto());
+        pago.setMoneda(command.moneda());
+        pago.setMetodoPago(command.metodoPago());
+        pago.setTipoMovimiento(command.tipoMovimiento());
+        pago.setEstado(command.estado());
+        pago.setCotizacionUsada(command.cotizacionUsada());
+        pago.setMontoAplicadoVenta(command.montoAplicadoVenta());
+        pago.setFechaCotizacionUsada(command.fechaCotizacionUsada());
+        pago.setContratoPlanAhorro(command.contratoPlanAhorro());
+        pago.setUsuarioRegistro(command.usuarioRegistro());
+        pago.setObservaciones(command.observaciones());
+        pago.setCreatedDate(command.createdDate());
+        pago.setLastModifiedDate(command.lastModifiedDate());
+        return pago;
     }
 
     private ContratoPlanAhorro contratoBase() {

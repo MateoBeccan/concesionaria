@@ -48,6 +48,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -234,7 +235,12 @@ class PagoServiceImplBusinessTest {
         assertThat(venta.getTotalPagado()).isEqualByComparingTo("2000.00");
         assertThat(venta.getSaldo()).isEqualByComparingTo("18000.00");
         assertThat(venta.getEstado()).isEqualTo(EstadoVenta.RESERVADA);
-        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        ArgumentCaptor<Pago> pagoCajaCaptor = ArgumentCaptor.forClass(Pago.class);
+        verify(movimientoCajaService)
+            .registrarDesdePago(pagoCajaCaptor.capture(), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        assertThat(pagoCajaCaptor.getValue().getId()).isEqualTo(3200L);
+        assertThat(pagoCajaCaptor.getValue().getVenta()).isSameAs(venta);
+        assertThat(pagoCajaCaptor.getValue().getMonto()).isEqualByComparingTo("2000.00");
         verify(comprobanteService).emitirComprobantePago(3200L, 70L);
     }
 
@@ -276,7 +282,12 @@ class PagoServiceImplBusinessTest {
         assertThat(pago.getTipoMovimiento()).isEqualTo(TipoMovimientoPago.ANTICIPO);
         assertThat(pago.getMontoAplicadoVenta()).isEqualByComparingTo("5000.00");
         assertThat(reserva.getMontoSenia()).isEqualByComparingTo("5000.00");
-        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        ArgumentCaptor<Pago> pagoCajaCaptor = ArgumentCaptor.forClass(Pago.class);
+        verify(movimientoCajaService)
+            .registrarDesdePago(pagoCajaCaptor.capture(), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        assertThat(pagoCajaCaptor.getValue().getId()).isEqualTo(1310L);
+        assertThat(pagoCajaCaptor.getValue().getReserva()).isSameAs(reserva);
+        assertThat(pagoCajaCaptor.getValue().getMonto()).isEqualByComparingTo("5000.00");
         verify(comprobanteService, never()).emitirComprobantePago(any(), any());
     }
 

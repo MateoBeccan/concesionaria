@@ -8,7 +8,6 @@ import com.concesionaria.app.domain.enumeration.EstadoPago;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
-import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
@@ -26,7 +25,7 @@ public class PagoCuotaPlanAhorroProcessor {
 
     private final ContratoPlanAhorroRepository contratoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
-    private final PagoRepository pagoRepository;
+    private final PagoRegistrationService pagoRegistrationService;
     private final CuotaPlanAhorroRepository cuotaRepository;
     private final PagoCajaBridge pagoCajaBridge;
     private final ComprobantePlanAhorroService comprobantePlanAhorroService;
@@ -37,7 +36,7 @@ public class PagoCuotaPlanAhorroProcessor {
     public PagoCuotaPlanAhorroProcessor(
         ContratoPlanAhorroRepository contratoRepository,
         MetodoPagoRepository metodoPagoRepository,
-        PagoRepository pagoRepository,
+        PagoRegistrationService pagoRegistrationService,
         CuotaPlanAhorroRepository cuotaRepository,
         PagoCajaBridge pagoCajaBridge,
         ComprobantePlanAhorroService comprobantePlanAhorroService,
@@ -47,7 +46,7 @@ public class PagoCuotaPlanAhorroProcessor {
     ) {
         this.contratoRepository = contratoRepository;
         this.metodoPagoRepository = metodoPagoRepository;
-        this.pagoRepository = pagoRepository;
+        this.pagoRegistrationService = pagoRegistrationService;
         this.cuotaRepository = cuotaRepository;
         this.pagoCajaBridge = pagoCajaBridge;
         this.comprobantePlanAhorroService = comprobantePlanAhorroService;
@@ -138,26 +137,37 @@ public class PagoCuotaPlanAhorroProcessor {
         String login,
         Instant ahora
     ) {
-        Pago pago = new Pago();
-        pago.setFecha(ahora);
-        pago.setMonto(monto);
-        pago.setMoneda(contrato.getPlan().getMoneda());
-        pago.setMetodoPago(metodoPago);
-        pago.setTipoMovimiento(TipoMovimientoPago.PAGO_RECIBIDO);
-        pago.setEstado(EstadoPago.REGISTRADO);
-        pago.setCotizacionUsada(BigDecimal.ONE);
-        pago.setMontoAplicadoVenta(monto);
-        pago.setFechaCotizacionUsada(ahora);
-        pago.setVenta(null);
-        pago.setReserva(null);
-        pago.setTasacionUsado(null);
-        pago.setAdjudicacionPlanAhorro(null);
-        pago.setContratoPlanAhorro(contrato);
-        pago.setUsuarioRegistro(login);
-        pago.setObservaciones(observaciones);
-        pago.setCreatedDate(ahora);
-        pago.setLastModifiedDate(ahora);
-        return pagoRepository.save(pago);
+        return pagoRegistrationService.registrar(
+            new RegistrarPagoCommand(
+                ahora,
+                monto,
+                contrato.getPlan().getMoneda(),
+                metodoPago,
+                null,
+                TipoMovimientoPago.PAGO_RECIBIDO,
+                EstadoPago.REGISTRADO,
+                BigDecimal.ONE,
+                monto,
+                ahora,
+                null,
+                null,
+                null,
+                null,
+                null,
+                contrato,
+                login,
+                null,
+                null,
+                null,
+                null,
+                observaciones,
+                null,
+                null,
+                null,
+                ahora,
+                ahora
+            )
+        );
     }
 
     private MetodoPago resolverMetodoPago(Long metodoPagoId) {

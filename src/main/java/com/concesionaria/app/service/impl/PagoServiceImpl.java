@@ -69,6 +69,7 @@ public class PagoServiceImpl implements PagoService {
     private final MetodoPagoPolicy metodoPagoPolicy;
     private final PagoCalculator pagoCalculator;
     private final PagoTextNormalizer pagoTextNormalizer;
+    private final PagoRegistrationService pagoRegistrationService;
     private final PagoAnulacionService pagoAnulacionService;
     private final PagoCajaBridge pagoCajaBridge;
     private final PagoComprobanteBridge pagoComprobanteBridge;
@@ -96,6 +97,7 @@ public class PagoServiceImpl implements PagoService {
         MetodoPagoPolicy metodoPagoPolicy,
         PagoCalculator pagoCalculator,
         PagoTextNormalizer pagoTextNormalizer,
+        PagoRegistrationService pagoRegistrationService,
         PagoAnulacionService pagoAnulacionService,
         BusinessProperties businessProperties
     ) {
@@ -112,6 +114,8 @@ public class PagoServiceImpl implements PagoService {
         this.metodoPagoPolicy = metodoPagoPolicy;
         this.pagoCalculator = pagoCalculator;
         this.pagoTextNormalizer = pagoTextNormalizer;
+        this.pagoRegistrationService =
+            pagoRegistrationService != null ? pagoRegistrationService : new PagoRegistrationService(pagoRepository, pagoTextNormalizer);
         this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
         this.pagoCajaBridge = new PagoCajaBridge(movimientoCajaService, metodoPagoPolicy);
         this.pagoComprobanteBridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, metodoPagoPolicy);
@@ -206,6 +210,7 @@ public class PagoServiceImpl implements PagoService {
             new MetodoPagoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
             new PagoCalculator(currencyConversionService, new PagoTextNormalizer()),
             new PagoTextNormalizer(),
+            null,
             null,
             BusinessProperties.defaults()
         );
@@ -386,7 +391,6 @@ public class PagoServiceImpl implements PagoService {
         } else {
             pago.setContratoPlanAhorro(null);
         }
-        normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago ventaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoVenta={}",
             ventaId,
@@ -395,7 +399,7 @@ public class PagoServiceImpl implements PagoService {
             cotizacionUsada,
             montoAplicadoVenta
         );
-        pago = pagoRepository.save(pago);
+        pago = pagoRegistrationService.registrar(RegistrarPagoCommand.from(pago));
         pagoCajaBridge.registrarPago(pago);
         pagoComprobanteBridge.emitirSiCorresponde(pago, metodoPago);
 
@@ -468,7 +472,6 @@ public class PagoServiceImpl implements PagoService {
         pago.setTasacionUsado(null);
         pago.setAdjudicacionPlanAhorro(null);
         pago.setContratoPlanAhorro(null);
-        normalizarCamposTextoPago(pago);
         LOG.info(
             "Registrando pago reservaId={} montoOriginal={} monedaPagoId={} cotizacionAplicada={} montoAplicadoReserva={}",
             reservaId,
@@ -477,7 +480,7 @@ public class PagoServiceImpl implements PagoService {
             pago.getCotizacionUsada(),
             pago.getMontoAplicadoVenta()
         );
-        Pago pagoGuardado = pagoRepository.save(pago);
+        Pago pagoGuardado = pagoRegistrationService.registrar(RegistrarPagoCommand.from(pago));
         pagoCajaBridge.registrarPago(pagoGuardado);
         pagoComprobanteBridge.emitirSiCorresponde(pagoGuardado, metodoPago);
 
@@ -649,8 +652,6 @@ public class PagoServiceImpl implements PagoService {
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
-        normalizarCamposTextoPago(pago);
-
         venta.setTasacionUsado(tasacion);
         venta.setLastModifiedDate(ahora);
         ventaRepository.save(venta);
@@ -661,7 +662,7 @@ public class PagoServiceImpl implements PagoService {
             tasacion.getId(),
             montoTasado
         );
-        Pago pagoGuardado = pagoRepository.save(pago);
+        Pago pagoGuardado = pagoRegistrationService.registrar(RegistrarPagoCommand.from(pago));
         pagoCajaBridge.registrarPago(pagoGuardado);
         pagoComprobanteBridge.emitirSiCorresponde(pagoGuardado, metodoPago);
         recalcularVentaEInventario(venta);
@@ -715,21 +716,6 @@ public class PagoServiceImpl implements PagoService {
         if (pagoDTO.getFecha() != null && pagoDTO.getFecha().isAfter(Instant.now().plusSeconds(300))) {
             throw new BadRequestException("La fecha del pago no puede estar en el futuro");
         }
-    }
-
-    private void normalizarCamposTextoPago(Pago pago) {
-        pago.setReferencia(normalizarTexto(pago.getReferencia(), 100));
-        pago.setNumeroOperacion(normalizarTexto(pago.getNumeroOperacion(), 100));
-        pago.setComprobanteExterno(normalizarTexto(pago.getComprobanteExterno(), 100));
-        pago.setBancoEntidad(normalizarTexto(pago.getBancoEntidad(), 100));
-        pago.setObservaciones(normalizarTexto(pago.getObservaciones(), 500));
-        pago.setUsuarioRegistro(normalizarTexto(pago.getUsuarioRegistro(), 50));
-        pago.setMotivoAnulacion(normalizarTexto(pago.getMotivoAnulacion(), 500));
-        pago.setUsuarioAnulacion(normalizarTexto(pago.getUsuarioAnulacion(), 50));
-    }
-
-    private String normalizarTexto(String value, int max) {
-        return pagoTextNormalizer.normalizarTexto(value, max);
     }
 
     private BigDecimal normalizarMoneda(BigDecimal valor) {
