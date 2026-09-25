@@ -22,31 +22,31 @@ public class PagoComprobanteBridge {
     private final ComprobanteService comprobanteService;
     private final TipoComprobanteRepository tipoComprobanteRepository;
     private final ComprobanteRepository comprobanteRepository;
-    private final PagoMetodoPolicy pagoMetodoPolicy;
+    private final MetodoPagoPolicy metodoPagoPolicy;
 
     public PagoComprobanteBridge(
         ComprobanteService comprobanteService,
         TipoComprobanteRepository tipoComprobanteRepository,
         ComprobanteRepository comprobanteRepository,
-        PagoMetodoPolicy pagoMetodoPolicy
+        MetodoPagoPolicy metodoPagoPolicy
     ) {
         this.comprobanteService = comprobanteService;
         this.tipoComprobanteRepository = tipoComprobanteRepository;
         this.comprobanteRepository = comprobanteRepository;
-        this.pagoMetodoPolicy = pagoMetodoPolicy;
+        this.metodoPagoPolicy = metodoPagoPolicy;
     }
 
     public void emitirSiCorresponde(Pago pago, MetodoPago metodoPago) {
         if (pago == null || pago.getId() == null || pago.getVenta() == null || pago.getVenta().getId() == null) {
             return;
         }
-        if (!pagoMetodoPolicy.esMetodoEmitibleComprobante(metodoPago)) {
+        if (!metodoPagoPolicy.permiteComprobanteAutomatico(metodoPago)) {
             return;
         }
-        String codigoTipo = pagoMetodoPolicy.resolverTipoComprobantePago(metodoPago);
+        String codigoTipo = metodoPagoPolicy.resolverTipoComprobantePago(metodoPago);
         TipoComprobante tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(codigoTipo).orElse(null);
-        if (tipo == null && !PagoMetodoPolicy.TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
-            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(PagoMetodoPolicy.TIPO_COMPROBANTE_REC).orElse(null);
+        if (tipo == null && !MetodoPagoPolicy.TIPO_COMPROBANTE_REC.equals(codigoTipo)) {
+            tipo = tipoComprobanteRepository.findByCodigoIgnoreCase(MetodoPagoPolicy.TIPO_COMPROBANTE_REC).orElse(null);
         }
         if (tipo == null || tipo.getId() == null) {
             LOG.warn("No se emitio comprobante de pago para pagoId={} por falta de tipo comprobante REC/SEN", pago.getId());

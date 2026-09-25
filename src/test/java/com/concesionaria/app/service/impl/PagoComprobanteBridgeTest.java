@@ -35,7 +35,7 @@ class PagoComprobanteBridgeTest {
     @Test
     void emiteComprobanteCuandoCorresponde() {
         PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy policy = new PagoMetodoPolicy(null, normalizer);
+        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
         PagoComprobanteBridge bridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, policy);
         Pago pago = pagoConVenta(10L, "CONTADO");
         TipoComprobante tipo = new TipoComprobante();
@@ -52,7 +52,7 @@ class PagoComprobanteBridgeTest {
     @Test
     void noEmiteDuplicado() {
         PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy policy = new PagoMetodoPolicy(null, normalizer);
+        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
         PagoComprobanteBridge bridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, policy);
         Pago pago = pagoConVenta(11L, "CONTADO");
         TipoComprobante tipo = new TipoComprobante();
@@ -69,7 +69,7 @@ class PagoComprobanteBridgeTest {
     @Test
     void anulaComprobantesAsociados() {
         PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy policy = new PagoMetodoPolicy(null, normalizer);
+        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
         PagoComprobanteBridge bridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, policy);
         Pago pago = new Pago();
         pago.setId(12L);

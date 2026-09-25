@@ -75,7 +75,7 @@ class PagoAnulacionServiceTest {
     @BeforeEach
     void setUp() {
         PagoTextNormalizer textNormalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy metodoPolicy = new PagoMetodoPolicy(null, textNormalizer);
+        MetodoPagoPolicy metodoPolicy = new MetodoPagoPolicy(null, textNormalizer);
         PagoCajaBridge cajaBridge = new PagoCajaBridge(movimientoCajaService, metodoPolicy);
         PagoComprobanteBridge comprobanteBridge = new PagoComprobanteBridge(
             comprobanteService,

@@ -11,15 +11,15 @@ import org.springframework.stereotype.Service;
 public class PagoCajaBridge {
 
     private final MovimientoCajaService movimientoCajaService;
-    private final PagoMetodoPolicy pagoMetodoPolicy;
+    private final MetodoPagoPolicy metodoPagoPolicy;
 
-    public PagoCajaBridge(MovimientoCajaService movimientoCajaService, PagoMetodoPolicy pagoMetodoPolicy) {
+    public PagoCajaBridge(MovimientoCajaService movimientoCajaService, MetodoPagoPolicy metodoPagoPolicy) {
         this.movimientoCajaService = movimientoCajaService;
-        this.pagoMetodoPolicy = pagoMetodoPolicy;
+        this.metodoPagoPolicy = metodoPagoPolicy;
     }
 
     public void registrarPago(Pago pago) {
-        boolean monetario = !pagoMetodoPolicy.esMetodoNoMonetarioInterno(pago.getMetodoPago());
+        boolean monetario = metodoPagoPolicy.esMonetario(pago.getMetodoPago());
         movimientoCajaService.registrarDesdePago(
             pago,
             monetario ? TipoMovimientoCaja.INGRESO : TipoMovimientoCaja.INFORMATIVO,
@@ -30,7 +30,7 @@ public class PagoCajaBridge {
 
     public void registrarAnulacion(Pago pago) {
         boolean monetario = pago.getTipoMovimiento() != TipoMovimientoPago.ENTREGA_USADO &&
-            !pagoMetodoPolicy.esMetodoNoMonetarioInterno(pago.getMetodoPago());
+            metodoPagoPolicy.esMonetario(pago.getMetodoPago());
         movimientoCajaService.registrarDesdePago(
             pago,
             monetario ? TipoMovimientoCaja.REVERSO : TipoMovimientoCaja.INFORMATIVO,

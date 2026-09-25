@@ -15,9 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PagoMetodoPolicy {
+public class MetodoPagoPolicy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PagoMetodoPolicy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MetodoPagoPolicy.class);
 
     public static final String CODIGO_CONTADO = "CONTADO";
     public static final String CODIGO_TRANSFERENCIA = "TRANSFERENCIA";
@@ -37,7 +37,7 @@ public class PagoMetodoPolicy {
     private final EntidadFinancieraRepository entidadFinancieraRepository;
     private final PagoTextNormalizer pagoTextNormalizer;
 
-    public PagoMetodoPolicy(EntidadFinancieraRepository entidadFinancieraRepository, PagoTextNormalizer pagoTextNormalizer) {
+    public MetodoPagoPolicy(EntidadFinancieraRepository entidadFinancieraRepository, PagoTextNormalizer pagoTextNormalizer) {
         this.entidadFinancieraRepository = entidadFinancieraRepository;
         this.pagoTextNormalizer = pagoTextNormalizer;
     }
@@ -112,15 +112,45 @@ public class PagoMetodoPolicy {
     }
 
     public boolean esMetodoEntregaUsado(MetodoPago metodoPago) {
-        return metodoPago != null && CODIGO_ENTREGA_USADO.equals(normalizarCodigoMetodo(metodoPago));
+        return esEntregaUsado(metodoPago);
     }
 
     public boolean esMetodoNoMonetarioInterno(MetodoPago metodoPago) {
-        if (metodoPago == null) {
-            return false;
-        }
-        String codigo = normalizarCodigoMetodo(metodoPago);
-        return CODIGO_ENTREGA_USADO.equals(codigo) || CODIGO_PLAN_AHORRO.equals(codigo);
+        return !esMonetario(metodoPago);
+    }
+
+    public boolean requiereEntidadFinanciera(MetodoPago metodoPago) {
+        String codigoMetodo = normalizarCodigoMetodo(metodoPago);
+        return CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
+            CODIGO_DEPOSITO.equals(codigoMetodo) ||
+            CODIGO_CHEQUE.equals(codigoMetodo) ||
+            CODIGO_TARJETA.equals(codigoMetodo) ||
+            CODIGO_DEBITO.equals(codigoMetodo) ||
+            CODIGO_CREDITO.equals(codigoMetodo);
+    }
+
+    public boolean esEntregaUsado(MetodoPago metodoPago) {
+        return metodoPago != null && CODIGO_ENTREGA_USADO.equals(normalizarCodigoMetodo(metodoPago));
+    }
+
+    public boolean esPlanAhorro(MetodoPago metodoPago) {
+        return CODIGO_PLAN_AHORRO.equals(normalizarCodigoMetodo(metodoPago));
+    }
+
+    public boolean esMonetario(MetodoPago metodoPago) {
+        return !esEntregaUsado(metodoPago) && !esPlanAhorro(metodoPago);
+    }
+
+    public boolean impactaCaja(MetodoPago metodoPago) {
+        return true;
+    }
+
+    public boolean generaMovimientoInformativo(MetodoPago metodoPago) {
+        return impactaCaja(metodoPago) && !esMonetario(metodoPago);
+    }
+
+    public boolean permiteComprobanteAutomatico(MetodoPago metodoPago) {
+        return esMetodoEmitibleComprobante(metodoPago);
     }
 
     public void validarReglaMetodoPlanAhorro(PagoDTO pagoDTO, MetodoPago metodoPago) {
@@ -135,12 +165,7 @@ public class PagoMetodoPolicy {
 
     public EntidadFinanciera resolverEntidadFinanciera(PagoDTO pagoDTO, MetodoPago metodoPago) {
         String codigoMetodo = normalizarCodigoMetodo(metodoPago);
-        boolean requiereEntidad = CODIGO_TRANSFERENCIA.equals(codigoMetodo) ||
-            CODIGO_DEPOSITO.equals(codigoMetodo) ||
-            CODIGO_CHEQUE.equals(codigoMetodo) ||
-            CODIGO_TARJETA.equals(codigoMetodo) ||
-            CODIGO_DEBITO.equals(codigoMetodo) ||
-            CODIGO_CREDITO.equals(codigoMetodo);
+        boolean requiereEntidad = requiereEntidadFinanciera(metodoPago);
 
         Long entidadId = pagoDTO.getEntidadFinanciera() != null ? pagoDTO.getEntidadFinanciera().getId() : null;
         if (!requiereEntidad) {

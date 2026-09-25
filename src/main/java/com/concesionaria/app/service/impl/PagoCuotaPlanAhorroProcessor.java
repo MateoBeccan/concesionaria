@@ -26,8 +26,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class PagoCuotaPlanAhorroProcessor {
 
-    private static final String CODIGO_CONTADO = "CONTADO";
-
     private final ContratoPlanAhorroRepository contratoRepository;
     private final MetodoPagoRepository metodoPagoRepository;
     private final PagoRepository pagoRepository;
@@ -169,7 +167,7 @@ public class PagoCuotaPlanAhorroProcessor {
             return metodoPagoRepository.findById(metodoPagoId).orElseThrow(() -> new BadRequestException("El mÃ©todo de pago no existe"));
         }
         return metodoPagoRepository
-            .findByCodigoIgnoreCase(CODIGO_CONTADO)
+            .findByCodigoIgnoreCase(MetodoPagoPolicy.CODIGO_CONTADO)
             .orElseThrow(() -> new BadRequestException("No existe el metodo de pago CONTADO configurado"));
     }
 }

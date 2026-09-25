@@ -66,7 +66,7 @@ public class PagoServiceImpl implements PagoService {
     private final EntidadFinancieraRepository entidadFinancieraRepository;
     private final TasacionUsadoRepository tasacionUsadoRepository;
     private final CurrencyConversionService currencyConversionService;
-    private final PagoMetodoPolicy pagoMetodoPolicy;
+    private final MetodoPagoPolicy metodoPagoPolicy;
     private final PagoCalculator pagoCalculator;
     private final PagoTextNormalizer pagoTextNormalizer;
     private final PagoAnulacionService pagoAnulacionService;
@@ -93,7 +93,7 @@ public class PagoServiceImpl implements PagoService {
         ComprobantePlanAhorroService comprobantePlanAhorroService,
         CuotaPlanAhorroRepository cuotaPlanAhorroRepository,
         ContratoPlanAhorroRepository contratoPlanAhorroRepository,
-        PagoMetodoPolicy pagoMetodoPolicy,
+        MetodoPagoPolicy metodoPagoPolicy,
         PagoCalculator pagoCalculator,
         PagoTextNormalizer pagoTextNormalizer,
         PagoAnulacionService pagoAnulacionService,
@@ -109,12 +109,12 @@ public class PagoServiceImpl implements PagoService {
         this.entidadFinancieraRepository = entidadFinancieraRepository;
         this.tasacionUsadoRepository = tasacionUsadoRepository;
         this.currencyConversionService = currencyConversionService;
-        this.pagoMetodoPolicy = pagoMetodoPolicy;
+        this.metodoPagoPolicy = metodoPagoPolicy;
         this.pagoCalculator = pagoCalculator;
         this.pagoTextNormalizer = pagoTextNormalizer;
         this.businessProperties = businessProperties == null ? BusinessProperties.defaults() : businessProperties;
-        this.pagoCajaBridge = new PagoCajaBridge(movimientoCajaService, pagoMetodoPolicy);
-        this.pagoComprobanteBridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, pagoMetodoPolicy);
+        this.pagoCajaBridge = new PagoCajaBridge(movimientoCajaService, metodoPagoPolicy);
+        this.pagoComprobanteBridge = new PagoComprobanteBridge(comprobanteService, tipoComprobanteRepository, comprobanteRepository, metodoPagoPolicy);
         this.pagoAnulacionService =
             pagoAnulacionService != null
                 ? pagoAnulacionService
@@ -203,7 +203,7 @@ public class PagoServiceImpl implements PagoService {
             },
             null,
             null,
-            new PagoMetodoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
+            new MetodoPagoPolicy(entidadFinancieraRepository, new PagoTextNormalizer()),
             new PagoCalculator(currencyConversionService, new PagoTextNormalizer()),
             new PagoTextNormalizer(),
             null,
@@ -309,12 +309,12 @@ public class PagoServiceImpl implements PagoService {
         if (metodoPago == null) {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
-        pagoMetodoPolicy.validarMetodoPagoEspecial(metodoPago);
-        pagoMetodoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
-        pagoMetodoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        pagoMetodoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
-        EntidadFinanciera entidadFinanciera = pagoMetodoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
-        if (pagoMetodoPolicy.esMetodoEntregaUsado(metodoPago)) {
+        metodoPagoPolicy.validarMetodoPagoEspecial(metodoPago);
+        metodoPagoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
+        metodoPagoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
+        metodoPagoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = metodoPagoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
+        if (metodoPagoPolicy.esEntregaUsado(metodoPago)) {
             return registrarPagoEntregaUsado(venta, pagoDTO, metodoPago);
         }
         if (pagoDTO.getTasacionUsadoId() != null) {
@@ -366,8 +366,8 @@ public class PagoServiceImpl implements PagoService {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, null);
-        pagoMetodoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
+        metodoPagoPolicy.completarDatosOperacion(pago, metodoPago, null);
+        metodoPagoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -422,12 +422,12 @@ public class PagoServiceImpl implements PagoService {
         if (metodoPago == null) {
             throw new BadRequestException("Debe informar el metodo de pago");
         }
-        pagoMetodoPolicy.validarMetodoPagoEspecial(metodoPago);
-        pagoMetodoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
-        pagoMetodoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
-        pagoMetodoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
-        EntidadFinanciera entidadFinanciera = pagoMetodoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
-        if (pagoMetodoPolicy.esMetodoEntregaUsado(metodoPago)) {
+        metodoPagoPolicy.validarMetodoPagoEspecial(metodoPago);
+        metodoPagoPolicy.validarReglaMetodoPlanAhorro(pagoDTO, metodoPago);
+        metodoPagoPolicy.validarDatosOperacionParaMetodo(pagoDTO, metodoPago);
+        metodoPagoPolicy.validarDatosAdministrativosPorMetodo(pagoDTO, metodoPago);
+        EntidadFinanciera entidadFinanciera = metodoPagoPolicy.resolverEntidadFinanciera(pagoDTO, metodoPago);
+        if (metodoPagoPolicy.esEntregaUsado(metodoPago)) {
             throw new BadRequestException("ENTREGA_USADO solo puede registrarse sobre una venta");
         }
         if (pagoDTO.getTasacionUsadoId() != null) {
@@ -460,8 +460,8 @@ public class PagoServiceImpl implements PagoService {
             pago.setUsuarioRegistro(currentUserLogin());
         }
         pago.setFecha(fechaPago);
-        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, null);
-        pagoMetodoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
+        metodoPagoPolicy.completarDatosOperacion(pago, metodoPago, null);
+        metodoPagoPolicy.completarBancoEntidadLegacy(pago, entidadFinanciera);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);
@@ -645,7 +645,7 @@ public class PagoServiceImpl implements PagoService {
         if (pago.getFecha() == null) {
             pago.setFecha(ahora);
         }
-        pagoMetodoPolicy.completarDatosOperacion(pago, metodoPago, tasacion);
+        metodoPagoPolicy.completarDatosOperacion(pago, metodoPago, tasacion);
         pago.setCreatedDate(ahora);
         pago.setLastModifiedDate(ahora);
         pago.setEstado(EstadoPago.REGISTRADO);

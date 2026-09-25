@@ -23,7 +23,7 @@ class PagoCajaBridgeTest {
     @Test
     void registrarPagoMonetarioEsIngreso() {
         PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy policy = new PagoMetodoPolicy(null, normalizer);
+        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
         PagoCajaBridge bridge = new PagoCajaBridge(movimientoCajaService, policy);
         Pago pago = pago("CONTADO", TipoMovimientoPago.PAGO_RECIBIDO);
 
@@ -35,7 +35,7 @@ class PagoCajaBridgeTest {
     @Test
     void registrarAnulacionNoMonetariaEsInformativo() {
         PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        PagoMetodoPolicy policy = new PagoMetodoPolicy(null, normalizer);
+        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
         PagoCajaBridge bridge = new PagoCajaBridge(movimientoCajaService, policy);
         Pago pago = pago("PLAN_AHORRO", TipoMovimientoPago.ANULACION);
 

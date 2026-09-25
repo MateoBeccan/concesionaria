@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class AplicadorCreditoPlanAhorro {
 
-    private static final String CODIGO_METODO_PLAN_AHORRO = "PLAN_AHORRO";
     private static final String OBS_PAGO_PLAN_AHORRO = "Aplicacion automatica de cuotas de plan de ahorro";
 
     private final PagoService pagoService;
@@ -61,13 +60,13 @@ public class AplicadorCreditoPlanAhorro {
         if (montoAplicar.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
-        if (pagoRepository.existsByVentaIdAndMetodoPagoCodigoAndEstado(ventaCreada.getId(), CODIGO_METODO_PLAN_AHORRO, EstadoPago.REGISTRADO)) {
+        if (pagoRepository.existsByVentaIdAndMetodoPagoCodigoAndEstado(ventaCreada.getId(), MetodoPagoPolicy.CODIGO_PLAN_AHORRO, EstadoPago.REGISTRADO)) {
             return;
         }
 
         MetodoPagoDTO metodoPagoDTO = new MetodoPagoDTO();
         MetodoPago metodoPago = metodoPagoRepository
-            .findByCodigoIgnoreCase(CODIGO_METODO_PLAN_AHORRO)
+            .findByCodigoIgnoreCase(MetodoPagoPolicy.CODIGO_PLAN_AHORRO)
             .orElseThrow(() -> new BadRequestException("No existe metodo de pago PLAN_AHORRO configurado"));
         metodoPagoDTO.setId(metodoPago.getId());
 
