@@ -43,19 +43,22 @@ public class ComprobanteServiceImpl implements ComprobanteService {
 
     private final TipoComprobanteRepository tipoComprobanteRepository;
     private final PagoRepository pagoRepository;
+    private final ComprobanteNumeradorService comprobanteNumeradorService;
 
     public ComprobanteServiceImpl(
         ComprobanteRepository comprobanteRepository,
         ComprobanteMapper comprobanteMapper,
         VentaRepository ventaRepository,
         TipoComprobanteRepository tipoComprobanteRepository,
-        PagoRepository pagoRepository
+        PagoRepository pagoRepository,
+        ComprobanteNumeradorService comprobanteNumeradorService
     ) {
         this.comprobanteRepository = comprobanteRepository;
         this.comprobanteMapper = comprobanteMapper;
         this.ventaRepository = ventaRepository;
         this.tipoComprobanteRepository = tipoComprobanteRepository;
         this.pagoRepository = pagoRepository;
+        this.comprobanteNumeradorService = comprobanteNumeradorService;
     }
 
     @Override
@@ -140,7 +143,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
             throw new BadRequestException("La venta no tiene moneda asociada. No se puede emitir comprobante");
         }
 
-        Long siguienteCorrelativo = (comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(tipoComprobanteId) + 1);
+        Long siguienteCorrelativo = comprobanteNumeradorService.siguienteNumero(tipoComprobanteId);
         String numeroComprobante = generarNumeroComprobante(tipoComprobante, siguienteCorrelativo);
 
         Instant now = Instant.now();
@@ -186,7 +189,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
             throw new BadRequestException("El pago ya posee un comprobante activo de ese tipo");
         }
 
-        Long siguienteCorrelativo = (comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(tipoComprobanteId) + 1);
+        Long siguienteCorrelativo = comprobanteNumeradorService.siguienteNumero(tipoComprobanteId);
         String numeroComprobante = generarNumeroComprobante(tipoComprobante, siguienteCorrelativo);
         Instant now = Instant.now();
         String currentUser = currentUserLogin();

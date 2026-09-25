@@ -98,9 +98,4 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
     )
     List<Comprobante> findAllByPagoIdForUser(@Param("pagoId") Long pagoId, @Param("login") String login);
 
-    @Query(
-        value = "select coalesce(max(cast(substring_index(c.numero_comprobante, '-', -1) as unsigned)), 0) from comprobante c where c.tipo_comprobante_id = :tipoComprobanteId",
-        nativeQuery = true
-    )
-    Long findMaxNumeroCorrelativoByTipoComprobanteId(@Param("tipoComprobanteId") Long tipoComprobanteId);
 }

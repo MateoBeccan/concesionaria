@@ -5,11 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.concesionaria.app.domain.Comprobante;
 import com.concesionaria.app.domain.Moneda;
+import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoComprobante;
@@ -26,6 +28,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -48,6 +51,9 @@ class ComprobanteServiceImplBusinessTest {
     @Mock
     private PagoRepository pagoRepository;
 
+    @Mock
+    private ComprobanteNumeradorService comprobanteNumeradorService;
+
     private ComprobanteServiceImpl comprobanteService;
 
     @BeforeEach
@@ -61,7 +67,8 @@ class ComprobanteServiceImplBusinessTest {
             comprobanteMapper,
             ventaRepository,
             tipoComprobanteRepository,
-            pagoRepository
+            pagoRepository,
+            comprobanteNumeradorService
         );
     }
 
@@ -98,7 +105,7 @@ class ComprobanteServiceImplBusinessTest {
         when(ventaRepository.findById(30L)).thenReturn(Optional.of(venta));
         when(tipoComprobanteRepository.findById(4L)).thenReturn(Optional.of(tipo));
         when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(30L, 4L, EstadoComprobante.EMITIDO)).thenReturn(false);
-        when(comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(4L)).thenReturn(0L);
+        when(comprobanteNumeradorService.siguienteNumero(4L)).thenReturn(1L);
         when(comprobanteRepository.save(any(Comprobante.class))).thenReturn(persisted);
         when(comprobanteMapper.toDto(any(Comprobante.class))).thenAnswer(invocation -> {
             Comprobante comprobante = invocation.getArgument(0);
@@ -124,7 +131,7 @@ class ComprobanteServiceImplBusinessTest {
         when(ventaRepository.findById(40L)).thenReturn(Optional.of(venta));
         when(tipoComprobanteRepository.findById(7L)).thenReturn(Optional.of(tipo));
         when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(40L, 7L, EstadoComprobante.EMITIDO)).thenReturn(false);
-        when(comprobanteRepository.findMaxNumeroCorrelativoByTipoComprobanteId(7L)).thenReturn(41L);
+        when(comprobanteNumeradorService.siguienteNumero(7L)).thenReturn(42L);
         when(comprobanteRepository.save(any(Comprobante.class))).thenAnswer(invocation -> {
             Comprobante comprobante = invocation.getArgument(0);
             comprobante.setId(901L);
@@ -151,6 +158,68 @@ class ComprobanteServiceImplBusinessTest {
         when(comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(50L, 8L, EstadoComprobante.EMITIDO)).thenReturn(true);
 
         assertThrows(BadRequestException.class, () -> comprobanteService.emitirComprobante(50L, 8L));
+        verify(comprobanteNumeradorService, never()).siguienteNumero(8L);
+    }
+
+    @Test
+    void emiteComprobantePagoValidoUsandoNumerador() {
+        Venta venta = ventaBase(70L, EstadoVenta.PAGADA, "1000", "210", "1210", moneda(1L));
+        Pago pago = new Pago();
+        pago.setId(700L);
+        pago.setVenta(venta);
+        pago.setMonto(new BigDecimal("500.00"));
+        pago.setMontoAplicadoVenta(new BigDecimal("500.00"));
+        TipoComprobante tipo = tipoComprobante(9L, "REC");
+
+        when(pagoRepository.findById(700L)).thenReturn(Optional.of(pago));
+        when(ventaRepository.findById(70L)).thenReturn(Optional.of(venta));
+        when(tipoComprobanteRepository.findById(9L)).thenReturn(Optional.of(tipo));
+        when(comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(700L, 9L, EstadoComprobante.EMITIDO)).thenReturn(false);
+        when(comprobanteNumeradorService.siguienteNumero(9L)).thenReturn(12L);
+        when(comprobanteRepository.save(any(Comprobante.class))).thenAnswer(invocation -> {
+            Comprobante comprobante = invocation.getArgument(0);
+            comprobante.setId(902L);
+            return comprobante;
+        });
+        when(comprobanteMapper.toDto(any(Comprobante.class))).thenAnswer(invocation -> {
+            Comprobante comprobante = invocation.getArgument(0);
+            ComprobanteDTO dto = new ComprobanteDTO();
+            dto.setId(comprobante.getId());
+            dto.setNumeroComprobante(comprobante.getNumeroComprobante());
+            dto.setEstado(comprobante.getEstado());
+            dto.setTotal(comprobante.getTotal());
+            return dto;
+        });
+
+        ComprobanteDTO result = comprobanteService.emitirComprobantePago(700L, 9L);
+
+        assertThat(result.getId()).isEqualTo(902L);
+        assertThat(result.getNumeroComprobante()).isEqualTo("REC-000012");
+        assertThat(result.getEstado()).isEqualTo(EstadoComprobante.EMITIDO);
+        ArgumentCaptor<Comprobante> comprobanteCaptor = ArgumentCaptor.forClass(Comprobante.class);
+        verify(comprobanteRepository).save(comprobanteCaptor.capture());
+        Comprobante comprobante = comprobanteCaptor.getValue();
+        assertThat(comprobante.getNumeroComprobante()).isEqualTo("REC-000012");
+        assertThat(comprobante.getPago()).isSameAs(pago);
+        assertThat(comprobante.getVenta()).isSameAs(venta);
+        assertThat(comprobante.getEstado()).isEqualTo(EstadoComprobante.EMITIDO);
+    }
+
+    @Test
+    void noPermiteDosComprobantesActivosParaMismoPago() {
+        Venta venta = ventaBase(71L, EstadoVenta.PAGADA, "1000", "210", "1210", moneda(1L));
+        Pago pago = new Pago();
+        pago.setId(701L);
+        pago.setVenta(venta);
+        TipoComprobante tipo = tipoComprobante(10L, "REC");
+
+        when(pagoRepository.findById(701L)).thenReturn(Optional.of(pago));
+        when(ventaRepository.findById(71L)).thenReturn(Optional.of(venta));
+        when(tipoComprobanteRepository.findById(10L)).thenReturn(Optional.of(tipo));
+        when(comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(701L, 10L, EstadoComprobante.EMITIDO)).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () -> comprobanteService.emitirComprobantePago(701L, 10L));
+        verify(comprobanteNumeradorService, never()).siguienteNumero(10L);
     }
 
     @Test

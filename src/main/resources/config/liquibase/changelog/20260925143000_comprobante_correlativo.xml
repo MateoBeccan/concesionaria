@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260925143000-1-create-comprobante-correlativo" author="codex">
+    <createTable tableName="comprobante_correlativo">
+      <column name="tipo_comprobante_id" type="BIGINT">
+        <constraints primaryKey="true" primaryKeyName="pk_comprobante_correlativo" nullable="false"/>
+      </column>
+      <column name="ultimo_numero" type="BIGINT" defaultValueNumeric="0">
+        <constraints nullable="false"/>
+      </column>
+    </createTable>
+
+    <addForeignKeyConstraint
+      baseTableName="comprobante_correlativo"
+      baseColumnNames="tipo_comprobante_id"
+      constraintName="fk_comprobante_correlativo_tipo"
+      referencedTableName="tipo_comprobante"
+      referencedColumnNames="id"/>
+
+    <sql dbms="mysql">
+      INSERT INTO comprobante_correlativo (tipo_comprobante_id, ultimo_numero)
+      SELECT
+        tc.id,
+        COALESCE(MAX(CAST(SUBSTRING_INDEX(c.numero_comprobante, '-', -1) AS UNSIGNED)), 0)
+      FROM tipo_comprobante tc
+      LEFT JOIN comprobante c ON c.tipo_comprobante_id = tc.id
+      GROUP BY tc.id
+    </sql>
+
+    <addUniqueConstraint tableName="comprobante" columnNames="numero_comprobante" constraintName="ux_comprobante_numero"/>
+  </changeSet>
+</databaseChangeLog>
