@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class MovimientoCajaServiceImplBusinessTest {
@@ -43,6 +44,7 @@ class MovimientoCajaServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
         movimientoCajaService = new MovimientoCajaServiceImpl(movimientoCajaRepository, movimientoCajaMapper);
     }
 

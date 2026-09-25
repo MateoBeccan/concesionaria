@@ -195,7 +195,11 @@ class PagoAnulacionServiceTest {
     @Test
     void anulaComprobantesAsociados() {
         Pago pago = pagoBase(17L, "CONTADO", TipoMovimientoPago.PAGO_RECIBIDO);
+        pago.setMonto(new BigDecimal("1000.00"));
+        pago.setMontoAplicadoVenta(new BigDecimal("1000.00"));
         Venta venta = new Venta().id(200L);
+        venta.setTotal(new BigDecimal("10000.00"));
+        venta.setImporteNeto(new BigDecimal("10000.00"));
         pago.setVenta(venta);
         Comprobante comprobante = new Comprobante();
         comprobante.setEstado(EstadoComprobante.EMITIDO);
@@ -203,12 +207,26 @@ class PagoAnulacionServiceTest {
         when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> inv.getArgument(0));
         when(pagoMapper.toDto(any(Pago.class))).thenReturn(new com.concesionaria.app.service.dto.PagoDTO());
         when(comprobanteRepository.findAllByPagoIdOrderByFechaEmisionDescIdDesc(17L)).thenReturn(List.of(comprobante));
+        when(pagoRepository.sumMontoByVentaId(200L)).thenReturn(new BigDecimal("2500.00"));
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
 
         service.anularPago(17L, "Anular comp");
 
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.ANULADO);
+        assertThat(pago.getTipoMovimiento()).isEqualTo(TipoMovimientoPago.ANULACION);
+        assertThat(pago.getMotivoAnulacion()).isEqualTo("Anular comp");
+        assertThat(pago.getUsuarioAnulacion()).isNotBlank();
+        assertThat(pago.getFechaAnulacion()).isNotNull();
         assertThat(comprobante.getEstado()).isEqualTo(EstadoComprobante.ANULADO);
+        assertThat(comprobante.getMotivoAnulacion()).isEqualTo("Anulado por anulacion de pago: Anular comp");
+        assertThat(comprobante.getUsuarioAnulacion()).isEqualTo(pago.getUsuarioAnulacion());
+        assertThat(venta.getTotalPagado()).isEqualByComparingTo("2500.00");
+        assertThat(venta.getSaldo()).isEqualByComparingTo("7500.00");
+        assertThat(venta.getEstado()).isEqualTo(com.concesionaria.app.domain.enumeration.EstadoVenta.RESERVADA);
+        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), org.mockito.ArgumentMatchers.eq(TipoMovimientoCaja.REVERSO), org.mockito.ArgumentMatchers.eq(EstadoPago.ANULADO), org.mockito.ArgumentMatchers.eq(true));
         verify(comprobanteRepository).save(comprobante);
         verify(comprobantePlanAhorroService).anularPorPago(org.mockito.ArgumentMatchers.eq(17L), org.mockito.ArgumentMatchers.eq("Anular comp"), any(), any());
+        verify(ventaService).actualizarInventarioPorEstadoVenta(200L);
     }
 
     @Test

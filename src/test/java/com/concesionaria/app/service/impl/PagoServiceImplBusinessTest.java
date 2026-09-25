@@ -3,7 +3,9 @@ package com.concesionaria.app.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -14,10 +16,13 @@ import com.concesionaria.app.domain.Inventario;
 import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.Reserva;
 import com.concesionaria.app.domain.TasacionUsado;
+import com.concesionaria.app.domain.TipoComprobante;
 import com.concesionaria.app.domain.Venta;
 import com.concesionaria.app.domain.enumeration.EstadoTasacionUsado;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
+import com.concesionaria.app.domain.enumeration.EstadoReserva;
 import com.concesionaria.app.domain.enumeration.EstadoVenta;
+import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.MonedaRepository;
@@ -95,6 +100,9 @@ class PagoServiceImplBusinessTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(ventaRepository.existsAccessibleByIdForUser(any(), anyString())).thenReturn(true);
+        lenient().when(reservaRepository.existsAccessibleByIdForUser(any(), anyString())).thenReturn(true);
+        lenient().when(pagoRepository.existsAccessibleByIdForUser(any(), anyString())).thenReturn(true);
         pagoService =
             new PagoServiceImpl(
                 pagoRepository,
@@ -177,6 +185,99 @@ class PagoServiceImplBusinessTest {
         verify(ventaRepository).findByIdForUpdate(30L);
         verify(ventaService).actualizarInventarioPorEstadoVenta(30L);
         verify(ventaService, never()).confirmarVenta(any());
+    }
+
+    @Test
+    void pagoVentaMonetarioRegistraCajaYComprobantePreservandoImportes() {
+        stubMonedaBaseArs();
+        Venta venta = ventaBase(32L, "20000", "0", "20000", EstadoVenta.PENDIENTE);
+        venta.setImporteNeto(BigDecimal.valueOf(20000));
+        venta.setMoneda(moneda(1L, "ARS"));
+        MetodoPago contado = metodoPago(1L, "CONTADO", false);
+        TipoComprobante recibo = new TipoComprobante();
+        recibo.setId(70L);
+        recibo.setCodigo("REC");
+
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(new BigDecimal("2000.00"));
+        pagoDTO.setFecha(Instant.parse("2026-01-10T10:00:00Z"));
+        pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(1L));
+        Pago pago = new Pago();
+        pago.setMonto(new BigDecimal("2000.00"));
+
+        when(ventaRepository.findByIdForUpdate(32L)).thenReturn(Optional.of(venta));
+        when(metodoPagoRepository.findById(1L)).thenReturn(Optional.of(contado));
+        when(monedaRepository.findById(1L)).thenReturn(Optional.of(moneda(1L, "ARS")));
+        when(currencyConversionService.convertir(any(), eq(1L), eq(1L), any())).thenReturn(conversion("2000.00", "1"));
+        when(pagoRepository.sumMontoByVentaId(32L)).thenReturn(BigDecimal.ZERO, new BigDecimal("2000.00"));
+        when(pagoMapper.toEntity(any(PagoDTO.class))).thenReturn(pago);
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> {
+            Pago saved = inv.getArgument(0);
+            saved.setId(3200L);
+            return saved;
+        });
+        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(tipoComprobanteRepository.findByCodigoIgnoreCase("REC")).thenReturn(Optional.of(recibo));
+        when(comprobanteRepository.existsByPagoIdAndTipoComprobanteIdAndEstado(3200L, 70L, com.concesionaria.app.domain.enumeration.EstadoComprobante.EMITIDO))
+            .thenReturn(false);
+        when(pagoMapper.toDto(any(Pago.class))).thenReturn(pagoDTO);
+
+        pagoService.registrarPago(32L, pagoDTO);
+
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REGISTRADO);
+        assertThat(pago.getVenta()).isSameAs(venta);
+        assertThat(pago.getMonto()).isEqualByComparingTo("2000.00");
+        assertThat(pago.getMoneda().getId()).isEqualTo(1L);
+        assertThat(pago.getCotizacionUsada()).isEqualByComparingTo("1.00000000");
+        assertThat(pago.getMontoAplicadoVenta()).isEqualByComparingTo("2000.00");
+        assertThat(venta.getTotalPagado()).isEqualByComparingTo("2000.00");
+        assertThat(venta.getSaldo()).isEqualByComparingTo("18000.00");
+        assertThat(venta.getEstado()).isEqualTo(EstadoVenta.RESERVADA);
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        verify(comprobanteService).emitirComprobantePago(3200L, 70L);
+    }
+
+    @Test
+    void pagoReservaSeniaActualizaReservaYNoEmiteComprobanteNormal() {
+        Reserva reserva = new Reserva();
+        reserva.setId(131L);
+        reserva.setEstado(EstadoReserva.ACTIVA);
+        reserva.setMoneda(moneda(1L, "ARS"));
+        MetodoPago senia = metodoPago(9L, "SENIA", false);
+
+        PagoDTO pagoDTO = new PagoDTO();
+        pagoDTO.setMonto(new BigDecimal("5000.00"));
+        pagoDTO.setMoneda(monedaDto(1L));
+        pagoDTO.setMetodoPago(metodoDto(9L));
+        Pago pago = new Pago();
+        pago.setMonto(new BigDecimal("5000.00"));
+
+        when(reservaRepository.findByIdForUpdate(131L)).thenReturn(Optional.of(reserva));
+        when(metodoPagoRepository.findById(9L)).thenReturn(Optional.of(senia));
+        when(monedaRepository.findById(1L)).thenReturn(Optional.of(moneda(1L, "ARS")));
+        when(currencyConversionService.convertir(any(), eq(1L), eq(1L), any())).thenReturn(conversion("5000.00", "1"));
+        when(pagoRepository.sumMontoByReservaId(131L)).thenReturn(new BigDecimal("5000.00"));
+        when(pagoMapper.toEntity(any(PagoDTO.class))).thenReturn(pago);
+        when(pagoRepository.save(any(Pago.class))).thenAnswer(inv -> {
+            Pago saved = inv.getArgument(0);
+            saved.setId(1310L);
+            return saved;
+        });
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(pagoMapper.toDto(any(Pago.class))).thenReturn(pagoDTO);
+
+        pagoService.registrarPagoReserva(131L, pagoDTO);
+
+        assertThat(pago.getEstado()).isEqualTo(EstadoPago.REGISTRADO);
+        assertThat(pago.getReserva()).isSameAs(reserva);
+        assertThat(pago.getVenta()).isNull();
+        assertThat(pago.getMonto()).isEqualByComparingTo("5000.00");
+        assertThat(pago.getTipoMovimiento()).isEqualTo(TipoMovimientoPago.ANTICIPO);
+        assertThat(pago.getMontoAplicadoVenta()).isEqualByComparingTo("5000.00");
+        assertThat(reserva.getMontoSenia()).isEqualByComparingTo("5000.00");
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        verify(comprobanteService, never()).emitirComprobantePago(any(), any());
     }
 
     @Test
@@ -421,7 +522,7 @@ class PagoServiceImplBusinessTest {
         assertThat(pago.getCotizacionUsada()).isEqualByComparingTo("1.00000000");
         assertThat(pago.getTasacionUsado()).isNotNull();
         assertThat(venta.getTasacionUsado()).isNotNull();
-        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), any(), eq(EstadoPago.REGISTRADO), eq(false));
+        verify(movimientoCajaService).registrarDesdePago(any(Pago.class), eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.REGISTRADO), eq(false));
         verify(ventaService).actualizarInventarioPorEstadoVenta(110L);
     }
 

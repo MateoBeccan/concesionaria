@@ -4,6 +4,7 @@ import com.concesionaria.app.config.BusinessProperties;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -278,7 +279,7 @@ class VentaServiceImplBusinessTest {
             }
             return i;
         });
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
         when(tasacionUsadoRepository.findById(300L)).thenReturn(java.util.Optional.of(tasacion));
         when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
         when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
@@ -319,7 +320,7 @@ class VentaServiceImplBusinessTest {
             }
             return i;
         });
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
+        lenient().when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
         when(tasacionUsadoRepository.findById(301L)).thenReturn(java.util.Optional.of(tasacion));
         when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
         when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
@@ -448,7 +449,6 @@ class VentaServiceImplBusinessTest {
             }
             return i;
         });
-        when(ventaRepository.save(any(Venta.class))).thenAnswer(inv -> inv.getArgument(0));
         when(tasacionUsadoRepository.findById(305L)).thenReturn(java.util.Optional.of(tasacion));
         when(tasacionUsadoRepository.save(any(TasacionUsado.class))).thenAnswer(inv -> inv.getArgument(0));
         when(monedaRepository.findByCodigoIgnoreCase("ARS")).thenReturn(java.util.Optional.of(ars));
