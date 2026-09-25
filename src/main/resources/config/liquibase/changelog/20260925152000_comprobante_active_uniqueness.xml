@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<databaseChangeLog
+  xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+  <changeSet id="20260925152000-1-comprobante-active-uniqueness" author="codex" dbms="mysql">
+    <preConditions onFail="HALT" onError="HALT">
+      <sqlCheck expectedResult="0">
+        <![CDATA[
+          SELECT COUNT(*)
+          FROM (
+            SELECT venta_id, tipo_comprobante_id
+            FROM comprobante
+            WHERE pago_id IS NULL
+              AND estado = 'EMITIDO'
+            GROUP BY venta_id, tipo_comprobante_id
+            HAVING COUNT(*) > 1
+          ) duplicated_active_sale_receipts
+        ]]>
+      </sqlCheck>
+      <sqlCheck expectedResult="0">
+        <![CDATA[
+          SELECT COUNT(*)
+          FROM (
+            SELECT pago_id, tipo_comprobante_id
+            FROM comprobante
+            WHERE pago_id IS NOT NULL
+              AND estado = 'EMITIDO'
+            GROUP BY pago_id, tipo_comprobante_id
+            HAVING COUNT(*) > 1
+          ) duplicated_active_payment_receipts
+        ]]>
+      </sqlCheck>
+      <sqlCheck expectedResult="0">
+        <![CDATA[
+          SELECT COUNT(*)
+          FROM comprobante
+          WHERE pago_id IS NOT NULL
+            AND venta_id IS NULL
+        ]]>
+      </sqlCheck>
+      <sqlCheck expectedResult="0">
+        <![CDATA[
+          SELECT COUNT(*)
+          FROM comprobante
+          WHERE tipo_comprobante_id IS NULL
+        ]]>
+      </sqlCheck>
+    </preConditions>
+
+    <sql>
+      ALTER TABLE comprobante
+      ADD COLUMN venta_emitida_id BIGINT
+      GENERATED ALWAYS AS (
+        CASE
+          WHEN estado = 'EMITIDO'
+           AND pago_id IS NULL
+          THEN venta_id
+          ELSE NULL
+        END
+      ) STORED,
+      ADD COLUMN pago_emitido_id BIGINT
+      GENERATED ALWAYS AS (
+        CASE
+          WHEN estado = 'EMITIDO'
+           AND pago_id IS NOT NULL
+          THEN pago_id
+          ELSE NULL
+        END
+      ) STORED
+    </sql>
+
+    <createIndex tableName="comprobante" indexName="ux_comprobante_venta_emitida_tipo" unique="true">
+      <column name="venta_emitida_id"/>
+      <column name="tipo_comprobante_id"/>
+    </createIndex>
+
+    <createIndex tableName="comprobante" indexName="ux_comprobante_pago_emitido_tipo" unique="true">
+      <column name="pago_emitido_id"/>
+      <column name="tipo_comprobante_id"/>
+    </createIndex>
+  </changeSet>
+</databaseChangeLog>

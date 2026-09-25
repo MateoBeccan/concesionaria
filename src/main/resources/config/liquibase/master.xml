@@ -86,6 +86,7 @@
   <include file="config/liquibase/changelog/20260519130000_normalize_mysql_boolean_types.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260829003000_operacion_idempotente.xml" relativeToChangelogFile="false"/>
   <include file="config/liquibase/changelog/20260925143000_comprobante_correlativo.xml" relativeToChangelogFile="false"/>
+  <include file="config/liquibase/changelog/20260925152000_comprobante_active_uniqueness.xml" relativeToChangelogFile="false"/>
   <!-- jhipster-needle-liquibase-add-changelog - JHipster will add liquibase changelogs here -->
   <!-- jhipster-needle-liquibase-add-constraints-changelog - JHipster will add liquibase constraints changelogs here -->
   <!-- jhipster-needle-liquibase-add-incremental-changelog - JHipster will add incremental liquibase changelogs here -->

@@ -256,7 +256,7 @@ public class ComprobanteServiceImpl implements ComprobanteService {
     }
 
     private void validarPoliticaUnicoComprobanteActivo(Long ventaId, Long tipoComprobanteId) {
-        if (comprobanteRepository.existsByVentaIdAndTipoComprobanteIdAndEstado(ventaId, tipoComprobanteId, EstadoComprobante.EMITIDO)) {
+        if (comprobanteRepository.existsActiveVentaComprobante(ventaId, tipoComprobanteId, EstadoComprobante.EMITIDO)) {
             throw new BadRequestException("La venta ya posee un comprobante activo de ese tipo");
         }
     }

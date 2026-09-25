@@ -83,7 +83,21 @@ public interface ComprobanteRepository extends JpaRepository<Comprobante, Long> 
 
     boolean existsByVentaIdAndEstado(Long ventaId, EstadoComprobante estado);
 
-    boolean existsByVentaIdAndTipoComprobanteIdAndEstado(Long ventaId, Long tipoComprobanteId, EstadoComprobante estado);
+    @Query(
+        """
+        select (count(c) > 0)
+        from Comprobante c
+        where c.venta.id = :ventaId
+          and c.pago is null
+          and c.tipoComprobante.id = :tipoComprobanteId
+          and c.estado = :estado
+        """
+    )
+    boolean existsActiveVentaComprobante(
+        @Param("ventaId") Long ventaId,
+        @Param("tipoComprobanteId") Long tipoComprobanteId,
+        @Param("estado") EstadoComprobante estado
+    );
 
     boolean existsByPagoIdAndTipoComprobanteIdAndEstado(Long pagoId, Long tipoComprobanteId, EstadoComprobante estado);
 
