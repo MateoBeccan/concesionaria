@@ -5,14 +5,12 @@ import com.concesionaria.app.domain.CuotaPlanAhorro;
 import com.concesionaria.app.domain.MetodoPago;
 import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
-import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
-import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
 import com.concesionaria.app.service.exception.BadRequestException;
 import com.concesionaria.app.service.mapper.CuotaPlanAhorroMapper;
@@ -30,7 +28,7 @@ public class PagoCuotaPlanAhorroProcessor {
     private final MetodoPagoRepository metodoPagoRepository;
     private final PagoRepository pagoRepository;
     private final CuotaPlanAhorroRepository cuotaRepository;
-    private final MovimientoCajaService movimientoCajaService;
+    private final PagoCajaBridge pagoCajaBridge;
     private final ComprobantePlanAhorroService comprobantePlanAhorroService;
     private final ContratoPlanAhorroValidator validator;
     private final ContratoPlanAhorroCalculator calculator;
@@ -41,7 +39,7 @@ public class PagoCuotaPlanAhorroProcessor {
         MetodoPagoRepository metodoPagoRepository,
         PagoRepository pagoRepository,
         CuotaPlanAhorroRepository cuotaRepository,
-        MovimientoCajaService movimientoCajaService,
+        PagoCajaBridge pagoCajaBridge,
         ComprobantePlanAhorroService comprobantePlanAhorroService,
         ContratoPlanAhorroValidator validator,
         ContratoPlanAhorroCalculator calculator,
@@ -51,7 +49,7 @@ public class PagoCuotaPlanAhorroProcessor {
         this.metodoPagoRepository = metodoPagoRepository;
         this.pagoRepository = pagoRepository;
         this.cuotaRepository = cuotaRepository;
-        this.movimientoCajaService = movimientoCajaService;
+        this.pagoCajaBridge = pagoCajaBridge;
         this.comprobantePlanAhorroService = comprobantePlanAhorroService;
         this.validator = validator;
         this.calculator = calculator;
@@ -79,7 +77,7 @@ public class PagoCuotaPlanAhorroProcessor {
         cuotaRepository.save(cuota);
 
         calculator.recalcularContrato(contrato);
-        movimientoCajaService.registrarDesdePago(pago, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        pagoCajaBridge.registrarPago(pago);
         comprobantePlanAhorroService.emitirParaCuota(cuota, pago);
 
         return cuotaMapper.toDto(cuota);
@@ -122,7 +120,7 @@ public class PagoCuotaPlanAhorroProcessor {
         }
 
         calculator.recalcularContrato(contrato);
-        movimientoCajaService.registrarDesdePago(pago, TipoMovimientoCaja.INGRESO, EstadoPago.REGISTRADO, true);
+        pagoCajaBridge.registrarPago(pago);
         return cuotas.stream().map(cuotaMapper::toDto).toList();
     }
 

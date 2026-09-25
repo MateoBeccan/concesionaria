@@ -14,14 +14,12 @@ import com.concesionaria.app.domain.Pago;
 import com.concesionaria.app.domain.PlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoCuotaPlanAhorro;
 import com.concesionaria.app.domain.enumeration.EstadoPago;
-import com.concesionaria.app.domain.enumeration.TipoMovimientoCaja;
 import com.concesionaria.app.domain.enumeration.TipoMovimientoPago;
 import com.concesionaria.app.repository.ContratoPlanAhorroRepository;
 import com.concesionaria.app.repository.CuotaPlanAhorroRepository;
 import com.concesionaria.app.repository.MetodoPagoRepository;
 import com.concesionaria.app.repository.PagoRepository;
 import com.concesionaria.app.service.ComprobantePlanAhorroService;
-import com.concesionaria.app.service.MovimientoCajaService;
 import com.concesionaria.app.service.dto.CuotaPlanAhorroDTO;
 import com.concesionaria.app.service.mapper.CuotaPlanAhorroMapper;
 import java.math.BigDecimal;
@@ -49,7 +47,7 @@ class PagoCuotaPlanAhorroProcessorTest {
     private CuotaPlanAhorroRepository cuotaRepository;
 
     @Mock
-    private MovimientoCajaService movimientoCajaService;
+    private PagoCajaBridge pagoCajaBridge;
 
     @Mock
     private ComprobantePlanAhorroService comprobantePlanAhorroService;
@@ -73,7 +71,7 @@ class PagoCuotaPlanAhorroProcessorTest {
                 metodoPagoRepository,
                 pagoRepository,
                 cuotaRepository,
-                movimientoCajaService,
+                pagoCajaBridge,
                 comprobantePlanAhorroService,
                 validator,
                 calculator,
@@ -128,7 +126,7 @@ class PagoCuotaPlanAhorroProcessorTest {
         assertThat(cuota.getFechaPago()).isNotNull();
         verify(cuotaRepository).save(cuota);
         verify(calculator).recalcularContrato(contrato);
-        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+        verify(pagoCajaBridge).registrarPago(pago);
         verify(comprobantePlanAhorroService).emitirParaCuota(cuota, pago);
     }
 

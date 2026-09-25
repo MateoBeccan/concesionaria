@@ -21,10 +21,8 @@ class PagoCajaBridgeTest {
     private MovimientoCajaService movimientoCajaService;
 
     @Test
-    void registrarPagoMonetarioEsIngreso() {
-        PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
-        PagoCajaBridge bridge = new PagoCajaBridge(movimientoCajaService, policy);
+    void contadoRegistradoEsIngresoMonetario() {
+        PagoCajaBridge bridge = bridge();
         Pago pago = pago("CONTADO", TipoMovimientoPago.PAGO_RECIBIDO);
 
         bridge.registrarPago(pago);
@@ -33,15 +31,57 @@ class PagoCajaBridgeTest {
     }
 
     @Test
-    void registrarAnulacionNoMonetariaEsInformativo() {
-        PagoTextNormalizer normalizer = new PagoTextNormalizer();
-        MetodoPagoPolicy policy = new MetodoPagoPolicy(null, normalizer);
-        PagoCajaBridge bridge = new PagoCajaBridge(movimientoCajaService, policy);
-        Pago pago = pago("PLAN_AHORRO", TipoMovimientoPago.ANULACION);
+    void transferenciaRegistradaEsIngresoMonetario() {
+        PagoCajaBridge bridge = bridge();
+        Pago pago = pago("TRANSFERENCIA", TipoMovimientoPago.PAGO_RECIBIDO);
+
+        bridge.registrarPago(pago);
+
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INGRESO), eq(EstadoPago.REGISTRADO), eq(true));
+    }
+
+    @Test
+    void entregaUsadoRegistradaEsInformativoNoMonetario() {
+        PagoCajaBridge bridge = bridge();
+        Pago pago = pago("ENTREGA_USADO", TipoMovimientoPago.ENTREGA_USADO);
+
+        bridge.registrarPago(pago);
+
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.REGISTRADO), eq(false));
+    }
+
+    @Test
+    void planAhorroRegistradoEsInformativoNoMonetario() {
+        PagoCajaBridge bridge = bridge();
+        Pago pago = pago("PLAN_AHORRO", TipoMovimientoPago.PAGO_RECIBIDO);
+
+        bridge.registrarPago(pago);
+
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.REGISTRADO), eq(false));
+    }
+
+    @Test
+    void contadoAnuladoEsReversoMonetario() {
+        PagoCajaBridge bridge = bridge();
+        Pago pago = pago("CONTADO", TipoMovimientoPago.ANULACION);
+
+        bridge.registrarAnulacion(pago);
+
+        verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.REVERSO), eq(EstadoPago.ANULADO), eq(true));
+    }
+
+    @Test
+    void entregaUsadoAnuladaEsInformativoNoMonetario() {
+        PagoCajaBridge bridge = bridge();
+        Pago pago = pago("ENTREGA_USADO", TipoMovimientoPago.ENTREGA_USADO);
 
         bridge.registrarAnulacion(pago);
 
         verify(movimientoCajaService).registrarDesdePago(eq(pago), eq(TipoMovimientoCaja.INFORMATIVO), eq(EstadoPago.ANULADO), eq(false));
+    }
+
+    private PagoCajaBridge bridge() {
+        return new PagoCajaBridge(movimientoCajaService, new MetodoPagoPolicy(null, new PagoTextNormalizer()));
     }
 
     private Pago pago(String metodo, TipoMovimientoPago tipo) {
