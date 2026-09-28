@@ -9,7 +9,7 @@ import org.testcontainers.junit.jupiter.Container;
 
 public interface DatabaseTestcontainer {
     @Container
-    MySQLContainer<?> databaseContainer = (MySQLContainer) new MySQLContainer<>("mysql:9.6.0")
+    MySQLContainer<?> databaseContainer = (MySQLContainer) new MySQLContainer<>("mysql:8.4.8")
         .withDatabaseName("concesionaria")
         .withConfigurationOverride("conf/mysql")
         .withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger(DatabaseTestcontainer.class)))

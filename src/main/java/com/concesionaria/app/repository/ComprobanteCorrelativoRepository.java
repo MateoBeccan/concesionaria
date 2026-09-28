@@ -14,7 +14,11 @@ import org.springframework.stereotype.Repository;
 public interface ComprobanteCorrelativoRepository extends JpaRepository<ComprobanteCorrelativo, Long> {
     @Modifying
     @Query(
-        value = "insert ignore into comprobante_correlativo (tipo_comprobante_id, ultimo_numero) values (:tipoComprobanteId, 0)",
+        value = """
+        insert into comprobante_correlativo (tipo_comprobante_id, ultimo_numero)
+        values (:tipoComprobanteId, 0)
+        on duplicate key update ultimo_numero = ultimo_numero
+        """,
         nativeQuery = true
     )
     void asegurarFila(@Param("tipoComprobanteId") Long tipoComprobanteId);
