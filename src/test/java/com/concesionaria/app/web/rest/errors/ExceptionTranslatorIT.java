@@ -1,5 +1,7 @@
 package com.concesionaria.app.web.rest.errors;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -32,6 +34,50 @@ class ExceptionTranslatorIT {
             .andExpect(status().isConflict())
             .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.message").value(ErrorConstants.ERR_CONCURRENCY_FAILURE));
+    }
+
+    @Test
+    void testComprobanteActiveVentaConflict() throws Exception {
+        mockMvc
+            .perform(get("/api/exception-translator-test/comprobante-active-venta-conflict"))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.message").value(ErrorConstants.ERR_COMPROBANTE_ACTIVE_CONFLICT))
+            .andExpect(jsonPath("$.detail").value("Ya existe un comprobante activo equivalente."))
+            .andExpect(content().string(not(containsString("insert into comprobante"))))
+            .andExpect(content().string(not(containsString("Duplicate entry"))))
+            .andExpect(content().string(not(containsString("ux_comprobante_venta_emitida_tipo"))));
+    }
+
+    @Test
+    void testComprobanteActivePagoConflict() throws Exception {
+        mockMvc
+            .perform(get("/api/exception-translator-test/comprobante-active-pago-conflict"))
+            .andExpect(status().isConflict())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.message").value(ErrorConstants.ERR_COMPROBANTE_ACTIVE_CONFLICT))
+            .andExpect(jsonPath("$.detail").value("Ya existe un comprobante activo equivalente."))
+            .andExpect(content().string(not(containsString("insert into comprobante"))))
+            .andExpect(content().string(not(containsString("Duplicate entry"))))
+            .andExpect(content().string(not(containsString("ux_comprobante_pago_emitido_tipo"))));
+    }
+
+    @Test
+    void testComprobanteNumeroConflictNoUsaMappingDeComprobanteActivo() throws Exception {
+        mockMvc
+            .perform(get("/api/exception-translator-test/comprobante-numero-conflict"))
+            .andExpect(status().isInternalServerError())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.message").value("error.http.500"));
+    }
+
+    @Test
+    void testGenericDataIntegrityViolationNoUsaMappingDeComprobanteActivo() throws Exception {
+        mockMvc
+            .perform(get("/api/exception-translator-test/generic-data-integrity-violation"))
+            .andExpect(status().isInternalServerError())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.message").value("error.http.500"));
     }
 
     @Test

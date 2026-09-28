@@ -6,11 +6,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.hibernate.exception.ConstraintViolationException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +52,11 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private static final String FIELD_ERRORS_KEY = "fieldErrors";
     private static final String MESSAGE_KEY = "message";
     private static final String PATH_KEY = "path";
+    private static final String COMPROBANTE_ACTIVE_CONFLICT_DETAIL = "Ya existe un comprobante activo equivalente.";
+    private static final Set<String> COMPROBANTE_ACTIVE_CONFLICT_CONSTRAINTS = Set.of(
+        "ux_comprobante_venta_emitida_tipo",
+        "ux_comprobante_pago_emitido_tipo"
+    );
     private static final boolean CASUAL_CHAIN_ENABLED = false;
 
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionTranslator.class);
@@ -194,6 +202,8 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     private String getMappedMessageKey(Throwable err) {
         if (err instanceof MethodArgumentNotValidException) {
             return ErrorConstants.ERR_VALIDATION;
+        } else if (isComprobanteActiveConflict(err)) {
+            return ErrorConstants.ERR_COMPROBANTE_ACTIVE_CONFLICT;
         } else if (err instanceof ConcurrencyFailureException || err.getCause() instanceof ConcurrencyFailureException) {
             return ErrorConstants.ERR_CONCURRENCY_FAILURE;
         }
@@ -206,6 +216,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
     }
 
     private String getCustomizedErrorDetails(Throwable err) {
+        if (isComprobanteActiveConflict(err)) return COMPROBANTE_ACTIVE_CONFLICT_DETAIL;
         Collection<String> activeProfiles = Arrays.asList(env.getActiveProfiles());
         if (activeProfiles.contains(JHipsterConstants.SPRING_PROFILE_PRODUCTION)) {
             if (err instanceof HttpMessageConversionException) return "Unable to convert http message";
@@ -217,6 +228,7 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
 
     private HttpStatus getMappedStatus(Throwable err) {
         // Where we disagree with Spring defaults
+        if (isComprobanteActiveConflict(err)) return HttpStatus.CONFLICT;
         if (err instanceof AccessDeniedException) return HttpStatus.FORBIDDEN;
         if (err instanceof ConcurrencyFailureException) return HttpStatus.CONFLICT;
         if (err instanceof BadCredentialsException) return HttpStatus.UNAUTHORIZED;
@@ -266,5 +278,37 @@ public class ExceptionTranslator extends ResponseEntityExceptionHandler {
             "de.",
             "com.concesionaria.app"
         );
+    }
+
+    private boolean isComprobanteActiveConflict(Throwable err) {
+        return findComprobanteActiveConflictConstraint(err).isPresent();
+    }
+
+    private Optional<String> findComprobanteActiveConflictConstraint(Throwable err) {
+        Set<Throwable> visited = new HashSet<>();
+        Throwable current = err;
+        while (current != null && visited.add(current)) {
+            Optional<String> constraintName = extractHibernateConstraintName(current);
+            if (constraintName.filter(COMPROBANTE_ACTIVE_CONFLICT_CONSTRAINTS::contains).isPresent()) {
+                return constraintName;
+            }
+            String message = current.getMessage();
+            Optional<String> messageConstraint = COMPROBANTE_ACTIVE_CONFLICT_CONSTRAINTS
+                .stream()
+                .filter(constraint -> message != null && message.contains(constraint))
+                .findFirst();
+            if (messageConstraint.isPresent()) {
+                return messageConstraint;
+            }
+            current = current.getCause();
+        }
+        return Optional.empty();
+    }
+
+    private Optional<String> extractHibernateConstraintName(Throwable throwable) {
+        if (throwable instanceof ConstraintViolationException constraintViolationException) {
+            return Optional.ofNullable(constraintViolationException.getConstraintName());
+        }
+        return Optional.empty();
     }
 }
